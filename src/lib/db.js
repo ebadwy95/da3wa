@@ -24,20 +24,42 @@ const DEFAULT_DB = {
   messages: [],
 };
 
-function hasUpstash() {
-  return Boolean(
-    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+// Vercel's Upstash-for-Redis marketplace integration prepends whatever custom
+// prefix you choose to ITS OWN suffixes (e.g. "<prefix>_KV_REST_API_URL"),
+// not a clean "<prefix>_URL". So we check the plain expected names first,
+// then the exact names Vercel generates for this project, then fall back to
+// scanning all env vars for anything that looks like a REST API URL/token —
+// this keeps working even if the integration is ever reconnected with a
+// different custom prefix.
+function getUpstashUrl() {
+  if (process.env.UPSTASH_REDIS_REST_URL) return process.env.UPSTASH_REDIS_REST_URL;
+  if (process.env.UPSTASH_REDIS_REST_KV_REST_API_URL) return process.env.UPSTASH_REDIS_REST_KV_REST_API_URL;
+  const found = Object.entries(process.env).find(
+    ([k]) => /REST_API_URL$/.test(k) && !/READ_ONLY/.test(k)
   );
+  return found ? found[1] : null;
+}
+
+function getUpstashToken() {
+  if (process.env.UPSTASH_REDIS_REST_TOKEN) return process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN) return process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
+  const found = Object.entries(process.env).find(
+    ([k]) => /REST_API_TOKEN$/.test(k) && !/READ_ONLY/.test(k)
+  );
+  return found ? found[1] : null;
+}
+
+function hasUpstash() {
+  return Boolean(getUpstashUrl() && getUpstashToken());
 }
 
 let redisClientPromise = null;
 async function getRedis() {
   if (!redisClientPromise) {
+    const url = getUpstashUrl();
+    const token = getUpstashToken();
     redisClientPromise = import("@upstash/redis").then(
-      ({ Redis }) => new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-      })
+      ({ Redis }) => new Redis({ url, token })
     );
   }
   return redisClientPromise;
