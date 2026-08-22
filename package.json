@@ -1,5 +1,5 @@
 {
-  "name": "izemak-clone",
+  "name": "da3wa",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,7 +16,8 @@
     "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "uuid": "^14.0.1"
+    "uuid": "^14.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

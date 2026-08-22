@@ -1,0 +1,34 @@
+@import "tailwindcss";
+
+:root {
+  --gold: #b08d57;
+  --gold-dark: #8a6d3f;
+  --cream: #faf6ef;
+  --ink: #2c2620;
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: "Tahoma", "Segoe UI", system-ui, sans-serif;
+}
+
+.btn-gold {
+  background: linear-gradient(180deg, #c8a06a, var(--gold));
+  color: #fff;
+  transition: filter 0.15s ease;
+}
+.btn-gold:hover {
+  filter: brightness(1.05);
+}
+.btn-gold:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #eee0cc;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(139, 109, 63, 0.08);
+}
