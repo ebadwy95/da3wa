@@ -39,7 +39,7 @@ export async function POST(request, { params }) {
 
   const result = await withDb((db) => {
     const event = db.events.find((e) => e.id === eventId);
-    if (!event) return { error: "الفرح غير موجود", status: 404 };
+    if (!event) return { error: "الزفاف غير موجود", status: 404 };
 
     const currentCount = db.guests.filter((g) => g.eventId === eventId).length;
     if (currentCount >= event.packageLimit && !force) {

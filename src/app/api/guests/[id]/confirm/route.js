@@ -19,6 +19,7 @@ export async function POST(request, { params }) {
   const outcome = await withDb(async (db) => {
     const guest = db.guests.find((g) => g.id === id);
     if (!guest) return { error: "الضيف غير موجود", status: 404 };
+    const event = db.events.find((e) => e.id === guest.eventId);
 
     const clampedCompanions = Math.max(
       0,
@@ -41,7 +42,10 @@ export async function POST(request, { params }) {
         phone: guest.phoneDisplay || guest.phone,
         templateName,
         broadcastName: "da3wa_qr_delivery",
-        params: [{ name: "name", value: guest.name }],
+        params: [
+          { name: "name", value: guest.name },
+          { name: "couple", value: event?.coupleNames || "" },
+        ],
       });
     }
 

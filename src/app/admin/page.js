@@ -90,7 +90,7 @@ function CreateEventForm({ onCreated }) {
         body: JSON.stringify(form),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "تعذر إنشاء الفرح");
+      if (!res.ok) throw new Error(data.error || "تعذر إنشاء الزفاف");
       onCreated(data.event);
     } catch (err) {
       setError(err.message);
@@ -101,9 +101,9 @@ function CreateEventForm({ onCreated }) {
 
   return (
     <form onSubmit={submit} className="card p-6 space-y-3 max-w-lg">
-      <h2 className="font-bold text-lg">إنشاء فرح جديد</h2>
+      <h2 className="font-bold text-lg">إنشاء زفاف جديد</h2>
       <div>
-        <label className="block text-xs text-gray-500 mb-1">رقم واتساب العريس (مطلوب — بيكون معرّف الفرح)</label>
+        <label className="block text-xs text-gray-500 mb-1">رقم واتساب العريس (مطلوب — بيكون معرّف الزفاف)</label>
         <input
           value={form.groomPhone}
           onChange={(e) => setForm({ ...form, groomPhone: e.target.value })}
@@ -126,7 +126,7 @@ function CreateEventForm({ onCreated }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">تاريخ الفرح</label>
+          <label className="block text-xs text-gray-500 mb-1">تاريخ الزفاف</label>
           <input
             value={form.eventDate}
             onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
@@ -158,7 +158,7 @@ function CreateEventForm({ onCreated }) {
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
       <button disabled={saving} className="btn-gold px-6 py-2 rounded-lg font-semibold">
-        {saving ? "..." : "إنشاء الفرح"}
+        {saving ? "..." : "إنشاء الزفاف"}
       </button>
     </form>
   );
@@ -183,6 +183,11 @@ function GuestRow({ guest, onDelete }) {
       <td className="py-3 px-2 text-center">{guest.maxCompanions}</td>
       <td className="py-3 px-2 text-center">
         <span style={{ color: statusColor }} className="font-semibold text-sm">{statusLabel}</span>
+        {guest.status === "confirmed" && (
+          <div className="text-xs text-gray-500 mt-0.5">
+            الحضور: {1 + (guest.confirmedCompanions || 0)} ({guest.confirmedCompanions || 0} مرافق)
+          </div>
+        )}
       </td>
       <td className="py-3 px-2 text-center">
         {guest.checkedIn ? <span className="text-green-700 font-semibold text-sm">✅ دخل</span> : <span className="text-gray-400 text-sm">—</span>}
@@ -208,7 +213,7 @@ function LimitReachedModal({ info, onForceAdd, onCancel }) {
       <div className="card p-6 max-w-sm w-full space-y-4 text-center">
         <h3 className="font-bold text-lg">وصلت لحد الباكدج</h3>
         <p className="text-sm text-gray-600">
-          الباكدج بتاع الفرح ده {info.packageLimit} دعوة، وعندك دلوقتي {info.guestCount} ضيف مضاف.
+          الباكدج بتاع الزفاف ده {info.packageLimit} دعوة، وعندك دلوقتي {info.guestCount} ضيف مضاف.
           تحب تعمل إيه؟
         </p>
         <div className="flex flex-col gap-2">
@@ -216,7 +221,7 @@ function LimitReachedModal({ info, onForceAdd, onCancel }) {
             ضيف الضيف ده برضو (زيادة عن الباكدج)
           </button>
           <a
-            href="https://wa.me/?text=عايز%20أرفع%20الباكدج%20بتاع%20الفرح"
+            href="https://wa.me/?text=عايز%20أرفع%20الباكدج%20بتاع%20الزفاف"
             target="_blank"
             rel="noreferrer"
             className="py-2 rounded-lg font-semibold border"
@@ -308,7 +313,10 @@ function BulkUpload({ eventId, onDone }) {
 
   async function upload() {
     const file = fileRef.current?.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setError("لازم تختار ملف الأول قبل الضغط على زر الرفع");
+      return;
+    }
     setUploading(true);
     setError("");
     setResult(null);
@@ -341,7 +349,12 @@ function BulkUpload({ eventId, onDone }) {
         أي شيت بترتيب مختلف هيترفض.
       </p>
       <div className="flex gap-2 items-center flex-wrap">
-        <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="text-sm" />
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className="text-sm"
+        />
         <button onClick={upload} disabled={uploading} className="btn-gold px-4 py-2 rounded-lg text-sm font-semibold">
           {uploading ? "جاري الرفع..." : "رفع الشيت"}
         </button>
@@ -439,6 +452,134 @@ function WhatsappFeed({ messages, watiConfigured }) {
   );
 }
 
+function TestWhatsappSend() {
+  const [phone, setPhone] = useState("");
+  const [message, setMessage] = useState("رسالة تجربة من نظام Da3wa 👋");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+
+  async function send(e) {
+    e.preventDefault();
+    setSending(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/whatsapp/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, message }),
+      });
+      const data = await res.json();
+      setResult(data);
+    } catch (err) {
+      setResult({ error: err.message });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="card p-4 space-y-3">
+      <h2 className="font-bold">تجربة إرسال واتساب (بدون قالب معتمد)</h2>
+      <p className="text-xs text-gray-500 leading-relaxed">
+        هذا الإرسال لا يحتاج قالبًا معتمدًا من ميتا، لكنه يعمل فقط ضمن نافذة
+        الأربع وعشرين ساعة التي تفتحها واتساب بعد أن يراسل الرقم المطلوب
+        اختباره رقم النشاط التجاري المتصل أولًا. إن لم يكن الرقم قد راسل
+        النشاط التجاري خلال آخر أربع وعشرين ساعة، سيفشل الإرسال مهما كان
+        الكود صحيحًا — هذا قيد من سياسة واتساب نفسها وليس خللًا في النظام.
+      </p>
+      <form onSubmit={send} className="flex flex-wrap gap-3 items-end">
+        <div className="flex-1 min-w-[160px]">
+          <label className="block text-xs text-gray-500 mb-1">الرقم (مع كود الدولة)</label>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            dir="ltr"
+            placeholder="+9665XXXXXXXX"
+            required
+            className="w-full border rounded-lg px-3 py-2 outline-none"
+            style={{ borderColor: "#eee0cc" }}
+          />
+        </div>
+        <div className="flex-[2] min-w-[220px]">
+          <label className="block text-xs text-gray-500 mb-1">نص الرسالة</label>
+          <input
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            required
+            className="w-full border rounded-lg px-3 py-2 outline-none"
+            style={{ borderColor: "#eee0cc" }}
+          />
+        </div>
+        <button disabled={sending} className="btn-gold px-6 py-2 rounded-lg font-semibold">
+          {sending ? "جاري الإرسال..." : "إرسال تجريبي"}
+        </button>
+      </form>
+      {result && (
+        <div
+          className="text-sm rounded-lg p-3"
+          style={{
+            background: result.error ? "#fdecea" : result.simulated ? "#fff4de" : "#e6f4ea",
+            color: result.error ? "#b3261e" : result.simulated ? "#a08a2d" : "#2e7d32",
+          }}
+        >
+          {result.error
+            ? `فشل الإرسال: ${result.error}`
+            : result.simulated
+            ? `محاكاة فقط (Wati غير متصل): ${result.reason}`
+            : "تم إرسال الرسالة بنجاح"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScannerAccessCard({ event }) {
+  const [copied, setCopied] = useState(null);
+
+  const scanLink =
+    typeof window !== "undefined" ? `${window.location.origin}/scan` : "/scan";
+
+  function copy(text, key) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
+
+  return (
+    <div className="card p-4 space-y-2">
+      <h2 className="font-bold">دخول سكانر الباب لهذا الزفاف</h2>
+      <p className="text-xs text-gray-500 leading-relaxed">
+        سلّم رابط السكانر وكود الزفاف ده للموظف الواقف على الباب. الكود ده
+        خاص بهذا الزفاف فقط — حتى لو كان فيه زفاف تاني شغال في نفس اليوم على
+        نفس السيستم، كل سكانر هيشتغل بضيوف زفافه بس ومش هيقدر يدخّل ضيوف
+        الزفاف التاني.
+      </p>
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex-1 min-w-[160px] border rounded-lg px-3 py-2 text-sm" dir="ltr" style={{ borderColor: "#eee0cc" }}>
+          {scanLink}
+        </div>
+        <button onClick={() => copy(scanLink, "link")} className="text-sm underline" style={{ color: "var(--gold-dark)" }}>
+          {copied === "link" ? "اتنسخ ✓" : "نسخ الرابط"}
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="border rounded-lg px-3 py-2 text-sm font-mono tracking-widest" dir="ltr" style={{ borderColor: "#eee0cc" }}>
+          {event.scannerCode || "..."}
+        </div>
+        <button
+          onClick={() => copy(event.scannerCode || "", "code")}
+          disabled={!event.scannerCode}
+          className="text-sm underline"
+          style={{ color: "var(--gold-dark)" }}
+        >
+          {copied === "code" ? "اتنسخ ✓" : "نسخ الكود"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EventDashboard({ event, onDeleted }) {
   const [stats, setStats] = useState(null);
   const [guests, setGuests] = useState([]);
@@ -482,19 +623,26 @@ function EventDashboard({ event, onDeleted }) {
           }}
           className="text-sm text-red-500 underline"
         >
-          حذف الفرح
+          حذف الزفاف
         </button>
       </div>
 
+      <ScannerAccessCard event={event} />
+
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatCard label="مدعوين" value={stats.invited} />
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <StatCard label="إجمالي الدعوات" value={stats.invited} />
           <StatCard label="أكدوا" value={stats.confirmed} accent="#2e7d32" />
           <StatCard label="لسه ماردوش" value={stats.pending} accent="#a08a5a" />
           <StatCard label="اعتذروا" value={stats.declined} accent="#b3261e" />
+          <StatCard label="إجمالي الحضور المتوقع" value={stats.expectedAttendees} accent="#6a4fb3" />
           <StatCard label="دخلوا فعلاً" value={stats.checkedIn} accent="#1a73e8" />
         </div>
       )}
+      <p className="text-xs text-gray-400 -mt-3">
+        &quot;إجمالي الدعوات&quot; = عدد الضيوف المضافين، بغض النظر عن حالتهم. &quot;إجمالي الحضور المتوقع&quot; = مجموع
+        كل ضيف مؤكّد زائد عدد مرافقيه اللي أكدهم فعلاً — وهو الرقم اللي يهمك لتوقع عدد الكراسي.
+      </p>
 
       <AddGuestForm eventId={event.id} onAdded={() => refresh()} />
       <BulkUpload eventId={event.id} onDone={() => refresh()} />
@@ -588,15 +736,17 @@ export default function AdminPage() {
           className="border rounded-lg px-3 py-2 outline-none"
           style={{ borderColor: "#eee0cc" }}
         >
-          <option value="" disabled>اختار فرح</option>
+          <option value="" disabled>اختار زفاف</option>
           {events.map((e) => (
             <option key={e.id} value={e.id}>{e.coupleNames} — {e.guestCount}/{e.packageLimit}</option>
           ))}
         </select>
         <button onClick={() => setShowCreate((v) => !v)} className="text-sm underline" style={{ color: "var(--gold-dark)" }}>
-          {showCreate ? "إلغاء" : "+ فرح جديد"}
+          {showCreate ? "إلغاء" : "+ زفاف جديد"}
         </button>
       </div>
+
+      <TestWhatsappSend />
 
       {showCreate && (
         <CreateEventForm
@@ -618,7 +768,7 @@ export default function AdminPage() {
           }}
         />
       ) : (
-        !showCreate && <p className="text-gray-500">لسه مفيش أفراح — دوس &quot;+ فرح جديد&quot; عشان تبدأ</p>
+        !showCreate && <p className="text-gray-500">لسه مفيش أعراس — دوس &quot;+ زفاف جديد&quot; عشان تبدأ</p>
       )}
     </main>
   );
