@@ -77,13 +77,21 @@ export async function sendTemplateMessage({ phone, templateName, broadcastName, 
     };
   }
   try {
+    const body = {
+      template_name: templateName,
+      broadcast_name: broadcastName || templateName,
+      parameters: params,
+    };
+    // Wati's v1 docs list channel_number as a required field on accounts
+    // with more than one connected WhatsApp number. Only include it if the
+    // account's number is configured, so single-channel accounts (which
+    // work fine without it) aren't affected.
+    if (process.env.WATI_CHANNEL_NUMBER) {
+      body.channel_number = process.env.WATI_CHANNEL_NUMBER;
+    }
     const result = await callWati(
       `/api/v1/sendTemplateMessage?whatsappNumber=${encodeURIComponent(normalized)}`,
-      {
-        template_name: templateName,
-        broadcast_name: broadcastName || templateName,
-        parameters: params,
-      }
+      body
     );
     return { simulated: false, result };
   } catch (err) {
