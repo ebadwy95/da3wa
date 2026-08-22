@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb, withDb } from "@/lib/db";
 import { verifyInviteToken } from "@/lib/token";
 import { isAdminAuthed } from "@/lib/auth";
+import { canAccessEvent } from "@/lib/coupleAuth";
 
 // Public: a guest opening their personal invite link. Requires a valid
 // signed token — no auth cookie needed, but the token gates access.
@@ -26,12 +27,19 @@ export async function GET(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  if (!(await isAdminAuthed())) {
+  const { id } = await params;
+
+  const db = await getDb();
+  const guest = db.guests.find((g) => g.id === id);
+  if (!guest) {
+    return NextResponse.json({ error: "الضيف غير موجود" }, { status: 404 });
+  }
+  if (!(await canAccessEvent(guest.eventId))) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
-  const { id } = await params;
-  await withDb((db) => {
-    db.guests = db.guests.filter((g) => g.id !== id);
+
+  await withDb((freshDb) => {
+    freshDb.guests = freshDb.guests.filter((g) => g.id !== id);
   });
   return NextResponse.json({ ok: true });
 }

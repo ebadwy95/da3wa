@@ -1,17 +1,32 @@
 import { NextResponse } from "next/server";
 import { getDb, withDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
+import { canAccessEvent } from "@/lib/coupleAuth";
 
 export async function GET(request, { params }) {
-  if (!(await isAdminAuthed())) {
+  const { id } = await params;
+  if (!(await canAccessEvent(id))) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
-  const { id } = await params;
   const db = await getDb();
   const event = db.events.find((e) => e.id === id);
   if (!event) return NextResponse.json({ error: "الزفاف غير موجود" }, { status: 404 });
   const guestCount = db.guests.filter((g) => g.eventId === id).length;
-  return NextResponse.json({ event: { ...event, guestCount, remaining: Math.max(0, event.packageLimit - guestCount) } });
+
+  // The door-scanner code stays admin-only info (it's shown inside the
+  // event's details in /admin) — a couple session for this same event
+  // should not receive it back in the API response at all.
+  const admin = await isAdminAuthed();
+  const { scannerCode, ...safeEvent } = event;
+
+  return NextResponse.json({
+    event: {
+      ...safeEvent,
+      ...(admin ? { scannerCode } : {}),
+      guestCount,
+      remaining: Math.max(0, event.packageLimit - guestCount),
+    },
+  });
 }
 
 // Update event details / upgrade the package limit.

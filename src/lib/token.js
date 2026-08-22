@@ -57,6 +57,34 @@ export function generateScannerCode() {
   return crypto.randomBytes(4).toString("hex").toUpperCase();
 }
 
+// Per-event couple login: a lightweight username+password the couple uses
+// at /couple to see (and manage guests for) ONLY their own wedding — not
+// the full platform admin dashboard. The session is scoped to one event the
+// same way the scanner session is.
+export function makeCoupleToken(eventId) {
+  return sign(`couple:${eventId}`).slice(0, 24);
+}
+
+export function verifyCoupleToken(eventId, token) {
+  if (!eventId || !token) return false;
+  return makeCoupleToken(eventId) === token;
+}
+
+// Turns the couple's names into a short, memorable login username, e.g.
+// "أحمد و سارة" -> "ahmed-sara"-ish is hard with Arabic, so we transliterate
+// nothing and instead just make a short readable code — simplest and avoids
+// collisions/encoding issues with Arabic names in a username field.
+export function generateCoupleUsername() {
+  return `couple${crypto.randomBytes(3).toString("hex")}`;
+}
+
+// A short random initial password the admin hands to the couple. They're
+// required to change it on first login (see mustChangePassword on the
+// event record).
+export function generateCouplePassword() {
+  return crypto.randomBytes(4).toString("hex");
+}
+
 export function verifyCheckinCode(code) {
   if (!code || typeof code !== "string" || !code.includes(".")) {
     return { valid: false, guestId: null };

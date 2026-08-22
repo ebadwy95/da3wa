@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { withDb } from "@/lib/db";
-import { isAdminAuthed } from "@/lib/auth";
 import { makeInviteToken } from "@/lib/token";
 import { sendTemplateMessage } from "@/lib/wati";
+import { canAccessEvent } from "@/lib/coupleAuth";
 
 // One-click bulk send: sends the "you're invited, tap to confirm" message
 // (a Meta-approved template with the guest's personal link) to every guest
 // in this event who hasn't been sent one yet. Guests added later (or a
 // second click) only message the new/un-sent ones — safe to click again.
 export async function POST(request, { params }) {
-  if (!(await isAdminAuthed())) {
+  const { id: eventId } = await params;
+  if (!(await canAccessEvent(eventId))) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
-  const { id: eventId } = await params;
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
   const templateName = process.env.WATI_INVITE_TEMPLATE_NAME || "hello_world";
 
@@ -24,7 +24,7 @@ export async function POST(request, { params }) {
   const pendingGuests = db.guests.filter((g) => g.eventId === eventId && !g.invitedAt);
 
   if (pendingGuests.length === 0) {
-    return NextResponse.json({ sent: 0, failed: 0, message: "كل الضيوف اتبعتلهم الدعوة قبل كده" });
+    return NextResponse.json({ sent: 0, failed: 0, message: "تم إرسال الدعوة لجميع الضيوف مسبقًا" });
   }
 
   let sent = 0;

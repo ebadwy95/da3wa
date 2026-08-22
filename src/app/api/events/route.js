@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getDb, withDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { normalizePhone } from "@/lib/phone";
-import { generateScannerCode } from "@/lib/token";
+import { generateScannerCode, generateCoupleUsername, generateCouplePassword } from "@/lib/token";
 
 function withCounts(event, guests) {
   const eventGuests = guests.filter((g) => g.eventId === event.id);
@@ -18,14 +18,21 @@ export async function GET() {
   if (!(await isAdminAuthed())) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
-  // Backfill: events created before the per-event scanner-code feature
-  // existed won't have one yet — generate and persist one on first read so
-  // every event (old or new) always has a scanner code to show/share.
-  const needsBackfill = (await getDb()).events.some((e) => !e.scannerCode);
+  // Backfill: events created before the per-event scanner-code / couple-login
+  // features existed won't have them yet — generate and persist on first
+  // read so every event (old or new) always has both to show/share.
+  const needsBackfill = (await getDb()).events.some(
+    (e) => !e.scannerCode || !e.coupleUsername || !e.couplePassword
+  );
   const db = needsBackfill
     ? await withDb((db) => {
         db.events.forEach((e) => {
           if (!e.scannerCode) e.scannerCode = generateScannerCode();
+          if (!e.coupleUsername) e.coupleUsername = generateCoupleUsername();
+          if (!e.couplePassword) {
+            e.couplePassword = generateCouplePassword();
+            e.mustChangePassword = true;
+          }
         });
         return db;
       })
@@ -76,6 +83,15 @@ export async function POST(request) {
     // admin password, and without being able to check in another event's
     // guests — see src/app/api/scan-auth/route.js.
     scannerCode: generateScannerCode(),
+    // Lets the couple themselves log into /couple and manage ONLY their own
+    // event (add guests, send invites, see stats) without the platform
+    // admin password and without seeing any other couple's event. Stored in
+    // plain text on the event record — same simplicity level as
+    // ADMIN_PASSWORD elsewhere in this app; fine for this stage, worth
+    // revisiting if/when this becomes a bigger multi-tenant product.
+    coupleUsername: generateCoupleUsername(),
+    couplePassword: generateCouplePassword(),
+    mustChangePassword: true,
     createdAt: new Date().toISOString(),
   };
 

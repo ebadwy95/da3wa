@@ -25,7 +25,7 @@ const KNOWN_COUNTRY_CODES = [
  * Returns { valid: true, digits, e164 } or { valid: false, error }.
  */
 export function normalizePhone(raw) {
-  if (!raw) return { valid: false, error: "الرقم فاضي" };
+  if (!raw) return { valid: false, error: "الرقم فارغ" };
 
   let s = String(raw).trim();
   // Normalize "00" international prefix to "+".
@@ -38,7 +38,7 @@ export function normalizePhone(raw) {
   if (!hasPlus) {
     return {
       valid: false,
-      error: "الرقم لازم يبدأ بكود الدولة (+965 أو 00965 مثلاً) — رقم من غير كود دولة مرفوض",
+      error: "يجب أن يبدأ الرقم برمز الدولة (+965 أو 00965 مثلًا) — الرقم بدون رمز دولة مرفوض",
     };
   }
 
@@ -50,7 +50,7 @@ export function normalizePhone(raw) {
   if (!matchedCode) {
     return {
       valid: false,
-      error: "كود الدولة مش من الدول المدعومة حالياً — كلم الدعم لو الرقم صح",
+      error: "رمز الدولة ليس من الدول المدعومة حاليًا — يُرجى التواصل مع الدعم إن كان الرقم صحيحًا",
     };
   }
 

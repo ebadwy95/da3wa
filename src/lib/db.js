@@ -22,6 +22,11 @@ const DEFAULT_DB = {
   events: [],
   guests: [],
   messages: [],
+  // Every door-scan attempt (successful or rejected) gets logged here, along
+  // with which scanner-staff member's session made it — the audit trail that
+  // lets the admin/couple see who did what at the door if something looks
+  // like misuse (e.g. someone repeatedly trying an already-used QR).
+  checkinLogs: [],
 };
 
 // Vercel's Upstash-for-Redis marketplace integration prepends whatever custom

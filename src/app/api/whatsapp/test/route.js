@@ -18,7 +18,7 @@ export async function POST(request) {
   const { phone, message } = body;
 
   if (!phone || !message) {
-    return NextResponse.json({ error: "لازم رقم ونص الرسالة" }, { status: 400 });
+    return NextResponse.json({ error: "يجب إدخال الرقم ونص الرسالة" }, { status: 400 });
   }
 
   const result = await sendSessionMessage({ phone, text: message });

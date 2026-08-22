@@ -2,29 +2,29 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import * as XLSX from "xlsx";
 import { withDb } from "@/lib/db";
-import { isAdminAuthed } from "@/lib/auth";
 import { normalizePhone } from "@/lib/phone";
+import { canAccessEvent } from "@/lib/coupleAuth";
 
 // The ONLY accepted column header row, in this exact order. We deliberately
 // do NOT try to be clever about reordered/renamed columns — a strict
 // template avoids silently misreading someone's ad-hoc sheet (e.g. treating
 // a "phone" column as "companions" because the columns got swapped).
-export const TEMPLATE_HEADERS = ["الاسم", "رقم الواتساب (مع كود الدولة)", "عدد المرافقين"];
+export const TEMPLATE_HEADERS = ["الاسم", "رقم الواتساب (مع كود الدولة)", "إجمالي عدد الحضور (شامل الضيف نفسه)"];
 
 function normalizeHeaderCell(v) {
   return String(v ?? "").trim();
 }
 
 export async function POST(request, { params }) {
-  if (!(await isAdminAuthed())) {
+  const { id: eventId } = await params;
+  if (!(await canAccessEvent(eventId))) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
-  const { id: eventId } = await params;
 
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("file");
   if (!file || typeof file.arrayBuffer !== "function") {
-    return NextResponse.json({ error: "لازم ترفع ملف (Excel أو CSV)" }, { status: 400 });
+    return NextResponse.json({ error: "يجب رفع ملف (Excel أو CSV)" }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -32,14 +32,14 @@ export async function POST(request, { params }) {
   try {
     workbook = XLSX.read(buffer, { type: "buffer" });
   } catch {
-    return NextResponse.json({ error: "تعذر قراءة الملف — لازم يكون Excel أو CSV صحيح" }, { status: 400 });
+    return NextResponse.json({ error: "تعذّر قراءة الملف — يجب أن يكون ملف Excel أو CSV صحيحًا" }, { status: 400 });
   }
 
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
 
   if (rows.length === 0) {
-    return NextResponse.json({ error: "الملف فاضي" }, { status: 400 });
+    return NextResponse.json({ error: "الملف فارغ" }, { status: 400 });
   }
 
   const headerRow = rows[0].map(normalizeHeaderCell);
@@ -51,7 +51,7 @@ export async function POST(request, { params }) {
     return NextResponse.json(
       {
         error:
-          "شكل الشيت مش مطابق للتيمبلت المطلوب — نزّل التيمبلت وابعتلنا نفس الأعمدة بنفس الترتيب من غير تعديل",
+          "شكل الملف غير مطابق للنموذج المطلوب — يُرجى تحميل النموذج وإرسال نفس الأعمدة بنفس الترتيب دون تعديل",
         expectedHeaders: TEMPLATE_HEADERS,
         receivedHeaders: headerRow,
       },
@@ -66,10 +66,10 @@ export async function POST(request, { params }) {
 
   dataRows.forEach((row, idx) => {
     const rowNumber = idx + 2; // +1 for header, +1 for 1-indexing
-    const [rawName, rawPhone, rawCompanions] = row;
+    const [rawName, rawPhone, rawTotalGuests] = row;
     const name = String(rawName || "").trim();
     if (!name) {
-      errors.push({ row: rowNumber, reason: "الاسم فاضي" });
+      errors.push({ row: rowNumber, reason: "الاسم فارغ" });
       return;
     }
     const phone = normalizePhone(rawPhone);
@@ -77,7 +77,11 @@ export async function POST(request, { params }) {
       errors.push({ row: rowNumber, reason: `رقم الضيف "${name}": ${phone.error}` });
       return;
     }
-    const maxCompanions = Math.max(0, parseInt(rawCompanions, 10) || 0);
+    // The sheet's number is the TOTAL party size including the guest
+    // themself (e.g. 3 = هو + مرافقين اتنين) — stored internally as
+    // companions beyond the guest, same as the single-add form.
+    const maxTotalGuests = Math.max(1, parseInt(rawTotalGuests, 10) || 1);
+    const maxCompanions = maxTotalGuests - 1;
     candidates.push({ name, phone, maxCompanions, rowNumber });
   });
 
@@ -102,7 +106,9 @@ export async function POST(request, { params }) {
         status: "pending",
         confirmedCompanions: null,
         checkedIn: false,
+        checkedInCount: 0,
         checkedInAt: null,
+        lastCheckedInAt: null,
         qrDataUrl: null,
         invitedAt: null,
         createdAt: new Date().toISOString(),
@@ -113,7 +119,7 @@ export async function POST(request, { params }) {
 
     return {
       added: added.length,
-      skippedForLimit: skippedForLimit.map((c) => ({ row: c.rowNumber, reason: "تخطى حد الباكدج المتاح" })),
+      skippedForLimit: skippedForLimit.map((c) => ({ row: c.rowNumber, reason: "تجاوز الحد الأقصى المتاح للباقة" })),
       packageLimit: event.packageLimit,
       guestCountAfter: currentCount + added.length,
     };

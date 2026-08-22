@@ -32,3 +32,13 @@ body {
   border-radius: 1rem;
   box-shadow: 0 4px 20px rgba(139, 109, 63, 0.08);
 }
+
+/* Full-screen red flash on a rejected door-scan (e.g. an already-used QR),
+   paired with an audio alert — see src/app/scan/page.js. */
+@keyframes da3wa-flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.da3wa-flash-overlay {
+  animation: da3wa-flash 0.5s ease-out;
+}

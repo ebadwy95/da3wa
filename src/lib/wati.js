@@ -114,8 +114,14 @@ export async function sendSessionMessage({ phone, text }) {
     };
   }
   try {
+    // Wati's v1 "sendSessionMessage" endpoint reads the message text from a
+    // URL query parameter (messageText), NOT the JSON body — sending it only
+    // in the body (as an earlier version of this function did) results in a
+    // 200 OK with no actual message delivered, since Wati receives an empty
+    // messageText. We send it as a query param to match Wati's actual
+    // contract, and keep it in the body too for harmless redundancy.
     const result = await callWati(
-      `/api/v1/sendSessionMessage/${encodeURIComponent(normalized)}`,
+      `/api/v1/sendSessionMessage/${encodeURIComponent(normalized)}?messageText=${encodeURIComponent(text)}`,
       { messageText: text }
     );
     return { simulated: false, result };

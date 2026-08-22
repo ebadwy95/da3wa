@@ -19,6 +19,9 @@ function InviteContent() {
   const [state, setState] = useState({ loading: true, error: null, guest: null, event: null });
   const [companions, setCompanions] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [wishText, setWishText] = useState("");
+  const [wishSubmitting, setWishSubmitting] = useState(false);
+  const [wishError, setWishError] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -31,6 +34,7 @@ function InviteContent() {
       .then(({ guest, event }) => {
         setState({ loading: false, error: null, guest, event });
         setCompanions(guest.confirmedCompanions || 0);
+        setWishText(guest.wishMessage || "");
       })
       .catch((err) => setState({ loading: false, error: err.message, guest: null, event: null }));
   }, [id, token]);
@@ -50,6 +54,25 @@ function InviteContent() {
       setState((s) => ({ ...s, error: err.message }));
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function sendWish() {
+    setWishSubmitting(true);
+    setWishError("");
+    try {
+      const res = await fetch(`/api/guests/${id}/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, message: wishText }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "خطأ");
+      setState((s) => ({ ...s, guest: data.guest }));
+    } catch (err) {
+      setWishError(err.message);
+    } finally {
+      setWishSubmitting(false);
     }
   }
 
@@ -90,7 +113,7 @@ function InviteContent() {
             {guest.maxCompanions > 0 && (
               <div>
                 <label className="block text-sm text-gray-500 mb-2">
-                  عدد المرافقين معاك (بحد أقصى {guest.maxCompanions})
+                  عدد المرافقين معك (بحد أقصى {guest.maxCompanions})
                 </label>
                 <select
                   value={companions}
@@ -135,16 +158,44 @@ function InviteContent() {
               <div className="space-y-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={guest.qrDataUrl} alt="QR Code للدخول" className="mx-auto rounded-xl border" style={{ borderColor: "#eee0cc" }} />
-                <p className="text-xs text-gray-400">هيوصلك نفس الكود ده على واتساب — وريه للموظف يوم الزفاف</p>
+                <p className="text-xs text-gray-400">سيصلك الرمز نفسه على واتساب — أظهره للموظف يوم الزفاف</p>
               </div>
             ) : (
-              <p className="text-sm text-gray-400">جاري تجهيز كود الدخول...</p>
+              <p className="text-sm text-gray-400">جارٍ تجهيز رمز الدخول...</p>
             )}
           </div>
         )}
 
         {guest.status === "declined" && (
-          <p className="text-gray-500">تم تسجيل اعتذارك، نتمنى نشوفك في مناسبة تانية 🌷</p>
+          <p className="text-gray-500">تم تسجيل اعتذارك، نتمنى أن نراك في مناسبة أخرى 🌷</p>
+        )}
+
+        {guest.status !== "pending" && (
+          <div className="text-right space-y-2 border-t pt-4" style={{ borderColor: "#f1e8d8" }}>
+            <label className="block text-sm text-gray-500">
+              {guest.wishMessage ? "تعديل رسالتك للعروسين" : "اترك رسالة تهنئة للعروسين 💌"}
+            </label>
+            <textarea
+              value={wishText}
+              onChange={(e) => setWishText(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="اكتب هنا رسالتك أو تهنئتك..."
+              className="w-full border rounded-lg px-3 py-2 outline-none text-sm"
+              style={{ borderColor: "#eee0cc" }}
+            />
+            {wishError && <p className="text-red-600 text-xs">{wishError}</p>}
+            <button
+              onClick={sendWish}
+              disabled={wishSubmitting || !wishText.trim()}
+              className="btn-gold w-full py-2 rounded-lg text-sm font-semibold"
+            >
+              {wishSubmitting ? "جارٍ الإرسال..." : guest.wishMessage ? "تحديث الرسالة" : "إرسال الرسالة"}
+            </button>
+            {guest.wishMessage && (
+              <p className="text-xs text-green-700">تم إرسال رسالتك، ويمكنك تعديلها في أي وقت.</p>
+            )}
+          </div>
         )}
       </div>
     </main>

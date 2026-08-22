@@ -4,8 +4,37 @@ import { useEffect, useRef, useState } from "react";
 
 const READER_ID = "da3wa-qr-reader";
 
+// Two quick beeps via the Web Audio API — no audio file needed, works the
+// moment the page loads. Used whenever a scan is rejected (wrong event,
+// already fully used, declined, invalid...) so the door staff notices even
+// if they're not looking straight at the screen.
+function playAlertSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    [0, 0.18].forEach((offset) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.35, now + offset + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + offset);
+      osc.stop(now + offset + 0.17);
+    });
+  } catch {
+    // Best-effort only — a browser blocking audio shouldn't break scanning.
+  }
+}
+
 function LoginGate({ onLoggedIn }) {
   const [code, setCode] = useState("");
+  const [staffName, setStaffName] = useState("");
   const [error, setError] = useState("");
   const [showAdmin, setShowAdmin] = useState(false);
   const [password, setPassword] = useState("");
@@ -16,14 +45,14 @@ function LoginGate({ onLoggedIn }) {
     const res = await fetch("/api/scan-auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, staffName }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setError(data.error || "الكود غير صحيح");
+      setError(data.error || "الرمز غير صحيح");
       return;
     }
-    onLoggedIn(data.event);
+    onLoggedIn(data.event, data.staffName);
   }
 
   async function submitAdmin(e) {
@@ -38,7 +67,7 @@ function LoginGate({ onLoggedIn }) {
       setError("كلمة المرور غير صحيحة");
       return;
     }
-    onLoggedIn(null);
+    onLoggedIn(null, "مسؤول المنصة");
   }
 
   return (
@@ -51,19 +80,32 @@ function LoginGate({ onLoggedIn }) {
         {!showAdmin ? (
           <form onSubmit={submitCode} className="space-y-4">
             <p className="text-xs text-gray-500 leading-relaxed">
-              أدخل كود الزفاف الخاص بهذا الباب — كل زفاف له كود مختلف، حتى لو
-              كان فيه أكتر من زفاف في نفس اليوم، كل سكانر هيشتغل بضيوف زفافه
-              هو بس.
+              أدخل رمز الزفاف الخاص بهذا الباب — لكل زفاف رمز مختلف، وحتى لو
+              أُقيم أكثر من زفاف في اليوم نفسه، فسيعمل كل جهاز مسح بضيوف
+              زفافه فقط.
             </p>
             <input
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="كود الزفاف"
+              placeholder="رمز الزفاف"
               dir="ltr"
               className="w-full border rounded-lg px-4 py-3 text-center outline-none tracking-widest font-mono"
               style={{ borderColor: "#eee0cc" }}
               autoFocus
             />
+            <div>
+              <input
+                value={staffName}
+                onChange={(e) => setStaffName(e.target.value)}
+                placeholder="اسمك"
+                required
+                className="w-full border rounded-lg px-4 py-3 text-center outline-none"
+                style={{ borderColor: "#eee0cc" }}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                سيُسجَّل مع كل عملية دخول تقوم بها — حتى إذا كان أكثر من شخص يستخدم الماسح على الباب نفسه، يمكن معرفة من قام بكل عملية.
+              </p>
+            </div>
             {error && <p className="text-red-600 text-sm">{error}</p>}
             <button className="btn-gold w-full py-3 rounded-lg font-semibold">دخول</button>
             <button
@@ -92,7 +134,7 @@ function LoginGate({ onLoggedIn }) {
               onClick={() => { setShowAdmin(false); setError(""); }}
               className="text-xs text-gray-400 underline"
             >
-              الرجوع لتسجيل الدخول بكود الزفاف
+              العودة لتسجيل الدخول برمز الزفاف
             </button>
           </form>
         )}
@@ -104,9 +146,11 @@ function LoginGate({ onLoggedIn }) {
 export default function ScanPage() {
   const [authed, setAuthed] = useState(null);
   const [eventInfo, setEventInfo] = useState(null);
+  const [staffName, setStaffName] = useState("");
   const [cameraError, setCameraError] = useState(null);
   const [manualCode, setManualCode] = useState("");
   const [result, setResult] = useState(null);
+  const [flash, setFlash] = useState(false);
   const scannerRef = useRef(null);
   const lastScanRef = useRef({ code: null, at: 0 });
 
@@ -115,6 +159,7 @@ export default function ScanPage() {
       const data = await res.json().catch(() => ({}));
       setAuthed(Boolean(data.authed));
       setEventInfo(data.event || null);
+      setStaffName(data.staffName || "");
     });
   }, []);
 
@@ -133,9 +178,17 @@ export default function ScanPage() {
         body: JSON.stringify({ code }),
       });
       const data = await res.json();
-      setResult({ ok: data.ok, message: data.message });
+      setResult(data);
+      if (!data.ok) {
+        setFlash(true);
+        playAlertSound();
+        setTimeout(() => setFlash(false), 500);
+      }
     } catch {
-      setResult({ ok: false, message: "خطأ في الاتصال بالسيرفر" });
+      setResult({ ok: false, message: "خطأ في الاتصال بالخادم" });
+      setFlash(true);
+      playAlertSound();
+      setTimeout(() => setFlash(false), 500);
     }
   }
 
@@ -153,7 +206,7 @@ export default function ScanPage() {
       Html5Qrcode.getCameras()
         .then((cameras) => {
           if (cancelled || !cameras?.length) {
-            setCameraError("مفيش كاميرا متاحة — استخدم الإدخال اليدوي تحت");
+            setCameraError("لا توجد كاميرا متاحة — استخدم الإدخال اليدوي أدناه");
             return;
           }
           const cameraId = cameras.find((c) => /back|rear/i.test(c.label))?.id || cameras[0].id;
@@ -163,9 +216,9 @@ export default function ScanPage() {
               { fps: 10, qrbox: { width: 250, height: 250 } },
               (decodedText) => submitCode(decodedText)
             )
-            .catch(() => setCameraError("تعذر تشغيل الكاميرا — استخدم الإدخال اليدوي تحت"));
+            .catch(() => setCameraError("تعذّر تشغيل الكاميرا — استخدم الإدخال اليدوي أدناه"));
         })
-        .catch(() => setCameraError("محتاج صلاحية الكاميرا — استخدم الإدخال اليدوي تحت"));
+        .catch(() => setCameraError("يلزم إذن الوصول إلى الكاميرا — استخدم الإدخال اليدوي أدناه"));
     });
 
     return () => {
@@ -183,8 +236,9 @@ export default function ScanPage() {
   if (authed === false) {
     return (
       <LoginGate
-        onLoggedIn={(event) => {
+        onLoggedIn={(event, name) => {
           setEventInfo(event);
+          setStaffName(name || "");
           setAuthed(true);
         }}
       />
@@ -192,7 +246,14 @@ export default function ScanPage() {
   }
 
   return (
-    <main className="min-h-screen p-6 max-w-md mx-auto space-y-4">
+    <main className="min-h-screen p-6 max-w-md mx-auto space-y-4 relative">
+      {flash && (
+        <div
+          className="fixed inset-0 pointer-events-none z-50 da3wa-flash-overlay"
+          style={{ background: "rgba(211,47,47,0.55)" }}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold" style={{ color: "var(--gold-dark)" }}>
           سكانر الباب
@@ -211,6 +272,7 @@ export default function ScanPage() {
       </div>
       <p className="text-sm text-gray-500 text-center -mt-2">
         {eventInfo ? `زفاف: ${eventInfo.coupleNames}` : "مسؤول المنصة — كل الأفراح"}
+        {staffName && <span className="block text-xs text-gray-400 mt-0.5">تم تسجيل الدخول باسم: {staffName}</span>}
       </p>
 
       <div id={READER_ID} className="card overflow-hidden" />
@@ -219,20 +281,28 @@ export default function ScanPage() {
 
       {result && (
         <div
-          className="card p-4 text-center font-semibold"
-          style={{ color: result.ok ? "#2e7d32" : "#b3261e" }}
+          className="card p-4 text-center space-y-1"
+          style={{
+            background: result.ok ? "transparent" : "#fdecea",
+            border: result.ok ? undefined : "2px solid #b3261e",
+          }}
         >
-          {result.message}
+          <p className="font-bold text-lg" style={{ color: result.ok ? "#2e7d32" : "#b3261e" }}>
+            {result.ok ? "✅ دخول ناجح" : "⛔ مرفوض"}
+          </p>
+          <p className="font-semibold" style={{ color: result.ok ? "#2e7d32" : "#b3261e" }}>
+            {result.message}
+          </p>
         </div>
       )}
 
       <div className="card p-4 space-y-2">
-        <label className="block text-xs text-gray-500">محاكاة يدوية (مفيش كاميرا؟)</label>
+        <label className="block text-xs text-gray-500">محاكاة يدوية (لا توجد كاميرا؟)</label>
         <div className="flex gap-2">
           <input
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value)}
-            placeholder="الصق كود الـ QR هنا"
+            placeholder="الصق رمز الـ QR هنا"
             dir="ltr"
             className="flex-1 border rounded-lg px-3 py-2 outline-none text-sm"
             style={{ borderColor: "#eee0cc" }}
