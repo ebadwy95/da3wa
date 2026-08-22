@@ -9,7 +9,7 @@ export async function GET(request, { params }) {
   const { id } = await params;
   const db = await getDb();
   const event = db.events.find((e) => e.id === id);
-  if (!event) return NextResponse.json({ error: "الفرح غير موجود" }, { status: 404 });
+  if (!event) return NextResponse.json({ error: "الزفاف غير موجود" }, { status: 404 });
   const guestCount = db.guests.filter((g) => g.eventId === id).length;
   return NextResponse.json({ event: { ...event, guestCount, remaining: Math.max(0, event.packageLimit - guestCount) } });
 }
@@ -24,7 +24,7 @@ export async function PATCH(request, { params }) {
 
   const result = await withDb((db) => {
     const event = db.events.find((e) => e.id === id);
-    if (!event) return { error: "الفرح غير موجود" };
+    if (!event) return { error: "الزفاف غير موجود" };
 
     const editable = [
       "coupleNames",

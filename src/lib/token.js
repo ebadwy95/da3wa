@@ -38,6 +38,25 @@ export function makeCheckinCode(guestId) {
   return `${guestId}.${sig}`;
 }
 
+// Per-event door-scanner session: lets a specific wedding's door staff log
+// into /scan with a per-event code (NOT the platform admin password), and
+// scopes their session to that one event — so if two weddings run the same
+// day, one door's scanner session can never check in the other's guests.
+export function makeScannerToken(eventId) {
+  return sign(`scanner:${eventId}`).slice(0, 24);
+}
+
+export function verifyScannerToken(eventId, token) {
+  if (!eventId || !token) return false;
+  return makeScannerToken(eventId) === token;
+}
+
+// Generates a short, easy-to-type-or-share per-event scanner code (e.g.
+// "A1B2C3D4"), created once when the event is made.
+export function generateScannerCode() {
+  return crypto.randomBytes(4).toString("hex").toUpperCase();
+}
+
 export function verifyCheckinCode(code) {
   if (!code || typeof code !== "string" || !code.includes(".")) {
     return { valid: false, guestId: null };

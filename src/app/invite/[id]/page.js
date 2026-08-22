@@ -135,7 +135,7 @@ function InviteContent() {
               <div className="space-y-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={guest.qrDataUrl} alt="QR Code للدخول" className="mx-auto rounded-xl border" style={{ borderColor: "#eee0cc" }} />
-                <p className="text-xs text-gray-400">هيوصلك نفس الكود ده على واتساب — وريه للموظف يوم الفرح</p>
+                <p className="text-xs text-gray-400">هيوصلك نفس الكود ده على واتساب — وريه للموظف يوم الزفاف</p>
               </div>
             ) : (
               <p className="text-sm text-gray-400">جاري تجهيز كود الدخول...</p>

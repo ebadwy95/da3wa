@@ -9,7 +9,7 @@ export default function HomePage() {
         </h1>
         <p className="text-sm text-gray-600 leading-relaxed">
           نظام دعوات أفراح إلكتروني — لكل ضيف رابط شخصي، تأكيد حضور، وQR للدخول
-          يوم الفرح.
+          يوم الزفاف.
         </p>
         <Link
           href="/admin"

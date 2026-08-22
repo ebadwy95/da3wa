@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { getDb, withDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { normalizePhone } from "@/lib/phone";
+import { generateScannerCode } from "@/lib/token";
 
 function withCounts(event, guests) {
   const eventGuests = guests.filter((g) => g.eventId === event.id);
@@ -17,7 +18,18 @@ export async function GET() {
   if (!(await isAdminAuthed())) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
-  const db = await getDb();
+  // Backfill: events created before the per-event scanner-code feature
+  // existed won't have one yet — generate and persist one on first read so
+  // every event (old or new) always has a scanner code to show/share.
+  const needsBackfill = (await getDb()).events.some((e) => !e.scannerCode);
+  const db = needsBackfill
+    ? await withDb((db) => {
+        db.events.forEach((e) => {
+          if (!e.scannerCode) e.scannerCode = generateScannerCode();
+        });
+        return db;
+      })
+    : await getDb();
   const events = db.events
     .map((e) => withCounts(e, db.guests))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -35,7 +47,7 @@ export async function POST(request) {
   // it's the only identifier we have for a wedding before real per-couple
   // accounts exist.
   if (!groomPhone) {
-    return NextResponse.json({ error: "رقم العريس مطلوب لإنشاء أي فرح جديد" }, { status: 400 });
+    return NextResponse.json({ error: "رقم العريس مطلوب لإنشاء أي زفاف جديد" }, { status: 400 });
   }
   const phone = normalizePhone(groomPhone);
   if (!phone.valid) {
@@ -60,6 +72,10 @@ export async function POST(request) {
     // Invite-count package the couple paid for. Set by the platform admin
     // based on what was agreed with the couple — not self-serve yet.
     packageLimit: Math.max(1, parseInt(packageLimit, 10) || 100),
+    // Lets THIS event's door staff log into /scan without the platform
+    // admin password, and without being able to check in another event's
+    // guests — see src/app/api/scan-auth/route.js.
+    scannerCode: generateScannerCode(),
     createdAt: new Date().toISOString(),
   };
 

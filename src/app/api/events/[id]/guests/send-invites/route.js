@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
 
   const db = await import("@/lib/db").then((m) => m.getDb());
   const event = db.events.find((e) => e.id === eventId);
-  if (!event) return NextResponse.json({ error: "الفرح غير موجود" }, { status: 404 });
+  if (!event) return NextResponse.json({ error: "الزفاف غير موجود" }, { status: 404 });
 
   const pendingGuests = db.guests.filter((g) => g.eventId === eventId && !g.invitedAt);
 
@@ -40,6 +40,7 @@ export async function POST(request, { params }) {
       broadcastName: "da3wa_invite_link",
       params: [
         { name: "name", value: guest.name },
+        { name: "couple", value: event.coupleNames },
         { name: "link", value: link },
       ],
     });
