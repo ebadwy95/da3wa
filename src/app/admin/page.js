@@ -12,6 +12,7 @@ import {
   CheckinLogFeed,
   WishWall,
 } from "@/components/dashboardWidgets";
+import { formatEventDateArabic } from "@/lib/date";
 
 function LoginForm({ onLoggedIn }) {
   const [password, setPassword] = useState("");
@@ -59,7 +60,7 @@ function LoginForm({ onLoggedIn }) {
         <button
           type="submit"
           disabled={loading || !password}
-          className="btn-gold w-full py-3 rounded-lg font-semibold"
+          className="pill-btn w-full"
         >
           {loading ? "جاري الدخول..." : "تسجيل الدخول"}
         </button>
@@ -128,9 +129,9 @@ function CreateEventForm({ onCreated }) {
         <div>
           <label className="block text-xs text-gray-500 mb-1">تاريخ الزفاف</label>
           <input
+            type="date"
             value={form.eventDate}
             onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
-            placeholder="مثلاً: 20 نوفمبر 2026"
             className="w-full border rounded-lg px-3 py-2 outline-none"
             style={{ borderColor: "#eee0cc" }}
           />
@@ -157,9 +158,117 @@ function CreateEventForm({ onCreated }) {
         />
       </div>
       {error && <p className="text-red-600 text-sm">{error}</p>}
-      <button disabled={saving} className="btn-gold px-6 py-2 rounded-lg font-semibold">
+      <button disabled={saving} className="pill-btn px-6">
         {saving ? "..." : "إنشاء الزفاف"}
       </button>
+    </form>
+  );
+}
+
+function EditEventForm({ event, onUpdated, onClose }) {
+  const [form, setForm] = useState({
+    coupleNames: event.coupleNames || "",
+    eventDate: event.eventDate || "",
+    venueName: event.venueName || "",
+    venueAddress: event.venueAddress || "",
+    venueMapUrl: event.venueMapUrl || "",
+    welcomeMessage: event.welcomeMessage || "",
+    packageLimit: event.packageLimit || 100,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "تعذّر حفظ التعديلات");
+      onUpdated(data.event);
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="card p-6 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold text-lg">تعديل تفاصيل الزفاف</h2>
+        <button type="button" onClick={onClose} className="text-sm text-gray-400 underline">إغلاق</button>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">اسم العروسين</label>
+        <input
+          value={form.coupleNames}
+          onChange={(e) => setForm({ ...form, coupleNames: e.target.value })}
+          required
+          className="w-full border rounded-lg px-3 py-2 outline-none"
+          style={{ borderColor: "#eee0cc" }}
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">تاريخ الزفاف</label>
+          <input
+            type="date"
+            value={form.eventDate}
+            onChange={(e) => setForm({ ...form, eventDate: e.target.value })}
+            className="w-full border rounded-lg px-3 py-2 outline-none"
+            style={{ borderColor: "#eee0cc" }}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">الحد الأقصى للباقة (عدد الدعوات)</label>
+          <input
+            type="number"
+            min={1}
+            value={form.packageLimit}
+            onChange={(e) => setForm({ ...form, packageLimit: e.target.value })}
+            className="w-full border rounded-lg px-3 py-2 outline-none"
+            style={{ borderColor: "#eee0cc" }}
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">اسم القاعة</label>
+        <input
+          value={form.venueName}
+          onChange={(e) => setForm({ ...form, venueName: e.target.value })}
+          className="w-full border rounded-lg px-3 py-2 outline-none"
+          style={{ borderColor: "#eee0cc" }}
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">رابط الموقع على الخريطة (اختياري)</label>
+        <input
+          value={form.venueMapUrl}
+          onChange={(e) => setForm({ ...form, venueMapUrl: e.target.value })}
+          dir="ltr"
+          className="w-full border rounded-lg px-3 py-2 outline-none"
+          style={{ borderColor: "#eee0cc" }}
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">رسالة الترحيب التي يراها الضيف</label>
+        <textarea
+          value={form.welcomeMessage}
+          onChange={(e) => setForm({ ...form, welcomeMessage: e.target.value })}
+          rows={3}
+          className="w-full border rounded-lg px-3 py-2 outline-none text-sm"
+          style={{ borderColor: "#eee0cc" }}
+        />
+      </div>
+      {error && <p className="text-red-600 text-sm">{error}</p>}
+      <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الحفظ..." : "حفظ التعديلات"}</button>
     </form>
   );
 }
@@ -190,8 +299,7 @@ function TestWhatsappSend() {
   }
 
   return (
-    <div className="card p-4 space-y-3">
-      <h2 className="font-bold">تجربة إرسال واتساب (بدون قالب معتمد)</h2>
+    <div className="space-y-3">
       <p className="text-xs text-gray-500 leading-relaxed">
         هذا الإرسال لا يحتاج قالبًا معتمدًا من ميتا، لكنه يعمل فقط ضمن نافذة
         الأربع وعشرين ساعة التي تفتحها واتساب بعد أن يراسل الرقم المطلوب
@@ -222,7 +330,7 @@ function TestWhatsappSend() {
             style={{ borderColor: "#eee0cc" }}
           />
         </div>
-        <button disabled={sending} className="btn-gold px-6 py-2 rounded-lg font-semibold">
+        <button disabled={sending} className="pill-btn px-6">
           {sending ? "جاري الإرسال..." : "إرسال تجريبي"}
         </button>
       </form>
@@ -255,8 +363,32 @@ function TestWhatsappSend() {
   );
 }
 
-function ScannerAccessCard({ event }) {
+function TechnicalToolsPanel() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="card p-4">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between text-sm font-semibold text-gray-500"
+      >
+        <span>🛠️ أدوات تقنية للمطوّر</span>
+        <span className="text-xs">{open ? "إخفاء ▲" : "إظهار ▼"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 pt-3 border-t" style={{ borderColor: "#f1e8d8" }}>
+          <h2 className="font-bold mb-2">تجربة إرسال واتساب (بدون قالب معتمد)</h2>
+          <TestWhatsappSend />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScannerAccessCard({ event, onUpdated }) {
   const [copied, setCopied] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState("");
+  const scanners = event.scanners || [];
 
   const scanLink =
     typeof window !== "undefined" ? `${window.location.origin}/scan` : "/scan";
@@ -268,14 +400,46 @@ function ScannerAccessCard({ event }) {
     });
   }
 
+  async function addScanner() {
+    setAdding(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/events/${event.id}/scanners`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "تعذّرت إضافة سكانر");
+      onUpdated(data.scanners);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function renameScanner(scannerId, name) {
+    const res = await fetch(`/api/events/${event.id}/scanners/${scannerId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (res.ok) onUpdated(data.scanners);
+  }
+
+  async function removeScanner(scannerId) {
+    const res = await fetch(`/api/events/${event.id}/scanners/${scannerId}`, { method: "DELETE" });
+    const data = await res.json();
+    if (res.ok) onUpdated(data.scanners);
+  }
+
   return (
-    <div className="card p-4 space-y-2">
+    <div className="card p-4 space-y-3">
       <h2 className="font-bold">دخول سكانر الباب لهذا الزفاف</h2>
       <p className="text-xs text-gray-500 leading-relaxed">
-        سلّم رابط الماسح ورمز الزفاف هذا لموظف الاستقبال عند الباب. هذا الرمز
-        خاص بهذا الزفاف فقط — حتى لو كان هناك زفاف آخر يُقام في اليوم نفسه على
-        النظام نفسه، فكل جهاز مسح سيعمل بضيوف زفافه فقط، ولن يتمكّن من تسجيل
-        دخول ضيوف الزفاف الآخر.
+        سلّم رابط الماسح لكل موظف استقبال عند الباب، مع الرمز الخاص به. اكتب
+        اسم الموظف بنفسك أمام كل رمز — موظف الأمن لا يكتب اسمه بنفسه عند
+        الدخول، بل يُدخل الرمز فقط، والاسم المسجَّل هنا هو ما يُنسب إليه في
+        سجلّ الدخول تلقائيًا؛ هذا يمنع أي موظف من الدخول باسم زميل آخر. يمكن
+        إضافة أكثر من رمز إذا كان أكثر من شخص سيقوم بالمسح في الزفاف نفسه.
       </p>
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex-1 min-w-[160px] border rounded-lg px-3 py-2 text-sm" dir="ltr" style={{ borderColor: "#eee0cc" }}>
@@ -285,19 +449,36 @@ function ScannerAccessCard({ event }) {
           {copied === "link" ? "تم النسخ ✓" : "نسخ الرابط"}
         </button>
       </div>
-      <div className="flex flex-wrap gap-2 items-center">
-        <div className="border rounded-lg px-3 py-2 text-sm font-mono tracking-widest" dir="ltr" style={{ borderColor: "#eee0cc" }}>
-          {event.scannerCode || "..."}
-        </div>
-        <button
-          onClick={() => copy(event.scannerCode || "", "code")}
-          disabled={!event.scannerCode}
-          className="text-sm underline"
-          style={{ color: "var(--gold-dark)" }}
-        >
-          {copied === "code" ? "تم النسخ ✓" : "نسخ الرمز"}
-        </button>
+
+      <div className="space-y-2">
+        {scanners.map((s) => (
+          <div key={s.id} className="flex flex-wrap gap-2 items-center border rounded-lg p-2" style={{ borderColor: "#f1e8d8" }}>
+            <div className="border rounded-lg px-3 py-2 text-sm font-mono tracking-widest" dir="ltr" style={{ borderColor: "#eee0cc" }}>
+              {s.code}
+            </div>
+            <button onClick={() => copy(s.code, s.id)} className="text-xs underline" style={{ color: "var(--gold-dark)" }}>
+              {copied === s.id ? "تم النسخ ✓" : "نسخ"}
+            </button>
+            <input
+              defaultValue={s.name}
+              placeholder="اسم موظف الأمن المخصَّص لهذا الرمز"
+              onBlur={(e) => renameScanner(s.id, e.target.value)}
+              className="flex-1 min-w-[140px] border rounded-lg px-3 py-2 text-sm outline-none"
+              style={{ borderColor: "#eee0cc" }}
+            />
+            {!s.name && (
+              <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: "#fdecea", color: "#b3261e" }}>
+                بلا اسم — لن يعمل حتى تُدخل اسمًا
+              </span>
+            )}
+            <button onClick={() => removeScanner(s.id)} className="text-xs text-red-500 underline">حذف</button>
+          </div>
+        ))}
       </div>
+      {error && <p className="text-red-600 text-sm">{error}</p>}
+      <button onClick={addScanner} disabled={adding} className="pill-btn-outline text-sm">
+        {adding ? "..." : "+ إضافة سكانر"}
+      </button>
     </div>
   );
 }
@@ -392,13 +573,80 @@ function CoupleCredentialsCard({ event, onUpdated }) {
   );
 }
 
-function EventDashboard({ event, onDeleted }) {
+function ArchiveList({ events, onOpen, onRecalled }) {
+  const [recallingId, setRecallingId] = useState(null);
+  const [errors, setErrors] = useState({});
+
+  const dateArchived = events.filter((e) => e.displayStatus === "archived");
+  const deleted = events.filter((e) => e.displayStatus === "deleted");
+
+  async function recall(id) {
+    setRecallingId(id);
+    setErrors((e) => ({ ...e, [id]: null }));
+    try {
+      const res = await fetch(`/api/events/${id}/recall`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "تعذّر الاسترجاع");
+      onRecalled();
+    } catch (err) {
+      setErrors((e) => ({ ...e, [id]: err.message }));
+    } finally {
+      setRecallingId(null);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="font-bold mb-2">أعراس اكتملت (مضى على تاريخها أكثر من 3 أيام)</h2>
+        {dateArchived.length === 0 && <p className="text-sm text-gray-400">لا يوجد شيء هنا</p>}
+        <div className="space-y-2">
+          {dateArchived.map((e) => (
+            <button
+              key={e.id}
+              onClick={() => onOpen(e.id)}
+              className="card p-3 w-full text-right flex items-center justify-between"
+            >
+              <span>{e.coupleNames}</span>
+              <span className="text-xs text-gray-400">{formatEventDateArabic(e.eventDate) || e.eventDate}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-bold mb-2">أعراس محذوفة (قابلة للاسترجاع لمدة 30 يومًا)</h2>
+        {deleted.length === 0 && <p className="text-sm text-gray-400">لا يوجد شيء هنا</p>}
+        <div className="space-y-2">
+          {deleted.map((e) => (
+            <div key={e.id} className="card p-3 space-y-1">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span>{e.coupleNames}</span>
+                <button
+                  onClick={() => recall(e.id)}
+                  disabled={recallingId === e.id}
+                  className="pill-btn-outline text-xs"
+                >
+                  {recallingId === e.id ? "..." : "استرجاع"}
+                </button>
+              </div>
+              {errors[e.id] && <p className="text-red-600 text-xs">{errors[e.id]}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventDashboard({ event, onDeleted, onUpdated }) {
   const [stats, setStats] = useState(null);
   const [guests, setGuests] = useState([]);
   const [feed, setFeed] = useState({ messages: [], watiConfigured: false });
   const [checkinLogs, setCheckinLogs] = useState([]);
-  const [coupleOverrides, setCoupleOverrides] = useState({});
-  const eventForDisplay = { ...event, ...coupleOverrides };
+  const [overrides, setOverrides] = useState({});
+  const [showEdit, setShowEdit] = useState(false);
+  const eventForDisplay = { ...event, ...overrides };
 
   const refresh = useCallback(async () => {
     const [statsRes, guestsRes, feedRes, logsRes] = await Promise.all([
@@ -424,28 +672,47 @@ function EventDashboard({ event, onDeleted }) {
     refresh();
   }
 
+  const prettyDate = formatEventDateArabic(eventForDisplay.eventDate);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h2 className="text-xl font-bold">{event.coupleNames}</h2>
+          <h2 className="text-xl font-bold">{eventForDisplay.coupleNames}</h2>
           <p className="text-xs text-gray-500" dir="ltr">
-            {event.groomPhoneDisplay} — الباقة: {event.packageLimit} دعوة
+            {eventForDisplay.groomPhoneDisplay} — الباقة: {eventForDisplay.packageLimit} دعوة
+            {prettyDate ? ` — ${prettyDate}` : ""}
           </p>
         </div>
-        <button
-          onClick={async () => {
-            await fetch(`/api/events/${event.id}`, { method: "DELETE" });
-            onDeleted();
-          }}
-          className="text-sm text-red-500 underline"
-        >
-          حذف الزفاف
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowEdit((v) => !v)} className="text-sm underline" style={{ color: "var(--gold-dark)" }}>
+            {showEdit ? "إلغاء التعديل" : "تعديل تفاصيل الزفاف"}
+          </button>
+          <button
+            onClick={async () => {
+              await fetch(`/api/events/${event.id}`, { method: "DELETE" });
+              onDeleted();
+            }}
+            className="text-sm text-red-500 underline"
+          >
+            حذف الزفاف
+          </button>
+        </div>
       </div>
 
-      <ScannerAccessCard event={event} />
-      <CoupleCredentialsCard event={eventForDisplay} onUpdated={(patch) => setCoupleOverrides((prev) => ({ ...prev, ...patch }))} />
+      {showEdit && (
+        <EditEventForm
+          event={eventForDisplay}
+          onClose={() => setShowEdit(false)}
+          onUpdated={(updated) => {
+            setOverrides((prev) => ({ ...prev, ...updated }));
+            onUpdated(updated);
+          }}
+        />
+      )}
+
+      <ScannerAccessCard event={eventForDisplay} onUpdated={(scanners) => setOverrides((prev) => ({ ...prev, scanners }))} />
+      <CoupleCredentialsCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
@@ -513,6 +780,7 @@ export default function AdminPage() {
   const [events, setEvents] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [view, setView] = useState("active"); // active | archive
 
   const refreshEvents = useCallback(async () => {
     const res = await fetch("/api/events");
@@ -523,8 +791,12 @@ export default function AdminPage() {
     setAuthed(true);
     const data = await res.json();
     setEvents(data.events);
-    if (!selectedId && data.events.length > 0) setSelectedId(data.events[0].id);
-  }, [selectedId]);
+    setSelectedId((prev) => {
+      if (prev) return prev;
+      const firstActive = data.events.find((e) => e.displayStatus === "active");
+      return firstActive ? firstActive.id : prev;
+    });
+  }, []);
 
   useEffect(() => {
     refreshEvents();
@@ -537,6 +809,7 @@ export default function AdminPage() {
     return <LoginForm onLoggedIn={refreshEvents} />;
   }
 
+  const activeEvents = events.filter((e) => e.displayStatus === "active");
   const selectedEvent = events.find((e) => e.id === selectedId);
 
   return (
@@ -554,46 +827,67 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <select
-          value={selectedId || ""}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="border rounded-lg px-3 py-2 outline-none"
-          style={{ borderColor: "#eee0cc" }}
-        >
-          <option value="" disabled>اختر زفافًا</option>
-          {events.map((e) => (
-            <option key={e.id} value={e.id}>{e.coupleNames} — {e.guestCount}/{e.packageLimit}</option>
-          ))}
-        </select>
-        <button onClick={() => setShowCreate((v) => !v)} className="text-sm underline" style={{ color: "var(--gold-dark)" }}>
-          {showCreate ? "إلغاء" : "+ زفاف جديد"}
-        </button>
+      <div className="tab-switch">
+        <button data-active={view === "active"} onClick={() => setView("active")}>الأعراس النشطة</button>
+        <button data-active={view === "archive"} onClick={() => setView("archive")}>الأرشيف</button>
       </div>
 
-      <TestWhatsappSend />
+      {view === "active" ? (
+        <>
+          <div className="flex items-center gap-3 flex-wrap">
+            <select
+              value={selectedId || ""}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="border rounded-lg px-3 py-2 outline-none"
+              style={{ borderColor: "#eee0cc" }}
+            >
+              <option value="" disabled>اختر زفافًا</option>
+              {activeEvents.map((e) => (
+                <option key={e.id} value={e.id}>{e.coupleNames} — {e.guestCount}/{e.packageLimit}</option>
+              ))}
+            </select>
+            <button onClick={() => setShowCreate((v) => !v)} className="text-sm underline" style={{ color: "var(--gold-dark)" }}>
+              {showCreate ? "إلغاء" : "+ زفاف جديد"}
+            </button>
+          </div>
 
-      {showCreate && (
-        <CreateEventForm
-          onCreated={(event) => {
-            setShowCreate(false);
-            setEvents((evs) => [event, ...evs]);
-            setSelectedId(event.id);
-          }}
-        />
-      )}
+          <TechnicalToolsPanel />
 
-      {selectedEvent ? (
-        <EventDashboard
-          key={selectedEvent.id}
-          event={selectedEvent}
-          onDeleted={() => {
-            setSelectedId(null);
-            refreshEvents();
-          }}
-        />
+          {showCreate && (
+            <CreateEventForm
+              onCreated={(event) => {
+                setShowCreate(false);
+                setEvents((evs) => [event, ...evs]);
+                setSelectedId(event.id);
+              }}
+            />
+          )}
+
+          {selectedEvent && selectedEvent.displayStatus !== "deleted" ? (
+            <EventDashboard
+              key={selectedEvent.id}
+              event={selectedEvent}
+              onDeleted={() => {
+                setSelectedId(null);
+                refreshEvents();
+              }}
+              onUpdated={() => refreshEvents()}
+            />
+          ) : (
+            !showCreate && activeEvents.length === 0 && (
+              <p className="text-gray-500">لا توجد أعراس نشطة بعد — اضغط &quot;+ زفاف جديد&quot; للبدء</p>
+            )
+          )}
+        </>
       ) : (
-        !showCreate && <p className="text-gray-500">لا توجد أعراس بعد — اضغط &quot;+ زفاف جديد&quot; للبدء</p>
+        <ArchiveList
+          events={events}
+          onOpen={(id) => {
+            setSelectedId(id);
+            setView("active");
+          }}
+          onRecalled={refreshEvents}
+        />
       )}
     </main>
   );

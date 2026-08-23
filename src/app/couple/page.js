@@ -11,6 +11,7 @@ import {
   CheckinLogFeed,
   WishWall,
 } from "@/components/dashboardWidgets";
+import { formatEventDateArabic } from "@/lib/date";
 
 function LoginForm({ onLoggedIn }) {
   const [username, setUsername] = useState("");
@@ -69,7 +70,7 @@ function LoginForm({ onLoggedIn }) {
         <button
           type="submit"
           disabled={loading || !username || !password}
-          className="btn-gold w-full py-3 rounded-lg font-semibold"
+          className="pill-btn w-full"
         >
           {loading ? "جاري الدخول..." : "تسجيل الدخول"}
         </button>
@@ -145,7 +146,7 @@ function ChangePasswordForm({ onChanged }) {
         <button
           type="submit"
           disabled={saving || !newPassword || !confirm}
-          className="btn-gold w-full py-3 rounded-lg font-semibold"
+          className="pill-btn w-full"
         >
           {saving ? "جاري الحفظ..." : "حفظ كلمة المرور والمتابعة"}
         </button>
@@ -195,7 +196,10 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
             {event ? event.coupleNames : "لوحة زفافكما"}
           </h1>
           {event && (
-            <p className="text-xs text-gray-500">الباقة: {event.packageLimit} دعوة</p>
+            <p className="text-xs text-gray-500">
+              الباقة: {event.packageLimit} دعوة
+              {formatEventDateArabic(event.eventDate) ? ` — ${formatEventDateArabic(event.eventDate)}` : ""}
+            </p>
           )}
         </div>
         <button

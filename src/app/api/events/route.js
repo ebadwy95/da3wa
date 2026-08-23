@@ -4,6 +4,7 @@ import { getDb, withDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { normalizePhone } from "@/lib/phone";
 import { generateScannerCode, generateCoupleUsername, generateCouplePassword } from "@/lib/token";
+import { computeDisplayStatus } from "@/lib/date";
 
 function withCounts(event, guests) {
   const eventGuests = guests.filter((g) => g.eventId === event.id);
@@ -11,6 +12,7 @@ function withCounts(event, guests) {
     ...event,
     guestCount: eventGuests.length,
     remaining: Math.max(0, event.packageLimit - eventGuests.length),
+    displayStatus: computeDisplayStatus(event),
   };
 }
 
@@ -19,26 +21,36 @@ export async function GET() {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
   // Backfill: events created before the per-event scanner-code / couple-login
-  // features existed won't have them yet — generate and persist on first
-  // read so every event (old or new) always has both to show/share.
+  // / multi-scanner / archive features existed won't have them yet —
+  // generate and persist on first read so every event (old or new) always
+  // has everything it needs to show/share.
   const needsBackfill = (await getDb()).events.some(
-    (e) => !e.scannerCode || !e.coupleUsername || !e.couplePassword
+    (e) => !e.coupleUsername || !e.couplePassword || !e.scanners || !e.status
   );
   const db = needsBackfill
     ? await withDb((db) => {
         db.events.forEach((e) => {
-          if (!e.scannerCode) e.scannerCode = generateScannerCode();
           if (!e.coupleUsername) e.coupleUsername = generateCoupleUsername();
           if (!e.couplePassword) {
             e.couplePassword = generateCouplePassword();
             e.mustChangePassword = true;
           }
+          if (!e.status) e.status = "active";
+          if (!e.scanners || e.scanners.length === 0) {
+            // Migrate the old single scannerCode (unnamed) into the new
+            // multi-scanner list — the admin can name it from the dashboard.
+            e.scanners = [
+              { id: randomUUID(), code: e.scannerCode || generateScannerCode(), name: "" },
+            ];
+          }
+          delete e.scannerCode;
         });
         return db;
       })
     : await getDb();
   const events = db.events
     .map((e) => withCounts(e, db.guests))
+    .filter((e) => e.displayStatus !== "hidden")
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   return NextResponse.json({ events });
 }
@@ -81,8 +93,15 @@ export async function POST(request) {
     packageLimit: Math.max(1, parseInt(packageLimit, 10) || 100),
     // Lets THIS event's door staff log into /scan without the platform
     // admin password, and without being able to check in another event's
-    // guests — see src/app/api/scan-auth/route.js.
-    scannerCode: generateScannerCode(),
+    // guests — see src/app/api/scan-auth/route.js. Several people can scan
+    // at once at a big wedding, each with their own named code, added later
+    // from the dashboard via POST .../scanners.
+    scanners: [{ id: randomUUID(), code: generateScannerCode(), name: "" }],
+    // Lifecycle: "active" -> auto-archived (display-only, computed from the
+    // date, see src/lib/date.js) -> "deleted" (soft, recallable for 30 days)
+    // -> permanently hidden from every listing (but never actually erased).
+    status: "active",
+    deletedAt: null,
     // Lets the couple themselves log into /couple and manage ONLY their own
     // event (add guests, send invites, see stats) without the platform
     // admin password and without seeing any other couple's event. Stored in

@@ -13,7 +13,7 @@ export default function HomePage() {
         </p>
         <Link
           href="/admin"
-          className="btn-gold inline-block w-full py-3 rounded-xl font-semibold"
+          className="pill-btn w-full"
         >
           دخول لوحة الإدارة
         </Link>

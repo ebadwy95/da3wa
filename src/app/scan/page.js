@@ -4,29 +4,41 @@ import { useEffect, useRef, useState } from "react";
 
 const READER_ID = "da3wa-qr-reader";
 
-// Two quick beeps via the Web Audio API — no audio file needed, works the
-// moment the page loads. Used whenever a scan is rejected (wrong event,
-// already fully used, declined, invalid...) so the door staff notices even
-// if they're not looking straight at the screen.
+// A longer siren-style rejection alert (frequency sweeping up and down for
+// about 1.6 seconds) rather than a couple of short beeps — loud and
+// distinctive enough that door staff notice it even without looking at the
+// screen. Pure Web Audio API, no audio file needed.
 function playAlertSound() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
     const now = ctx.currentTime;
-    [0, 0.18].forEach((offset) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "square";
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.0001, now + offset);
-      gain.gain.exponentialRampToValueAtTime(0.35, now + offset + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.16);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(now + offset);
-      osc.stop(now + offset + 0.17);
-    });
+    const duration = 1.6;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sawtooth";
+
+    // Sweep the frequency up and down repeatedly — the classic siren shape.
+    const sweepMs = 0.4;
+    let t = now;
+    osc.frequency.setValueAtTime(500, t);
+    while (t < now + duration) {
+      osc.frequency.linearRampToValueAtTime(1100, t + sweepMs);
+      osc.frequency.linearRampToValueAtTime(500, t + sweepMs * 2);
+      t += sweepMs * 2;
+    }
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.3, now + 0.05);
+    gain.gain.setValueAtTime(0.3, now + duration - 0.15);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration);
   } catch {
     // Best-effort only — a browser blocking audio shouldn't break scanning.
   }
@@ -34,7 +46,6 @@ function playAlertSound() {
 
 function LoginGate({ onLoggedIn }) {
   const [code, setCode] = useState("");
-  const [staffName, setStaffName] = useState("");
   const [error, setError] = useState("");
   const [showAdmin, setShowAdmin] = useState(false);
   const [password, setPassword] = useState("");
@@ -45,7 +56,7 @@ function LoginGate({ onLoggedIn }) {
     const res = await fetch("/api/scan-auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, staffName }),
+      body: JSON.stringify({ code }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -80,34 +91,22 @@ function LoginGate({ onLoggedIn }) {
         {!showAdmin ? (
           <form onSubmit={submitCode} className="space-y-4">
             <p className="text-xs text-gray-500 leading-relaxed">
-              أدخل رمز الزفاف الخاص بهذا الباب — لكل زفاف رمز مختلف، وحتى لو
-              أُقيم أكثر من زفاف في اليوم نفسه، فسيعمل كل جهاز مسح بضيوف
+              أدخل رمز الزفاف الخاص بك — تحصل عليه من الإدارة، وهو مرتبط
+              باسمك مسبقًا، فكل عملية دخول تقوم بها تُسجَّل باسمك تلقائيًا.
+              وحتى لو أُقيم أكثر من زفاف في اليوم نفسه، فسيعمل كل رمز بضيوف
               زفافه فقط.
             </p>
             <input
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="رمز الزفاف"
+              placeholder="رمزك"
               dir="ltr"
               className="w-full border rounded-lg px-4 py-3 text-center outline-none tracking-widest font-mono"
               style={{ borderColor: "#eee0cc" }}
               autoFocus
             />
-            <div>
-              <input
-                value={staffName}
-                onChange={(e) => setStaffName(e.target.value)}
-                placeholder="اسمك"
-                required
-                className="w-full border rounded-lg px-4 py-3 text-center outline-none"
-                style={{ borderColor: "#eee0cc" }}
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                سيُسجَّل مع كل عملية دخول تقوم بها — حتى إذا كان أكثر من شخص يستخدم الماسح على الباب نفسه، يمكن معرفة من قام بكل عملية.
-              </p>
-            </div>
             {error && <p className="text-red-600 text-sm">{error}</p>}
-            <button className="btn-gold w-full py-3 rounded-lg font-semibold">دخول</button>
+            <button className="pill-btn w-full">دخول</button>
             <button
               type="button"
               onClick={() => { setShowAdmin(true); setError(""); }}
@@ -128,13 +127,13 @@ function LoginGate({ onLoggedIn }) {
               autoFocus
             />
             {error && <p className="text-red-600 text-sm">{error}</p>}
-            <button className="btn-gold w-full py-3 rounded-lg font-semibold">دخول</button>
+            <button className="pill-btn w-full">دخول</button>
             <button
               type="button"
               onClick={() => { setShowAdmin(false); setError(""); }}
               className="text-xs text-gray-400 underline"
             >
-              العودة لتسجيل الدخول برمز الزفاف
+              العودة لتسجيل الدخول برمزك
             </button>
           </form>
         )}
@@ -150,6 +149,12 @@ export default function ScanPage() {
   const [cameraError, setCameraError] = useState(null);
   const [manualCode, setManualCode] = useState("");
   const [result, setResult] = useState(null);
+  // A validated-but-not-yet-confirmed scan: the door staff must explicitly
+  // pick how many people are entering right now and press confirm — a scan
+  // alone never counts anyone as having entered.
+  const [pending, setPending] = useState(null); // { code, guestName, remaining, partySize, checkedInCount }
+  const [pendingCount, setPendingCount] = useState(1);
+  const [confirming, setConfirming] = useState(false);
   const [flash, setFlash] = useState(false);
   const scannerRef = useRef(null);
   const lastScanRef = useRef({ code: null, at: 0 });
@@ -163,8 +168,17 @@ export default function ScanPage() {
     });
   }, []);
 
+  function reject(message) {
+    setResult({ ok: false, message });
+    setFlash(true);
+    playAlertSound();
+    setTimeout(() => setFlash(false), 500);
+  }
+
   async function submitCode(code) {
-    // Debounce duplicate scans of the same code within 3s.
+    // Ignore new camera decodes while a confirmation is already pending, or
+    // while the exact same code was just handled within the last 3s.
+    if (pending) return;
     const now = Date.now();
     if (lastScanRef.current.code === code && now - lastScanRef.current.at < 3000) {
       return;
@@ -175,20 +189,43 @@ export default function ScanPage() {
       const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, mode: "peek" }),
       });
       const data = await res.json();
-      setResult(data);
       if (!data.ok) {
-        setFlash(true);
-        playAlertSound();
-        setTimeout(() => setFlash(false), 500);
+        reject(data.message || "مرفوض");
+        return;
       }
+      setResult(null);
+      setPendingCount(Math.min(1, data.remaining) || 1);
+      setPending({ code, ...data });
     } catch {
-      setResult({ ok: false, message: "خطأ في الاتصال بالخادم" });
-      setFlash(true);
-      playAlertSound();
-      setTimeout(() => setFlash(false), 500);
+      reject("خطأ في الاتصال بالخادم");
+    }
+  }
+
+  async function confirmEntry() {
+    if (!pending) return;
+    setConfirming(true);
+    try {
+      const res = await fetch("/api/checkin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: pending.code, mode: "confirm", count: pendingCount }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setPending(null);
+        reject(data.message || "مرفوض");
+        return;
+      }
+      setResult(data);
+      setPending(null);
+    } catch {
+      setPending(null);
+      reject("خطأ في الاتصال بالخادم");
+    } finally {
+      setConfirming(false);
     }
   }
 
@@ -279,7 +316,41 @@ export default function ScanPage() {
 
       {cameraError && <p className="text-sm text-amber-600 text-center">{cameraError}</p>}
 
-      {result && (
+      {pending && (
+        <div className="card p-4 text-center space-y-3" style={{ border: "2px solid var(--gold)" }}>
+          <p className="font-bold text-lg" style={{ color: "var(--gold-dark)" }}>
+            {pending.guestName}
+          </p>
+          <p className="text-sm text-gray-500">
+            المسموح به: {pending.partySize} — دخل حتى الآن: {pending.checkedInCount} — المتبقّي: {pending.remaining}
+          </p>
+          <p className="text-sm font-semibold">كم شخصًا من هذه الدعوة يدخل الآن؟</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {Array.from({ length: pending.remaining }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                onClick={() => setPendingCount(n)}
+                className="w-10 h-10 rounded-full border font-semibold"
+                style={
+                  pendingCount === n
+                    ? { background: "var(--gold)", color: "#fff", borderColor: "var(--gold)" }
+                    : { borderColor: "#eee0cc" }
+                }
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <button onClick={confirmEntry} disabled={confirming} className="pill-btn flex-1">
+              {confirming ? "..." : `تأكيد دخول ${pendingCount} ✅`}
+            </button>
+            <button onClick={() => setPending(null)} className="pill-btn-outline">إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      {!pending && result && (
         <div
           className="card p-4 text-center space-y-1"
           style={{
@@ -309,7 +380,7 @@ export default function ScanPage() {
           />
           <button
             onClick={() => submitCode(manualCode)}
-            className="btn-gold px-4 py-2 rounded-lg text-sm font-semibold"
+            className="pill-btn text-sm"
           >
             تحقق
           </button>

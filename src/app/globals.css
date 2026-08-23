@@ -5,32 +5,160 @@
   --gold-dark: #8a6d3f;
   --cream: #faf6ef;
   --ink: #2c2620;
+  --near-black: #17140f;
 }
 
 body {
   background: var(--cream);
   color: var(--ink);
-  font-family: "Tahoma", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-ui), "Tahoma", "Segoe UI", system-ui, sans-serif;
 }
+
+/* Elegant calligraphic display face for couple names / ceremonial headings
+   on the guest-facing invitation — never used for app/dashboard chrome. */
+.font-display {
+  font-family: var(--font-display), "Amiri", serif;
+}
+
+/* ---------- Buttons ---------- */
 
 .btn-gold {
   background: linear-gradient(180deg, #c8a06a, var(--gold));
   color: #fff;
-  transition: filter 0.15s ease;
+  transition: filter 0.15s ease, transform 0.1s ease;
 }
 .btn-gold:hover {
   filter: brightness(1.05);
+}
+.btn-gold:active {
+  transform: scale(0.98);
 }
 .btn-gold:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+/* Fully-rounded "pill" buttons, echoing the reference site's shape
+   language — used for primary actions across the invitation and
+   dashboards alike. */
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  padding: 0.65rem 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(180deg, #c8a06a, var(--gold));
+  color: #fff;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+.pill-btn:hover {
+  filter: brightness(1.06);
+}
+.pill-btn:active {
+  transform: scale(0.98);
+}
+.pill-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pill-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  padding: 0.6rem 1.4rem;
+  font-weight: 600;
+  border: 1.5px solid var(--gold);
+  color: var(--gold-dark);
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.pill-btn-outline:hover {
+  background: rgba(176, 141, 87, 0.08);
+}
+
+/* ---------- Cards & surfaces ---------- */
+
 .card {
   background: #fff;
   border: 1px solid #eee0cc;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   box-shadow: 0 4px 20px rgba(139, 109, 63, 0.08);
+}
+
+/* A dark "wall" surface for the guest well-wish feed on the invitation
+   page, echoing the reference site's contrast between the cream
+   invitation card and a near-black wishes wall. */
+.wall-section {
+  background: var(--near-black);
+  border-radius: 1.25rem;
+  color: #f3ede0;
+}
+
+.wish-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+}
+
+.avatar-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #c8a06a, var(--gold));
+  color: #fff;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ---------- Tab switcher (الدعوة / رسائل التهنئة) ---------- */
+
+.tab-switch {
+  display: inline-flex;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  background: rgba(44, 38, 32, 0.06);
+  gap: 0.25rem;
+}
+.tab-switch button {
+  border-radius: 9999px;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--ink);
+  opacity: 0.6;
+  transition: background 0.15s ease, opacity 0.15s ease, color 0.15s ease;
+}
+.tab-switch button[data-active="true"] {
+  background: #fff;
+  opacity: 1;
+  color: var(--gold-dark);
+  box-shadow: 0 2px 8px rgba(139, 109, 63, 0.15);
+}
+
+/* ---------- Small ornamental divider ---------- */
+
+.ornament-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--gold);
+  opacity: 0.7;
+}
+.ornament-divider::before,
+.ornament-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
 }
 
 /* Full-screen red flash on a rejected door-scan (e.g. an already-used QR),
@@ -41,4 +169,12 @@ body {
 }
 .da3wa-flash-overlay {
   animation: da3wa-flash 0.5s ease-out;
+}
+
+@keyframes da3wa-fade-in {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.da3wa-fade-in {
+  animation: da3wa-fade-in 0.35s ease-out;
 }

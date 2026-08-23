@@ -12,17 +12,31 @@ import { getScannerSession } from "@/lib/scannerAuth";
 // even if it somehow scanned one).
 //
 // A single QR is shared by the whole party (the guest + however many
-// companions they confirmed) — every individual arriving scans/re-presents
-// the SAME code, and each successful scan counts one more person in, up to
-// the confirmed party size. Once the party size is reached, any further
-// attempt to use that QR is rejected (and logged) rather than silently
-// re-admitting someone — that's what stops a QR from being reused beyond
-// what it was actually issued for.
+// companions they confirmed). Rather than silently counting "1 more person
+// in" the instant a camera decodes the code, checking someone in is a TWO
+// STEP process:
 //
-// Every attempt — successful or not — is written to checkinLogs together
-// with which scanner-staff member's session made it, so if something looks
-// like misuse at the door (e.g. repeated attempts on an already-used QR),
-// there's a record of exactly who scanned it.
+//   1. mode "peek" (the default — what a fresh camera decode sends): decode
+//      and validate the code, but make NO change to the database yet. If
+//      the guest/party is valid and has room left, respond with
+//      {pending:true, guestName, remaining, ...} so the door staff can see
+//      how many are actually standing in front of them and choose a number
+//      — the QR being merely scanned is never itself treated as an entry.
+//      If validation fails outright (wrong event, already fully used,
+//      declined, etc.) there's nothing to confirm, so that's logged and
+//      returned as a normal rejection immediately.
+//
+//   2. mode "confirm": the door staff has explicitly entered how many
+//      people are entering right now (1..remaining) and pressed confirm.
+//      This is the only path that actually increments checkedInCount, and
+//      the code is re-verified from scratch here too — the client's earlier
+//      "peek" response is never trusted for the actual write.
+//
+// Every attempt that reaches a final outcome (a peek-time rejection, or a
+// confirm) is written to checkinLogs together with which scanner-staff
+// member's session made it, so if something looks like misuse at the door
+// (e.g. repeated attempts on an already-used QR), there's a record of
+// exactly who scanned it.
 export async function POST(request) {
   const admin = await isAdminAuthed();
   const scannerSession = admin ? null : await getScannerSession();
@@ -33,7 +47,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
 
-  const { code } = await request.json().catch(() => ({}));
+  const { code, mode, count } = await request.json().catch(() => ({}));
+  const isConfirm = mode === "confirm";
   const { valid, guestId } = verifyCheckinCode(code);
 
   const result = await withDb((db) => {
@@ -106,8 +121,9 @@ export async function POST(request) {
     // the guest themself plus however many companions they confirmed.
     const partySize = 1 + (guest.confirmedCompanions || 0);
     const checkedInCount = guest.checkedInCount || 0;
+    const remaining = partySize - checkedInCount;
 
-    if (checkedInCount >= partySize) {
+    if (remaining <= 0) {
       return logAndReturn({
         ok: false,
         reason: "already_full",
@@ -118,26 +134,49 @@ export async function POST(request) {
       });
     }
 
-    guest.checkedInCount = checkedInCount + 1;
-    guest.checkedIn = guest.checkedInCount >= partySize; // true once the whole party is in
+    if (!isConfirm) {
+      // Just a peek — the camera saw a valid, not-yet-full QR. Nothing is
+      // written to the database or the audit log yet; the door staff must
+      // still explicitly choose a headcount and confirm.
+      return {
+        ok: true,
+        pending: true,
+        eventId: guest.eventId,
+        guestId: guest.id,
+        guestName: guest.name,
+        partySize,
+        checkedInCount,
+        remaining,
+      };
+    }
+
+    // Confirm step: apply exactly how many people the staff said are
+    // entering right now, clamped to what's actually still available so a
+    // stale/incorrect count from the client can never over-admit.
+    const requested = Math.max(1, parseInt(count, 10) || 1);
+    const applied = Math.min(requested, remaining);
+
+    guest.checkedInCount = checkedInCount + applied;
+    guest.checkedIn = guest.checkedInCount >= partySize;
     if (!guest.checkedInAt) guest.checkedInAt = new Date().toISOString();
     guest.lastCheckedInAt = new Date().toISOString();
 
-    const remaining = partySize - guest.checkedInCount;
+    const remainingAfter = partySize - guest.checkedInCount;
     const message =
-      remaining > 0
-        ? `أهلًا — دخل أحد أفراد ضيوف ${guest.name} (${guest.checkedInCount} من ${partySize}) — المتبقّي ${remaining}`
+      remainingAfter > 0
+        ? `أهلًا — دخل ${applied} من ضيوف ${guest.name} (${guest.checkedInCount} من ${partySize}) — المتبقّي ${remainingAfter}`
         : `أهلًا ${guest.name} 🎉 (${guest.checkedInCount} من ${partySize}) — اكتمل العدد المسموح به`;
 
     return logAndReturn({
       ok: true,
+      pending: false,
       message,
       eventId: guest.eventId,
       guestId: guest.id,
       guestName: guest.name,
       partySize,
       checkedInCount: guest.checkedInCount,
-      remaining,
+      remaining: remainingAfter,
     });
   });
 

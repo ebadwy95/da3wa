@@ -88,7 +88,7 @@ export function LimitReachedModal({ info, onForceAdd, onCancel }) {
           ماذا تودّ أن تفعل؟
         </p>
         <div className="flex flex-col gap-2">
-          <button onClick={onForceAdd} className="btn-gold py-2 rounded-lg font-semibold">
+          <button onClick={onForceAdd} className="pill-btn">
             إضافة هذا الضيف رغم ذلك (زيادة عن حدود الباقة)
           </button>
           <a
@@ -172,7 +172,7 @@ export function AddGuestForm({ eventId, onAdded }) {
           <label className="block text-xs text-gray-500 mb-1">إجمالي عدد الحضور (شامل الضيف نفسه)</label>
           <input type="number" min={1} value={maxGuests} onChange={(e) => setMaxGuests(e.target.value)} className="w-full border rounded-lg px-3 py-2 outline-none" style={{ borderColor: "#eee0cc" }} />
         </div>
-        <button disabled={saving} className="btn-gold px-6 py-2 rounded-lg font-semibold">{saving ? "جارٍ الإضافة..." : "إضافة"}</button>
+        <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الإضافة..." : "إضافة"}</button>
         {error && <p className="text-red-600 text-sm w-full">{error}</p>}
       </form>
     </>
@@ -229,7 +229,7 @@ export function BulkUpload({ eventId, onDone }) {
           accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           className="text-sm"
         />
-        <button onClick={upload} disabled={uploading} className="btn-gold px-4 py-2 rounded-lg text-sm font-semibold">
+        <button onClick={upload} disabled={uploading} className="pill-btn text-sm">
           {uploading ? "جارٍ الرفع..." : "رفع الملف"}
         </button>
       </div>
@@ -281,7 +281,7 @@ export function SendInvitesButton({ eventId, guests, onDone }) {
       <button
         onClick={send}
         disabled={sending || notYetInvited === 0}
-        className="btn-gold px-6 py-2 rounded-lg font-semibold"
+        className="pill-btn px-6"
       >
         {sending ? "جارٍ الإرسال..." : `إرسال الدعوات (${notYetInvited})`}
       </button>

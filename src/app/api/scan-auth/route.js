@@ -3,11 +3,17 @@ import { getDb } from "@/lib/db";
 import { getScannerSession, createScannerSession, clearScannerSession } from "@/lib/scannerAuth";
 
 // Separate login for the door scanner (/scan) — NOT the platform admin
-// password. Each wedding gets its own scannerCode (shown in the admin
-// dashboard), so when two weddings happen the same day, each door's staff
-// logs in with THEIR wedding's code and can only check in THAT wedding's
-// guests. Each staff member also types their own name at login, so every
-// check-in they make is attributed to them (see checkinLogs in /api/checkin).
+// password. Each wedding can have several named scanner codes (see
+// event.scanners in src/app/api/events/[id]/scanners), so when two weddings
+// happen the same day, each door's staff logs in with THEIR wedding's code
+// and can only check in THAT wedding's guests.
+//
+// The staff member does NOT type their own name here — that would let
+// someone type a colleague's name and check guests in under it. Instead the
+// ADMIN assigns a name to each code from the dashboard ahead of time, and
+// logging in with a code simply picks up whichever name the admin attached
+// to it (see checkinLogs in /api/checkin for how this is used as an audit
+// trail).
 export async function GET() {
   const session = await getScannerSession();
   if (!session) return NextResponse.json({ authed: false });
@@ -24,28 +30,40 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const { code, staffName } = await request.json().catch(() => ({}));
+  const { code } = await request.json().catch(() => ({}));
   const cleanCode = String(code || "").trim().toUpperCase();
-  const cleanStaffName = String(staffName || "").trim();
   if (!cleanCode) {
     return NextResponse.json({ error: "يجب إدخال رمز الزفاف" }, { status: 400 });
   }
-  if (!cleanStaffName) {
-    return NextResponse.json({ error: "يجب كتابة اسمك — سيُسجَّل مع كل عملية دخول تقوم بها" }, { status: 400 });
-  }
 
   const db = await getDb();
-  const event = db.events.find((e) => e.scannerCode === cleanCode);
-  if (!event) {
-    return NextResponse.json({ error: "الرمز غير صحيح" }, { status: 401 });
+  let matchedEvent = null;
+  let matchedScanner = null;
+  for (const event of db.events) {
+    const scanner = (event.scanners || []).find((s) => s.code === cleanCode);
+    if (scanner) {
+      matchedEvent = event;
+      matchedScanner = scanner;
+      break;
+    }
   }
 
-  await createScannerSession(event.id, cleanStaffName);
+  if (!matchedEvent) {
+    return NextResponse.json({ error: "الرمز غير صحيح" }, { status: 401 });
+  }
+  if (!matchedScanner.name) {
+    return NextResponse.json(
+      { error: "لم تُخصَّص هذه الشفرة باسم موظف بعد — تواصل مع الإدارة لتعيين اسم لها أولًا" },
+      { status: 403 }
+    );
+  }
+
+  await createScannerSession(matchedEvent.id, matchedScanner.name);
 
   return NextResponse.json({
     ok: true,
-    event: { id: event.id, coupleNames: event.coupleNames },
-    staffName: cleanStaffName,
+    event: { id: matchedEvent.id, coupleNames: matchedEvent.coupleNames },
+    staffName: matchedScanner.name,
   });
 }
 
