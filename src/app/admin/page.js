@@ -15,6 +15,8 @@ import {
 import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon } from "@/components/icons";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { joinCoupleNames, resolveCoupleParts } from "@/lib/couple";
+import { LoginScreen, DashboardHeader } from "@/components/dashboardChrome";
+import { EnquiriesInbox } from "@/components/EnquiriesInbox";
 
 function LoginForm({ onLoggedIn }) {
   const [password, setPassword] = useState("");
@@ -44,29 +46,26 @@ function LoginForm({ onLoggedIn }) {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <form onSubmit={submit} className="card max-w-sm w-full p-8 space-y-4 text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--gold-600)" }}>
-          دخول لوحة الإدارة
-        </h1>
+    <LoginScreen
+      title="لوحة الإدارة"
+      hint="الدخول لمسؤول المنصّة."
+      error={error}
+      loading={loading}
+      onSubmit={submit}
+    >
+      <div className="text-right">
+        <label htmlFor="admin-pw" className="label">كلمة المرور</label>
         <input
+          id="admin-pw"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="كلمة المرور"
           className="field text-center"
+          aria-invalid={error ? "true" : undefined}
           autoFocus
         />
-        {error && <p className="text-danger text-sm">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading || !password}
-          className="pill-btn w-full"
-        >
-          {loading ? "جاري الدخول..." : "تسجيل الدخول"}
-        </button>
-      </form>
-    </main>
+      </div>
+    </LoginScreen>
   );
 }
 
@@ -1086,22 +1085,21 @@ export default function AdminPage() {
   const selectedEvent = events.find((e) => e.id === selectedId);
 
   return (
-    <main className="min-h-screen p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--gold-600)" }}>لوحة إدارة Da3wa</h1>
-        <button
-          onClick={async () => {
-            await fetch("/api/admin/login", { method: "DELETE" });
-            setAuthed(false);
-          }}
-          className="pill-btn-ghost pill-btn-sm"
-        >
-          تسجيل خروج
-        </button>
-      </div>
+    <main className="min-h-screen" style={{ background: "var(--paper)" }}>
+      <DashboardHeader
+        title="لوحة الإدارة"
+        subtitle={`${activeEvents.length} مناسبة نشطة`}
+        onLogout={async () => {
+          await fetch("/api/admin/login", { method: "DELETE" });
+          setAuthed(false);
+        }}
+      />
+
+      <div className="wrap p-5 flex flex-col gap-6" style={{ maxWidth: "80rem" }}>
+      <EnquiriesInbox />
 
       <div className="tab-switch">
-        <button data-active={view === "active"} onClick={() => setView("active")}>الأعراس النشطة</button>
+        <button data-active={view === "active"} onClick={() => setView("active")}>المناسبات النشطة</button>
         <button data-active={view === "archive"} onClick={() => setView("archive")}>الأرشيف</button>
       </div>
 
@@ -1161,6 +1159,7 @@ export default function AdminPage() {
           onRecalled={refreshEvents}
         />
       )}
+      </div>
     </main>
   );
 }

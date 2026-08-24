@@ -12,6 +12,7 @@ import {
   WishWall,
 } from "@/components/dashboardWidgets";
 import { formatEventDateArabic } from "@/lib/date";
+import { LoginScreen, DashboardHeader } from "@/components/dashboardChrome";
 
 function LoginForm({ onLoggedIn }) {
   const [username, setUsername] = useState("");
@@ -40,40 +41,37 @@ function LoginForm({ onLoggedIn }) {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <form onSubmit={submit} className="card max-w-sm w-full p-8 space-y-4 text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--gold-600)" }}>
-          دخول العروسين
-        </h1>
-        <p className="text-xs text-ink-2">
-          استخدما اسم المستخدم وكلمة المرور اللذين وصلاكما من الإدارة.
-        </p>
+    <LoginScreen
+      title="لوحة مناسبتكما"
+      hint="استخدما اسم المستخدم وكلمة المرور اللذين وصلاكما من الإدارة."
+      error={error}
+      loading={loading}
+      onSubmit={submit}
+    >
+      <div className="text-right">
+        <label htmlFor="couple-user" className="label">اسم المستخدم</label>
         <input
+          id="couple-user"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder="اسم المستخدم"
           dir="ltr"
           className="field text-center"
           autoFocus
         />
+      </div>
+      <div className="text-right">
+        <label htmlFor="couple-pw" className="label">كلمة المرور</label>
         <input
+          id="couple-pw"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="كلمة المرور"
           dir="ltr"
           className="field text-center"
+          aria-invalid={error ? "true" : undefined}
         />
-        {error && <p className="text-danger text-sm">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading || !username || !password}
-          className="pill-btn w-full"
-        >
-          {loading ? "جاري الدخول..." : "تسجيل الدخول"}
-        </button>
-      </form>
-    </main>
+      </div>
+    </LoginScreen>
   );
 }
 
@@ -185,29 +183,23 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
   }
 
   return (
-    <main className="min-h-screen p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--gold-600)" }}>
-            {event ? event.coupleNames : "لوحة زفافكما"}
-          </h1>
-          {event && (
-            <p className="text-xs text-ink-2">
-              الباقة: {event.packageLimit} دعوة
-              {formatEventDateArabic(event.eventDate) ? ` — ${formatEventDateArabic(event.eventDate)}` : ""}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={async () => {
-            await fetch("/api/couple-auth", { method: "DELETE" });
-            onLoggedOut();
-          }}
-          className="pill-btn-ghost pill-btn-sm"
-        >
-          تسجيل خروج
-        </button>
-      </div>
+    <main className="min-h-screen" style={{ background: "var(--paper)" }}>
+      <DashboardHeader
+        title={event ? event.coupleNames : "لوحة مناسبتكما"}
+        subtitle={
+          event
+            ? `الباقة: ${event.packageLimit} دعوة${
+                formatEventDateArabic(event.eventDate) ? ` — ${formatEventDateArabic(event.eventDate)}` : ""
+              }`
+            : undefined
+        }
+        onLogout={async () => {
+          await fetch("/api/couple-auth", { method: "DELETE" });
+          onLoggedOut();
+        }}
+      />
+
+      <div className="wrap p-5 flex flex-col gap-6" style={{ maxWidth: "80rem" }}>
 
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
@@ -261,10 +253,11 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid lg:grid-cols-2 gap-6 items-start">
           <WhatsappFeed messages={feed.messages} watiConfigured={feed.watiConfigured} />
           <WishWall guests={guests} />
         </div>
+      </div>
       </div>
     </main>
   );
