@@ -34,6 +34,20 @@ export async function POST(request, { params }) {
     );
   }
 
+  // The personal link IS the message — a guest who can't open it has received
+  // nothing. If NEXT_PUBLIC_BASE_URL is unset or still points at a dev
+  // machine, every link in the batch is dead on arrival, and a sent WhatsApp
+  // message can't be recalled. Cheaper to fail here than to explain later.
+  const baseLooksUnusable = !base || /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(base);
+  if (watiIsConfigured() && baseLooksUnusable) {
+    return NextResponse.json(
+      {
+        error: `رابط الموقع غير مضبوط بشكل صحيح (${base || "فارغ"}) — اضبط NEXT_PUBLIC_BASE_URL على https://www.da3wa.digital قبل الإرسال، وإلا وصلت الضيوف روابط لا تعمل`,
+      },
+      { status: 503 }
+    );
+  }
+
   const db = await getDb();
   const event = db.events.find((e) => e.id === eventId);
   if (!event) return NextResponse.json({ error: "الزفاف غير موجود" }, { status: 404 });
