@@ -431,10 +431,113 @@ function TechnicalToolsPanel() {
         <span className="flex items-center gap-1 text-xs">{open ? "إخفاء" : "إظهار"}<ChevronDownIcon size={14} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }} /></span>
       </button>
       {open && (
-        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--line-soft)" }}>
-          <h2 className="font-bold mb-2">تجربة إرسال واتساب (بدون قالب معتمد)</h2>
-          <TestWhatsappSend />
+        <div className="mt-3 pt-3 border-t flex flex-col gap-5" style={{ borderColor: "var(--line-soft)" }}>
+          <WhatsappDiagnostics />
+          <div>
+            <h2 className="font-bold mb-2">تجربة إرسال واتساب (بدون قالب معتمد)</h2>
+            <TestWhatsappSend />
+          </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Shows what THIS deployment is configured with, checked against the live
+// Wati account. Added because a failed send used to give only a raw API error
+// per guest, while the answer — which template name the deployment holds —
+// was only visible in the hosting dashboard.
+function WhatsappDiagnostics() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    fetch("/api/whatsapp/diagnostics")
+      .then((res) => res.json())
+      .then(setData)
+      .catch(() => setData({ error: "تعذّر قراءة الإعدادات" }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading && !data) return <p className="meta">جارٍ قراءة الإعدادات...</p>;
+  if (!data || data.error) return <p className="error">{data?.error || "تعذّر قراءة الإعدادات"}</p>;
+
+  const rows = [
+    {
+      label: "الاتصال بـ Wati",
+      value: data.watiConfigured ? "متصل" : "غير مضبوط",
+      ok: data.watiConfigured,
+      problem: data.accountError,
+    },
+    {
+      label: "رابط الموقع",
+      value: data.baseUrl.value || "—",
+      ok: data.baseUrl.ok,
+      problem: data.baseUrl.problem,
+      ltr: true,
+    },
+    ...data.templates.map((t) => ({
+      label: t.label,
+      value: t.value || "—",
+      ok: t.ok,
+      problem: t.problem,
+      hint: t.status ? `الحالة: ${t.status}` : null,
+      ltr: true,
+    })),
+  ];
+
+  if (data.channelNumber) {
+    rows.push({
+      label: "رقم القناة",
+      value: data.channelNumber,
+      ok: false,
+      problem: "مضبوط — امسحه إن كان لحسابك رقم واتساب واحد فقط",
+      ltr: true,
+    });
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2 gap-2">
+        <h2 className="font-bold">حالة إعدادات واتساب</h2>
+        <button onClick={load} className="pill-btn-ghost pill-btn-sm" disabled={loading}>
+          {loading ? "..." : "تحديث"}
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {rows.map((r) => (
+          <div key={r.label} className="card-flat px-3 py-2 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-semibold" style={{ minWidth: "7.5rem" }}>
+              {r.label}
+            </span>
+            <span
+              className={`text-sm ${r.ltr ? "ltr text-left" : ""}`}
+              style={{ color: "var(--ink-2)", wordBreak: "break-all", flex: 1 }}
+            >
+              {r.value}
+            </span>
+            <span className={`chip ${r.ok ? "chip-ok" : "chip-danger"}`}>
+              {r.ok ? "سليم" : "يحتاج ضبط"}
+            </span>
+            {r.problem && <p className="error w-full m-0">{r.problem}</p>}
+            {r.ok && r.hint && <p className="hint w-full m-0">{r.hint}</p>}
+          </div>
+        ))}
+      </div>
+
+      {data.approvedTemplates.length > 0 && (
+        <p className="hint mt-2">
+          القوالب المعتمدة في حسابك الآن:{" "}
+          <span className="ltr">
+            {data.approvedTemplates.map((t) => `${t.name} (${t.params.join(", ")})`).join(" · ")}
+          </span>
+        </p>
       )}
     </div>
   );

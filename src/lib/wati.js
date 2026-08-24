@@ -101,6 +101,15 @@ async function fetchTemplateParamNames(templateName) {
 }
 
 /**
+ * The account's templates as a Map of name -> { status, paramNames }.
+ * Used by the admin diagnostics panel; throws if Wati can't be reached, so
+ * the caller can say so rather than reporting an empty account.
+ */
+export async function listAccountTemplates() {
+  return loadTemplates();
+}
+
+/**
  * Checks a configured template name against the Wati account before anything
  * is sent. Meta only delivers APPROVED templates, so a name that is missing or
  * still in review fails per-guest with an opaque "Wati API error 400 … code:
