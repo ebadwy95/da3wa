@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getDb, withDb } from "@/lib/db";
 import { makeInviteToken } from "@/lib/token";
-import { sendTemplateMessage, watiIsConfigured } from "@/lib/wati";
+import { sendTemplateMessage, watiIsConfigured, isUsableTemplateName } from "@/lib/wati";
 import { canAccessEvent } from "@/lib/coupleAuth";
 
 // One-click bulk send: sends the "you're invited, tap to confirm" message
@@ -21,12 +21,13 @@ export async function POST(request, { params }) {
   // used to default to Meta's "hello_world" sample, which meant a missing env
   // var didn't fail — it quietly sent every guest a placeholder message from
   // WhatsApp's own docs. Bad sends can't be recalled, so a blocked send with
-  // a clear reason is always the better outcome.
-  if (watiIsConfigured() && !templateName) {
+  // a clear reason is always the better outcome. isUsableTemplateName also
+  // rejects "hello_world" when it's the value actually set, not just missing.
+  if (watiIsConfigured() && !isUsableTemplateName(templateName)) {
     return NextResponse.json(
       {
         error:
-          "قالب الدعوة على واتساب غير مضبوط — أضف WATI_INVITE_TEMPLATE_NAME باسم القالب المعتمد من Meta قبل الإرسال",
+          "قالب الدعوة على واتساب غير مضبوط — اضبط WATI_INVITE_TEMPLATE_NAME باسم قالب معتمد من Meta (مثل da3wa_invite_link بعد اعتماده، أو main_msg للاختبار الآن) قبل الإرسال",
       },
       { status: 503 }
     );

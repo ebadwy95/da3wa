@@ -16,6 +16,26 @@ function isConfigured() {
   return Boolean(process.env.WATI_API_ENDPOINT && process.env.WATI_ACCESS_TOKEN);
 }
 
+// Every new WhatsApp Business account ships with Meta's sample template
+// "hello_world", and it's the value that gets pasted in while wiring things
+// up — the production environment was found holding exactly that for
+// WATI_QR_TEMPLATE_NAME. It is never a legitimate template for this app: it
+// isn't one of the approved da3wa templates, so the send just fails, and if
+// it ever did resolve it would deliver a guest a message from WhatsApp's own
+// documentation. So a placeholder name counts as "not configured" rather than
+// as a usable template.
+const PLACEHOLDER_TEMPLATE_NAMES = new Set(["hello_world", "changeme", "template_name"]);
+
+/**
+ * True only if this env value names a template we should actually try to send.
+ * Callers should refuse to send (with a clear reason) when it returns false —
+ * an unsent message can be fixed, a wrongly-sent one cannot.
+ */
+export function isUsableTemplateName(name) {
+  const clean = String(name || "").trim().toLowerCase();
+  return Boolean(clean) && !PLACEHOLDER_TEMPLATE_NAMES.has(clean);
+}
+
 function endpoint(path) {
   const base = process.env.WATI_API_ENDPOINT.replace(/\/$/, "");
   return `${base}${path}`;

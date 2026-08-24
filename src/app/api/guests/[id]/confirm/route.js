@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { withDb } from "@/lib/db";
 import { verifyInviteToken } from "@/lib/token";
 import { generateGuestQr } from "@/lib/qr";
-import { sendTemplateMessage, watiIsConfigured } from "@/lib/wati";
+import { sendTemplateMessage, watiIsConfigured, isUsableTemplateName } from "@/lib/wati";
 
 // Public endpoint: the guest confirms or declines from their invite page.
 // Body: { token, attending: boolean, companions?: number }
@@ -64,10 +64,10 @@ export async function POST(request, { params }) {
   //    the admin feed says exactly why.
   const qrTemplateName = process.env.WATI_QR_TEMPLATE_NAME;
   let waResult = null;
-  if (attending && watiIsConfigured() && !qrTemplateName) {
+  if (attending && watiIsConfigured() && !isUsableTemplateName(qrTemplateName)) {
     waResult = {
       error:
-        "لم يُرسَل رمز QR على واتساب: قالب WATI_QR_TEMPLATE_NAME غير مضبوط",
+        "لم يُرسَل رمز QR على واتساب: WATI_QR_TEMPLATE_NAME غير مضبوط على قالب معتمد (اضبطه على da3wa_qr_delivery بعد اعتماده من Meta)",
     };
   } else if (attending) {
     waResult = await sendTemplateMessage({

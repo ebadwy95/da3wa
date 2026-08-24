@@ -53,11 +53,30 @@ compare-and-set على عدّاد نسخة، وتعيد المحاولة تلق�
 `WATI_API_ENDPOINT` / `WATI_ACCESS_TOKEN`. لازم Template معتمد من Meta لإرسال
 أول رسالة، واسم كل قالب في متغيّر بيئة خاص به:
 
-- `WATI_INVITE_TEMPLATE_NAME` — رسالة الدعوة الأولى (المتغيّرات: name, couple, link)
-- `WATI_QR_TEMPLATE_NAME` — رمز الدخول بعد التأكيد (المتغيّرات: name, couple)
+- `WATI_INVITE_TEMPLATE_NAME` — رسالة الدعوة الأولى
+- `WATI_QR_TEMPLATE_NAME` — رمز الدخول بعد التأكيد
 
-إذا كان Wati مضبوطًا واسم القالب ناقصًا، **يرفض التطبيق الإرسال** بدل أن يستبدل
-القالب بواحد افتراضي — الرسائل المُرسَلة لا يمكن استرجاعها.
+### القوالب
+
+| القالب | الحالة | المتغيّرات |
+|---|---|---|
+| `main_msg` | ✅ معتمد | `name`, `link` |
+| `da3wa_invite_link` | ⏳ قيد المراجعة | `name`, `groom`, `bride`, `link` |
+| `da3wa_qr_delivery` | ⏳ قيد المراجعة | `name`, `groom`, `bride` |
+| `da3wa_event_reminder` | ⏳ قيد المراجعة — **غير مربوط بالكود** | `name`, `groom`, `bride`, `date`, `time`, `venue`, `maplink` |
+
+`main_msg` هو الوحيد المعتمد حاليًا، ومتغيّراته (`name`, `link`) موجودة أصلًا
+ضمن ما يرسله الكود — فيمكن ضبط `WATI_INVITE_TEMPLATE_NAME=main_msg` لاختبار
+المسار كاملًا قبل اعتماد قوالب `da3wa_*`.
+
+قوالب `da3wa_invite_link` و `da3wa_qr_delivery` تطلب `groom` و `bride` كمتغيّرين
+منفصلين، بينما نموذج البيانات فيه حقل واحد `coupleNames`. **هذا لم يُنفَّذ بعد**
+وينتظر قرار صاحب المشروع.
+
+إذا كان Wati مضبوطًا واسم القالب ناقصًا — أو محتواه اسم افتراضي مثل
+`hello_world` — **يرفض التطبيق الإرسال** بدل أن يستبدل القالب بواحد افتراضي.
+الرسائل المُرسَلة لا يمكن استرجاعها. المنطق في `isUsableTemplateName()` داخل
+`src/lib/wati.js`.
 
 ## نظام التصميم
 
