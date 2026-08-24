@@ -21,13 +21,12 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, onOpe
   const videoRef = useRef(null);
   const audioRef = useRef(null);
 
+  // Stable across renders (no deps), so it can be handed to the media event
+  // handlers directly — an earlier version mirrored it into a ref, which
+  // React forbids writing during render and which bought nothing.
   const finish = useCallback(() => {
     setState((s) => (s === "done" || s === "closing" ? s : "closing"));
   }, []);
-
-  // Kept in a ref so the media-ended listener doesn't need re-binding.
-  const finishRef = useRef(finish);
-  finishRef.current = finish;
 
   useEffect(() => {
     if (state !== "closing") return;
@@ -56,7 +55,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, onOpe
     // If there's no film — music only, or a device that refused the video —
     // there's nothing to watch, so don't hold the guest on a black screen.
     const videoPlaying = video && results[0]?.status === "fulfilled";
-    if (!videoPlaying) finishRef.current();
+    if (!videoPlaying) finish();
   }
 
   return (
@@ -89,8 +88,8 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, onOpe
             muted
             playsInline
             preload="auto"
-            onEnded={() => finishRef.current()}
-            onError={() => finishRef.current()}
+            onEnded={() => finish()}
+            onError={() => finish()}
           />
         )}
 
@@ -113,7 +112,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, onOpe
         ) : (
           <>
             <div className="opener-veil" aria-hidden="true" />
-            <button type="button" onClick={() => finishRef.current()} className="opener-skip">
+            <button type="button" onClick={() => finish()} className="opener-skip">
               تخطّي
               <ChevronDownIcon size={13} />
             </button>

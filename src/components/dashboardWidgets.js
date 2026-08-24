@@ -290,6 +290,19 @@ export function SendInvitesButton({ eventId, guests, onDone }) {
   );
 }
 
+// "sent" only means Wati accepted the message; WhatsApp's real verdict arrives
+// later over the webhook (see src/app/api/whatsapp/webhook). The labels keep
+// that distinction visible — "تم التسليم" is WhatsApp confirming the phone got
+// it, "أُرسلت" is only that it left the building.
+const MESSAGE_STATUS = {
+  read: { label: "قرأها الضيف", chip: "chip-ok" },
+  delivered: { label: "تم التسليم", chip: "chip-ok" },
+  sent: { label: "أُرسلت — بانتظار التأكيد", chip: "chip-info" },
+  simulated: { label: "محاكاة", chip: "chip-warn" },
+  failed: { label: "فشل الإرسال", chip: "chip-danger" },
+  logged: { label: "مسجَّلة", chip: "chip-neutral" },
+};
+
 export function WhatsappFeed({ messages, watiConfigured }) {
   return (
     <div className="card p-4">
@@ -308,14 +321,8 @@ export function WhatsappFeed({ messages, watiConfigured }) {
           <div key={m.id} className="log-row">
             <div className="flex justify-between items-start gap-2">
               <span className="font-medium min-w-0 flex-1">{m.content}</span>
-              <span
-                className="text-xs shrink-0 px-2 py-0.5 rounded-full"
-                style={{
-                  background: m.status === "sent" ? "var(--ok-bg)" : m.status === "failed" ? "var(--danger-bg)" : "var(--warn-bg)",
-                  color: m.status === "sent" ? "var(--ok)" : m.status === "failed" ? "var(--danger)" : "var(--warn)",
-                }}
-              >
-                {{ sent: "تم الإرسال فعليًا", simulated: "محاكاة", failed: "فشل الإرسال", logged: "مسجَّلة" }[m.status]}
+              <span className={`chip shrink-0 ${MESSAGE_STATUS[m.status]?.chip || "chip-neutral"}`}>
+                {MESSAGE_STATUS[m.status]?.label || m.status}
               </span>
             </div>
             {/* API errors arrive as one long unbroken JSON string, which used

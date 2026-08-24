@@ -136,6 +136,7 @@ export async function POST(request, { params }) {
         phone: guest.phoneDisplay || guest.phone,
         type: "invite_sent",
         status,
+        waMessageId: waResult.messageId || null,
         content:
           status === "failed"
             ? `تعذّر إرسال رابط الدعوة إلى ${guest.name}`

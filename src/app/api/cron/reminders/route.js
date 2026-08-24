@@ -129,6 +129,7 @@ export async function GET(request) {
           phone: guest.phoneDisplay || guest.phone,
           type: "event_reminder",
           status,
+          waMessageId: waResult.messageId || null,
           content: `تم إرسال تذكير بالزفاف إلى ${guest.name}`,
           error: waResult.error || null,
           createdAt: new Date().toISOString(),

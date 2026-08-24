@@ -553,18 +553,27 @@ function WhatsappDiagnostics() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Split so the mount path never sets state synchronously inside the effect —
+  // it starts already loading, and only the promise callbacks update state.
+  // The refresh button goes through `load`, where setLoading is a real event.
+  const fetchDiagnostics = useCallback(
+    () =>
+      fetch("/api/whatsapp/diagnostics")
+        .then((res) => res.json())
+        .then(setData)
+        .catch(() => setData({ error: "تعذّر قراءة الإعدادات" }))
+        .finally(() => setLoading(false)),
+    []
+  );
+
   const load = useCallback(() => {
     setLoading(true);
-    fetch("/api/whatsapp/diagnostics")
-      .then((res) => res.json())
-      .then(setData)
-      .catch(() => setData({ error: "تعذّر قراءة الإعدادات" }))
-      .finally(() => setLoading(false));
-  }, []);
+    fetchDiagnostics();
+  }, [fetchDiagnostics]);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    fetchDiagnostics();
+  }, [fetchDiagnostics]);
 
   if (loading && !data) return <p className="meta">جارٍ قراءة الإعدادات...</p>;
   if (!data || data.error) return <p className="error">{data?.error || "تعذّر قراءة الإعدادات"}</p>;

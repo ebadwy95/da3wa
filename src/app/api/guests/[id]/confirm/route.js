@@ -94,6 +94,7 @@ export async function POST(request, { params }) {
       phone: guest.phoneDisplay || guest.phone,
       type: attending ? "qr_delivery" : "decline_notice",
       status: waResult ? (waResult.simulated ? "simulated" : waResult.error ? "failed" : "sent") : "logged",
+      waMessageId: waResult?.messageId || null,
       content: attending
         ? `تم إرسال كود QR للدخول إلى ${guest.name} (${guest.phoneDisplay || guest.phone})`
         : `${guest.name} اعتذر عن الحضور`,

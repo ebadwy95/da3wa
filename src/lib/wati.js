@@ -221,7 +221,17 @@ export async function sendTemplateMessage({ phone, templateName, broadcastName, 
       `/api/v1/sendTemplateMessage?whatsappNumber=${encodeURIComponent(normalized)}`,
       body
     );
-    return { simulated: false, result };
+    // Wati accepting a message only means it was queued. WhatsApp can still
+    // reject it afterwards — an unapproved display name, a number outside the
+    // allowed list — and that verdict arrives later over the webhook. Keeping
+    // Wati's id lets the webhook attach that verdict to the right message
+    // instead of guessing from the phone number.
+    return {
+      simulated: false,
+      result,
+      messageId: result?.local_message_id || result?.id || null,
+      phone: normalized,
+    };
   } catch (err) {
     return { simulated: false, error: err.message };
   }
