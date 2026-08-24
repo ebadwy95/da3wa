@@ -14,14 +14,23 @@ import { withDb } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 // Wati names events by what happened rather than with a status field, and the
-// exact set differs by account. Rather than enumerate them, classify on the
-// substring — anything unrecognised is recorded verbatim instead of dropped.
-function classify(eventType) {
+// account's list is entirely positive — Message Received, Template Message
+// Sent, Sent Message is DELIVERED / READ / REPLIED, plus v2 variants. There is
+// no FAILED event to subscribe to.
+//
+// So a refusal does not arrive as its own event: it rides along on a send
+// event carrying an error payload, the way #131037 (display name not
+// approved) did. The error field is therefore checked FIRST, and it overrides
+// whatever the event name claims — otherwise a rejected message would be
+// classified "sent" by its name and its reason thrown away, which is the exact
+// failure this endpoint exists to catch.
+function classify(eventType, failureReason) {
+  if (failureReason) return "failed";
   const e = String(eventType || "").toLowerCase();
   if (/fail|error|undeliver|reject/.test(e)) return "failed";
   if (/read/.test(e)) return "read";
   if (/deliver/.test(e)) return "delivered";
-  if (/sent/.test(e)) return "sent";
+  if (/sent|replied/.test(e)) return "sent";
   return null;
 }
 
@@ -58,11 +67,18 @@ export async function POST(request) {
   if (!body) return NextResponse.json({ error: "payload غير صالح" }, { status: 400 });
 
   const eventType = body.eventType || body.type || body.event;
-  const status = classify(eventType);
   const messageId = body.localMessageId || body.local_message_id || body.id || null;
   const phone = digitsOnly(body.waId || body.whatsappNumber || body.phone);
+  // Wati has no failure event, so the refusal arrives inside a send event's
+  // payload. The field name varies, and Meta's own errors nest one level down.
   const failureReason =
-    body.failureReason || body.error || body.errorMessage || body.description || null;
+    body.failureReason ||
+    body.errorMessage ||
+    body.error?.message ||
+    (typeof body.error === "string" ? body.error : null) ||
+    body.errors?.[0]?.message ||
+    null;
+  const status = classify(eventType, failureReason);
 
   const outcome = await withDb((db) => {
     db.messages = db.messages || [];
