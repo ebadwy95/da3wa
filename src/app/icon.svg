@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The tab icon, and what a guest sees when they save the invitation to
+       their home screen. The same eight-point ornament the invitation card and
+       the film are built from — so the icon is recognisably the product rather
+       than a generic letter. -->
+  <rect width="64" height="64" rx="14" fill="#17140f"/>
+  <path d="M32 10 L37 27 L54 32 L37 37 L32 54 L27 37 L10 32 L27 27 Z"
+        fill="none" stroke="#d9b877" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M32 22 L34.2 29.8 L42 32 L34.2 34.2 L32 42 L29.8 34.2 L22 32 L29.8 29.8 Z"
+        fill="#e0c48d" opacity="0.9"/>
+</svg>
