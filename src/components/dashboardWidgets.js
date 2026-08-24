@@ -6,14 +6,15 @@
 // each one is allowed to touch (enforced server-side, not here).
 
 import { useRef, useState } from "react";
+import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon } from "@/components/icons";
 
 export function StatCard({ label, value, accent }) {
   return (
     <div className="card p-4 text-center">
-      <div className="text-3xl font-bold" style={{ color: accent || "var(--gold-dark)" }}>
+      <div className="text-3xl font-bold" style={{ color: accent || "var(--gold-600)" }}>
         {value}
       </div>
-      <div className="text-xs text-gray-500 mt-1">{label}</div>
+      <div className="text-xs text-ink-2 mt-1">{label}</div>
     </div>
   );
 }
@@ -21,7 +22,7 @@ export function StatCard({ label, value, accent }) {
 export function GuestRow({ guest, onDelete }) {
   const [copied, setCopied] = useState(false);
   const statusLabel = { pending: "لم يردّ بعد", confirmed: "أكّد الحضور", declined: "اعتذر" }[guest.status];
-  const statusColor = { pending: "#a08a5a", confirmed: "#2e7d32", declined: "#b3261e" }[guest.status];
+  const statusColor = { pending: "var(--gold-600)", confirmed: "var(--ok)", declined: "var(--danger)" }[guest.status];
 
   // maxCompanions is stored internally as "companions beyond the guest" —
   // the total party size shown to the admin/couple (what they actually set)
@@ -38,41 +39,41 @@ export function GuestRow({ guest, onDelete }) {
   }
 
   return (
-    <tr className="border-b last:border-0" style={{ borderColor: "#f1e8d8" }}>
+    <tr className="border-b last:border-0" style={{ borderColor: "var(--line-soft)" }}>
       <td className="py-3 px-2 font-medium">{guest.name}</td>
-      <td className="py-3 px-2 text-gray-500" dir="ltr">{guest.phoneDisplay || guest.phone}</td>
+      <td className="py-3 px-2 text-ink-2" dir="ltr">{guest.phoneDisplay || guest.phone}</td>
       <td className="py-3 px-2 text-center">{maxTotalGuests}</td>
       <td className="py-3 px-2 text-center">
         <span style={{ color: statusColor }} className="font-semibold text-sm">{statusLabel}</span>
         {guest.status === "confirmed" && (
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="text-xs text-ink-2 mt-0.5">
             الحضور: {partySize} ({guest.confirmedCompanions || 0} مرافق)
           </div>
         )}
       </td>
       <td className="py-3 px-2 text-center">
         {!partySize ? (
-          <span className="text-gray-400 text-sm">—</span>
+          <span className="text-ink-3 text-sm">—</span>
         ) : checkedInCount === 0 ? (
-          <span className="text-gray-400 text-sm">لم يدخل أحد بعد</span>
+          <span className="text-ink-3 text-sm">لم يدخل أحد بعد</span>
         ) : checkedInCount >= partySize ? (
-          <span className="text-green-700 font-semibold text-sm">✅ دخل الجميع ({checkedInCount}/{partySize})</span>
+          <span className="chip chip-ok tnum"><CheckCircleIcon size={13} />دخل الجميع ({checkedInCount}/{partySize})</span>
         ) : (
-          <span className="font-semibold text-sm" style={{ color: "#a08a2d" }}>
+          <span className="font-semibold text-sm" style={{ color: "var(--warn)" }}>
             دخل {checkedInCount} من {partySize}
           </span>
         )}
       </td>
       <td className="py-3 px-2 text-center">
-        {guest.invitedAt ? <span className="text-sm text-green-700">تم الإرسال</span> : <span className="text-sm text-gray-400">لم تُرسل بعد</span>}
+        {guest.invitedAt ? <span className="text-sm text-ok">تم الإرسال</span> : <span className="text-sm text-ink-3">لم تُرسل بعد</span>}
       </td>
       <td className="py-3 px-2 text-center whitespace-nowrap">
-        <button onClick={copyLink} className="text-sm underline" style={{ color: "var(--gold-dark)" }}>
+        <button onClick={copyLink} className="pill-btn-outline pill-btn-sm">
           {copied ? "تم النسخ ✓" : "نسخ الرابط"}
         </button>
       </td>
       <td className="py-3 px-2 text-center">
-        <button onClick={() => onDelete(guest.id)} className="text-sm text-red-500 hover:underline">حذف</button>
+        <button onClick={() => onDelete(guest.id)} className="pill-btn-danger pill-btn-sm">حذف</button>
       </td>
     </tr>
   );
@@ -83,7 +84,7 @@ export function LimitReachedModal({ info, onForceAdd, onCancel }) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
       <div className="card p-6 max-w-sm w-full space-y-4 text-center">
         <h3 className="font-bold text-lg">تم الوصول إلى الحد الأقصى للباقة</h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-ink-2">
           تسمح باقة هذا الزفاف بـ {info.packageLimit} دعوة، وقد أضفت حتى الآن {info.guestCount} ضيف.
           ماذا تودّ أن تفعل؟
         </p>
@@ -96,11 +97,10 @@ export function LimitReachedModal({ info, onForceAdd, onCancel }) {
             target="_blank"
             rel="noreferrer"
             className="py-2 rounded-lg font-semibold border"
-            style={{ borderColor: "#eee0cc" }}
           >
             التواصل مع الإدارة لترقية الباقة
           </a>
-          <button onClick={onCancel} className="text-sm text-gray-400 underline mt-1">
+          <button onClick={onCancel} className="pill-btn-ghost pill-btn-sm mt-1">
             إلغاء
           </button>
         </div>
@@ -161,19 +161,19 @@ export function AddGuestForm({ eventId, onAdded }) {
       )}
       <form onSubmit={(e) => { e.preventDefault(); doSubmit(false); }} className="card p-4 flex flex-wrap gap-3 items-end">
         <div className="flex-1 min-w-[160px]">
-          <label className="block text-xs text-gray-500 mb-1">اسم الضيف</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full border rounded-lg px-3 py-2 outline-none" style={{ borderColor: "#eee0cc" }} />
+          <label className="label">اسم الضيف</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} required className="field" />
         </div>
         <div className="flex-1 min-w-[160px]">
-          <label className="block text-xs text-gray-500 mb-1">رقم الواتساب (مع رمز الدولة)</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} required dir="ltr" placeholder="+9665XXXXXXXX" className="w-full border rounded-lg px-3 py-2 outline-none" style={{ borderColor: "#eee0cc" }} />
+          <label className="label">رقم الواتساب (مع رمز الدولة)</label>
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} required dir="ltr" placeholder="+9665XXXXXXXX" className="field" />
         </div>
         <div className="w-40">
-          <label className="block text-xs text-gray-500 mb-1">إجمالي عدد الحضور (شامل الضيف نفسه)</label>
-          <input type="number" min={1} value={maxGuests} onChange={(e) => setMaxGuests(e.target.value)} className="w-full border rounded-lg px-3 py-2 outline-none" style={{ borderColor: "#eee0cc" }} />
+          <label className="label">إجمالي عدد الحضور (شامل الضيف نفسه)</label>
+          <input type="number" min={1} value={maxGuests} onChange={(e) => setMaxGuests(e.target.value)} className="field" />
         </div>
         <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الإضافة..." : "إضافة"}</button>
-        {error && <p className="text-red-600 text-sm w-full">{error}</p>}
+        {error && <p className="text-danger text-sm w-full">{error}</p>}
       </form>
     </>
   );
@@ -214,11 +214,11 @@ export function BulkUpload({ eventId, onDone }) {
     <div className="card p-4 space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-bold">رفع كشف ضيوف دفعة واحدة</h2>
-        <a href="/da3wa-guests-template.csv" download className="text-sm underline" style={{ color: "var(--gold-dark)" }}>
+        <a href="/da3wa-guests-template.csv" download className="pill-btn-outline pill-btn-sm">
           تحميل النموذج
         </a>
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-ink-2">
         يجب أن يكون الملف بنفس أعمدة النموذج وبنفس الترتيب تمامًا: الاسم، رقم الواتساب (مع رمز الدولة)، إجمالي عدد
         الحضور (شامل الضيف نفسه — أي لو سيأتي مع مرافقَين، يُكتب 3 وليس 2). أي ملف بترتيب مختلف سيُرفض.
       </p>
@@ -233,12 +233,12 @@ export function BulkUpload({ eventId, onDone }) {
           {uploading ? "جارٍ الرفع..." : "رفع الملف"}
         </button>
       </div>
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
       {result && (
-        <div className="text-sm space-y-1 border-t pt-2" style={{ borderColor: "#f1e8d8" }}>
-          <p className="text-green-700 font-semibold">تمت إضافة {result.added} ضيف من أصل {result.totalRowsInFile}</p>
+        <div className="text-sm space-y-1 border-t pt-2" style={{ borderColor: "var(--line-soft)" }}>
+          <p className="text-ok font-semibold">تمت إضافة {result.added} ضيف من أصل {result.totalRowsInFile}</p>
           {result.errors?.length > 0 && (
-            <div className="text-amber-700">
+            <div className="text-warn">
               <p className="font-semibold">تم تخطي {result.errors.length} صف:</p>
               <ul className="list-disc mr-5 max-h-32 overflow-y-auto">
                 {result.errors.map((e, i) => (
@@ -275,8 +275,8 @@ export function SendInvitesButton({ eventId, guests, onDone }) {
     <div className="card p-4 flex items-center justify-between flex-wrap gap-3">
       <div>
         <h2 className="font-bold">إرسال روابط الدعوة</h2>
-        <p className="text-xs text-gray-500">{notYetInvited} ضيف لم يصله رابط الدعوة بعد</p>
-        {result && <p className="text-xs mt-1 text-green-700">تم الإرسال إلى {result.sent} — وفشل الإرسال إلى {result.failed}</p>}
+        <p className="text-xs text-ink-2">{notYetInvited} ضيف لم يصله رابط الدعوة بعد</p>
+        {result && <p className="text-xs mt-1 text-ok">تم الإرسال إلى {result.sent} — وفشل الإرسال إلى {result.failed}</p>}
       </div>
       <button
         onClick={send}
@@ -296,29 +296,29 @@ export function WhatsappFeed({ messages, watiConfigured }) {
         <h2 className="font-bold">سجلّ رسائل واتساب</h2>
         <span
           className="text-xs px-2 py-1 rounded-full font-semibold"
-          style={{ background: watiConfigured ? "#e6f4ea" : "#fdecea", color: watiConfigured ? "#2e7d32" : "#b3261e" }}
+          style={{ background: watiConfigured ? "var(--ok-bg)" : "var(--danger-bg)", color: watiConfigured ? "var(--ok)" : "var(--danger)" }}
         >
           {watiConfigured ? "متصل بـ Wati — إرسال حقيقي" : "غير متصل — محاكاة فقط"}
         </span>
       </div>
       <div className="space-y-2 max-h-80 overflow-y-auto">
-        {messages.length === 0 && <p className="text-sm text-gray-400 text-center py-6">لا توجد رسائل بعد</p>}
+        {messages.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لا توجد رسائل بعد</p>}
         {messages.map((m) => (
-          <div key={m.id} className="border rounded-lg p-3 text-sm" style={{ borderColor: "#f1e8d8" }}>
+          <div key={m.id} className="field" style={{ borderColor: "var(--line-soft)" }}>
             <div className="flex justify-between items-start gap-2">
               <span className="font-medium">{m.content}</span>
               <span
                 className="text-xs shrink-0 px-2 py-0.5 rounded-full"
                 style={{
-                  background: m.status === "sent" ? "#e6f4ea" : m.status === "failed" ? "#fdecea" : "#fff4de",
-                  color: m.status === "sent" ? "#2e7d32" : m.status === "failed" ? "#b3261e" : "#a08a2d",
+                  background: m.status === "sent" ? "var(--ok-bg)" : m.status === "failed" ? "var(--danger-bg)" : "var(--warn-bg)",
+                  color: m.status === "sent" ? "var(--ok)" : m.status === "failed" ? "var(--danger)" : "var(--warn)",
                 }}
               >
                 {{ sent: "تم الإرسال فعليًا", simulated: "محاكاة", failed: "فشل الإرسال", logged: "مسجَّلة" }[m.status]}
               </span>
             </div>
-            {m.error && <p className="text-red-500 text-xs mt-1">{m.error}</p>}
-            <p className="text-gray-400 text-xs mt-1">{new Date(m.createdAt).toLocaleString("ar-EG")}</p>
+            {m.error && <p className="text-danger text-xs mt-1">{m.error}</p>}
+            <p className="text-ink-3 text-xs mt-1">{new Date(m.createdAt).toLocaleString("ar-EG")}</p>
           </div>
         ))}
       </div>
@@ -339,11 +339,11 @@ export function WishWall({ guests }) {
     <div className="card p-4">
       <h2 className="font-bold mb-3">رسائل التهنئة من الضيوف</h2>
       <div className="space-y-2 max-h-80 overflow-y-auto">
-        {wishes.length === 0 && <p className="text-sm text-gray-400 text-center py-6">لم تصل رسائل تهنئة بعد</p>}
+        {wishes.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لم تصل رسائل تهنئة بعد</p>}
         {wishes.map((g) => (
-          <div key={g.id} className="border rounded-lg p-3 text-sm" style={{ borderColor: "#f1e8d8" }}>
-            <p className="text-gray-700 leading-relaxed">{g.wishMessage}</p>
-            <p className="text-gray-400 text-xs mt-1">
+          <div key={g.id} className="field" style={{ borderColor: "var(--line-soft)" }}>
+            <p className="text-ink leading-relaxed">{g.wishMessage}</p>
+            <p className="text-ink-3 text-xs mt-1">
               — {g.name}
               {g.wishMessageAt && <> · {new Date(g.wishMessageAt).toLocaleString("ar-EG")}</>}
             </p>
@@ -363,24 +363,24 @@ export function CheckinLogFeed({ logs }) {
     <div className="card p-4">
       <h2 className="font-bold mb-3">سجلّ الدخول عند الباب</h2>
       <div className="space-y-2 max-h-80 overflow-y-auto">
-        {logs.length === 0 && <p className="text-sm text-gray-400 text-center py-6">لا توجد عمليات دخول مسجَّلة بعد</p>}
+        {logs.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لا توجد عمليات دخول مسجَّلة بعد</p>}
         {logs.map((l) => (
           <div
             key={l.id}
-            className="border rounded-lg p-3 text-sm"
-            style={{ borderColor: l.ok ? "#f1e8d8" : "#f5c6c6", background: l.ok ? "transparent" : "#fff8f8" }}
+            className="field"
+            style={{ borderColor: l.ok ? "var(--line-soft)" : "var(--danger)", background: l.ok ? "transparent" : "var(--danger-bg)" }}
           >
             <div className="flex justify-between items-start gap-2">
               <span className="font-medium">{l.guestName || "رمز غير معروف"}</span>
               <span
                 className="text-xs shrink-0 px-2 py-0.5 rounded-full font-semibold"
-                style={{ background: l.ok ? "#e6f4ea" : "#fdecea", color: l.ok ? "#2e7d32" : "#b3261e" }}
+                style={{ background: l.ok ? "var(--ok-bg)" : "var(--danger-bg)", color: l.ok ? "var(--ok)" : "var(--danger)" }}
               >
                 {l.ok ? "دخول ناجح" : "مرفوض"}
               </span>
             </div>
-            <p className="text-gray-500 text-xs mt-1">{l.message}</p>
-            <p className="text-gray-400 text-xs mt-1">
+            <p className="text-ink-2 text-xs mt-1">{l.message}</p>
+            <p className="text-ink-3 text-xs mt-1">
               بواسطة: {l.staffName || "غير معروف"} — {new Date(l.createdAt).toLocaleString("ar-EG")}
             </p>
           </div>

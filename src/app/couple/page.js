@@ -42,10 +42,10 @@ function LoginForm({ onLoggedIn }) {
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
       <form onSubmit={submit} className="card max-w-sm w-full p-8 space-y-4 text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--gold-dark)" }}>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--gold-600)" }}>
           دخول العروسين
         </h1>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-ink-2">
           استخدما اسم المستخدم وكلمة المرور اللذين وصلاكما من الإدارة.
         </p>
         <input
@@ -53,8 +53,7 @@ function LoginForm({ onLoggedIn }) {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="اسم المستخدم"
           dir="ltr"
-          className="w-full border rounded-lg px-4 py-3 text-center outline-none focus:ring-2"
-          style={{ borderColor: "#eee0cc" }}
+          className="field text-center"
           autoFocus
         />
         <input
@@ -63,10 +62,9 @@ function LoginForm({ onLoggedIn }) {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="كلمة المرور"
           dir="ltr"
-          className="w-full border rounded-lg px-4 py-3 text-center outline-none focus:ring-2"
-          style={{ borderColor: "#eee0cc" }}
+          className="field text-center"
         />
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-danger text-sm">{error}</p>}
         <button
           type="submit"
           disabled={loading || !username || !password}
@@ -116,10 +114,10 @@ function ChangePasswordForm({ onChanged }) {
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
       <form onSubmit={submit} className="card max-w-sm w-full p-8 space-y-4 text-center">
-        <h1 className="text-2xl font-bold" style={{ color: "var(--gold-dark)" }}>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--gold-600)" }}>
           مطلوب تغيير كلمة المرور
         </h1>
-        <p className="text-xs text-gray-500 leading-relaxed">
+        <p className="text-xs text-ink-2 leading-relaxed">
           هذه أول مرة تدخلان فيها (أو تم إعادة تعيين كلمة المرور من الإدارة) —
           يجب اختيار كلمة مرور جديدة خاصة بكما قبل المتابعة إلى لوحة زفافكما.
         </p>
@@ -129,8 +127,7 @@ function ChangePasswordForm({ onChanged }) {
           onChange={(e) => setNewPassword(e.target.value)}
           placeholder="كلمة المرور الجديدة"
           dir="ltr"
-          className="w-full border rounded-lg px-4 py-3 text-center outline-none focus:ring-2"
-          style={{ borderColor: "#eee0cc" }}
+          className="field text-center"
           autoFocus
         />
         <input
@@ -139,10 +136,9 @@ function ChangePasswordForm({ onChanged }) {
           onChange={(e) => setConfirm(e.target.value)}
           placeholder="تأكيد كلمة المرور الجديدة"
           dir="ltr"
-          className="w-full border rounded-lg px-4 py-3 text-center outline-none focus:ring-2"
-          style={{ borderColor: "#eee0cc" }}
+          className="field text-center"
         />
-        {error && <p className="text-red-600 text-sm">{error}</p>}
+        {error && <p className="text-danger text-sm">{error}</p>}
         <button
           type="submit"
           disabled={saving || !newPassword || !confirm}
@@ -192,11 +188,11 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
     <main className="min-h-screen p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--gold-dark)" }}>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--gold-600)" }}>
             {event ? event.coupleNames : "لوحة زفافكما"}
           </h1>
           {event && (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-ink-2">
               الباقة: {event.packageLimit} دعوة
               {formatEventDateArabic(event.eventDate) ? ` — ${formatEventDateArabic(event.eventDate)}` : ""}
             </p>
@@ -207,7 +203,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
             await fetch("/api/couple-auth", { method: "DELETE" });
             onLoggedOut();
           }}
-          className="text-sm text-gray-500 underline"
+          className="pill-btn-ghost pill-btn-sm"
         >
           تسجيل خروج
         </button>
@@ -216,14 +212,14 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <StatCard label="إجمالي الدعوات" value={stats.invited} />
-          <StatCard label="أكدوا" value={stats.confirmed} accent="#2e7d32" />
-          <StatCard label="لم يردّوا بعد" value={stats.pending} accent="#a08a5a" />
-          <StatCard label="اعتذروا" value={stats.declined} accent="#b3261e" />
-          <StatCard label="إجمالي الحضور المتوقع" value={stats.expectedAttendees} accent="#6a4fb3" />
-          <StatCard label="دخلوا فعلاً (عدد الأفراد)" value={stats.peopleCheckedIn} accent="#1a73e8" />
+          <StatCard label="أكدوا" value={stats.confirmed} accent="var(--ok)" />
+          <StatCard label="لم يردّوا بعد" value={stats.pending} accent="var(--gold-600)" />
+          <StatCard label="اعتذروا" value={stats.declined} accent="var(--danger)" />
+          <StatCard label="إجمالي الحضور المتوقع" value={stats.expectedAttendees} accent="var(--info)" />
+          <StatCard label="دخلوا فعلاً (عدد الأفراد)" value={stats.peopleCheckedIn} accent="var(--info)" />
         </div>
       )}
-      <p className="text-xs text-gray-400 -mt-3">
+      <p className="text-xs text-ink-3 -mt-3">
         &quot;إجمالي الدعوات&quot; = عدد الضيوف المضافين، بصرف النظر عن حالتهم. &quot;إجمالي الحضور المتوقع&quot; = مجموع
         كل ضيف مؤكَّد زائد عدد مرافقيه الذين أكّدهم فعليًا. &quot;دخلوا فعلًا&quot; = عدد الأفراد الذين دخلوا فعليًا عند
         الباب حتى الآن (شاملًا الدخول الجزئي).
@@ -238,7 +234,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
           <h2 className="font-bold mb-3">قائمة الضيوف</h2>
           <table className="w-full text-right">
             <thead>
-              <tr className="text-xs text-gray-500 border-b" style={{ borderColor: "#f1e8d8" }}>
+              <tr className="text-xs text-ink-2 border-b" style={{ borderColor: "var(--line-soft)" }}>
                 <th className="py-2 px-2">الاسم</th>
                 <th className="py-2 px-2">الرقم</th>
                 <th className="py-2 px-2 text-center">إجمالي الحضور المسموح</th>
@@ -255,7 +251,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
               ))}
               {guests.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center text-gray-400 py-8">لا يوجد ضيوف مضافون بعد</td>
+                  <td colSpan={8} className="text-center text-ink-3 py-8">لا يوجد ضيوف مضافون بعد</td>
                 </tr>
               )}
             </tbody>

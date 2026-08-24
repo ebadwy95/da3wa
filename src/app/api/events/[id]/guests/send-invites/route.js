@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { withDb } from "@/lib/db";
+import { getDb, withDb } from "@/lib/db";
 import { makeInviteToken } from "@/lib/token";
-import { sendTemplateMessage } from "@/lib/wati";
+import { sendTemplateMessage, watiIsConfigured } from "@/lib/wati";
 import { canAccessEvent } from "@/lib/coupleAuth";
 
 // One-click bulk send: sends the "you're invited, tap to confirm" message
@@ -15,9 +15,24 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
-  const templateName = process.env.WATI_INVITE_TEMPLATE_NAME || "hello_world";
+  const templateName = process.env.WATI_INVITE_TEMPLATE_NAME;
 
-  const db = await import("@/lib/db").then((m) => m.getDb());
+  // Refuse to send rather than fall back to some default template name. This
+  // used to default to Meta's "hello_world" sample, which meant a missing env
+  // var didn't fail — it quietly sent every guest a placeholder message from
+  // WhatsApp's own docs. Bad sends can't be recalled, so a blocked send with
+  // a clear reason is always the better outcome.
+  if (watiIsConfigured() && !templateName) {
+    return NextResponse.json(
+      {
+        error:
+          "قالب الدعوة على واتساب غير مضبوط — أضف WATI_INVITE_TEMPLATE_NAME باسم القالب المعتمد من Meta قبل الإرسال",
+      },
+      { status: 503 }
+    );
+  }
+
+  const db = await getDb();
   const event = db.events.find((e) => e.id === eventId);
   if (!event) return NextResponse.json({ error: "الزفاف غير موجود" }, { status: 404 });
 
@@ -36,7 +51,10 @@ export async function POST(request, { params }) {
     const link = `${base}/invite/${guest.id}?t=${makeInviteToken(guest.id)}`;
     const waResult = await sendTemplateMessage({
       phone: guest.phoneDisplay || guest.phone,
-      templateName,
+      // Only ever undefined when Wati isn't configured at all (the guard
+      // above), in which case the send is simulated and the name is just a
+      // label in the admin feed.
+      templateName: templateName || "da3wa_invite",
       broadcastName: "da3wa_invite_link",
       params: [
         { name: "name", value: guest.name },

@@ -5,6 +5,9 @@ import { verifyCheckinCode } from "@/lib/token";
 import { isAdminAuthed } from "@/lib/auth";
 import { getScannerSession } from "@/lib/scannerAuth";
 
+// How many door-scan log entries to keep for each event.
+const PER_EVENT_LOG_LIMIT = 500;
+
 // The door scanner posts the raw QR payload here. Two ways in: the platform
 // admin password (full access, any event — for setup/testing), or a
 // per-event scanner session from /api/scan-auth (scoped to ONE event, so a
@@ -66,8 +69,17 @@ export async function POST(request) {
         message: entry.message,
         createdAt: new Date().toISOString(),
       });
-      // Bounded so it doesn't grow forever.
-      db.checkinLogs = db.checkinLogs.slice(0, 500);
+      // Bounded so it doesn't grow forever — but bounded PER EVENT, not
+      // across the whole platform. A single busy wedding can easily produce
+      // hundreds of scans in an evening; capping the shared list would have
+      // let it push another wedding's audit trail out entirely.
+      const kept = new Map();
+      db.checkinLogs = db.checkinLogs.filter((log) => {
+        const key = log.eventId || "unknown";
+        const count = (kept.get(key) || 0) + 1;
+        kept.set(key, count);
+        return count <= PER_EVENT_LOG_LIMIT;
+      });
       return entry;
     }
 

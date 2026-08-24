@@ -1,109 +1,313 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   Da3wa design tokens
+   ----------------------------------------------------------------------------
+   One source of truth for colour, type and spacing. Components below are built
+   only from these tokens — no raw hex in page files.
+
+   The neutrals are deliberately warm (biased toward the gold) rather than
+   Tailwind's default cool greys. A cool grey sitting on a cream ground is the
+   single most common reason a warm palette looks accidental, and the pages
+   used to be full of `text-gray-400` doing exactly that.
+   ========================================================================= */
+
 :root {
-  --gold: #b08d57;
-  --gold-dark: #8a6d3f;
-  --cream: #faf6ef;
-  --ink: #2c2620;
+  /* ---- Gold: the brand axis, light to dark ---- */
+  --gold-50:  #fbf6ec;
+  --gold-100: #f3e7ce;
+  --gold-200: #e7d3aa;
+  --gold-300: #d4b77e;
+  --gold-400: #c8a06a;
+  --gold-500: #b08d57;
+  --gold-600: #816539;  /* darkest usable on cream at 5.06:1 */
+  --gold-700: #634d2b;
+
+  /* Names the pages already use. Kept as aliases so both spellings work. */
+  --gold: var(--gold-500);
+  --gold-dark: var(--gold-600);
+
+  /* ---- Surfaces ---- */
+  --paper:   #faf6ef;  /* page ground */
+  --sunken:  #f3ece0;  /* inset areas, table headers, disabled fields */
+  --surface: #ffffff;  /* cards */
   --near-black: #17140f;
+  --on-dark: #f3ede0;
+
+  /* ---- Lines ---- */
+  --line:      #eaddc7;
+  --line-soft: #f1e8d8;
+
+  /* ---- Ink: every one of these clears 4.5:1 on --paper ---- */
+  --ink:   #2c2620;  /* body & headings          ~13:1 */
+  --ink-2: #5c534a;  /* secondary text            ~7:1 */
+  --ink-3: #6b6157;  /* captions, meta, hints   ~5.7:1 */
+
+  /* ---- Semantic ---- */
+  --ok:        #3f6b4a;
+  --ok-bg:     #eaf2ec;
+  --warn:      #8a6212;
+  --warn-bg:   #f9f0dc;
+  --danger:    #a6321f;
+  --danger-bg: #fbeae7;
+  --info:      #3d5a80;
+  --info-bg:   #e9eef5;
+
+  /* ---- Type scale (1.25 minor third, 16px base) ---- */
+  --text-xs:   0.8125rem; /* 13px — labels and meta only, never body copy */
+  --text-sm:   0.9375rem; /* 15px */
+  --text-base: 1rem;      /* 16px — body copy floor */
+  --text-lg:   1.125rem;
+  --text-xl:   1.375rem;
+  --text-2xl:  1.75rem;
+  --text-3xl:  2.25rem;
+  --text-4xl:  3rem;
+
+  /* ---- Depth: soft and warm, never a grey drop shadow ---- */
+  --shadow-sm: 0 1px 2px rgba(99, 77, 43, 0.06);
+  --shadow:    0 2px 10px rgba(99, 77, 43, 0.08);
+  --shadow-lg: 0 12px 32px rgba(99, 77, 43, 0.14);
+
+  --radius:    1.25rem;
+  --radius-sm: 0.75rem;
+
+  /* Smallest comfortable tap area. The door scanner gets used one-handed, in
+     the dark, by someone holding a phone and a guest list at the same time —
+     every control it shows is sized off this. */
+  --tap: 2.75rem; /* 44px */
 }
 
+/* Expose the palette to Tailwind so pages can write `text-ink-2`,
+   `border-line`, `bg-sunken` instead of arbitrary values or raw hex. Anything
+   that changes above changes everywhere at once. */
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-gold: var(--gold-500);
+  --color-gold-dark: var(--gold-600);
+  --color-gold-soft: var(--gold-50);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-paper: var(--paper);
+  --color-sunken: var(--sunken);
+  --color-surface: var(--surface);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+}
+
+/* ============================================================================
+   Base
+   ========================================================================= */
+
 body {
-  background: var(--cream);
+  background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-ui), "Tahoma", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-ui), "Segoe UI", Tahoma, system-ui, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Elegant calligraphic display face for couple names / ceremonial headings
    on the guest-facing invitation — never used for app/dashboard chrome. */
 .font-display {
   font-family: var(--font-display), "Amiri", serif;
+  line-height: 1.35;
 }
 
-/* ---------- Buttons ---------- */
-
-.btn-gold {
-  background: linear-gradient(180deg, #c8a06a, var(--gold));
-  color: #fff;
-  transition: filter 0.15s ease, transform 0.1s ease;
-}
-.btn-gold:hover {
-  filter: brightness(1.05);
-}
-.btn-gold:active {
-  transform: scale(0.98);
-}
-.btn-gold:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+/* Anywhere digits sit in a column or tick upward — guest counts, check-in
+   tallies, scanner codes — so they don't jitter as the numbers change. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
-/* Fully-rounded "pill" buttons, echoing the reference site's shape
-   language — used for primary actions across the invitation and
-   dashboards alike. */
-.pill-btn {
+/* Latin strings inside Arabic sentences (phone numbers, scanner codes, URLs)
+   need their own direction or the bidi algorithm reorders them. */
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* One focus treatment for the whole app, so no component has to remember. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--gold-600);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+:where(button, [role="button"], a, label, select):not(:disabled) {
+  cursor: pointer;
+}
+
+/* ============================================================================
+   Typography helpers
+   ========================================================================= */
+
+.title-lg { font-size: var(--text-2xl); font-weight: 700; line-height: 1.3; text-wrap: balance; }
+.title    { font-size: var(--text-xl);  font-weight: 700; line-height: 1.35; text-wrap: balance; }
+.body     { font-size: var(--text-base); color: var(--ink-2); }
+.meta     { font-size: var(--text-sm);  color: var(--ink-3); }
+
+/* Small uppercase-ish section label. Arabic has no case, so the emphasis
+   comes from weight, colour and letter-spacing on the Latin part instead. */
+.eyebrow {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+
+/* ============================================================================
+   Buttons — all at least --tap tall
+   ========================================================================= */
+
+.pill-btn,
+.pill-btn-outline,
+.pill-btn-ghost,
+.pill-btn-danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+  min-height: var(--tap);
+  padding: 0.6rem 1.5rem;
   border-radius: 9999px;
-  padding: 0.65rem 1.5rem;
+  font-size: var(--text-sm);
   font-weight: 700;
-  background: linear-gradient(180deg, #c8a06a, var(--gold));
+  line-height: 1.2;
+  transition: filter 0.18s ease, background 0.18s ease, transform 0.12s ease,
+    border-color 0.18s ease;
+}
+
+.pill-btn {
+  background: linear-gradient(180deg, var(--gold-400), var(--gold-500));
   color: #fff;
-  transition: filter 0.15s ease, transform 0.1s ease;
+  box-shadow: var(--shadow-sm);
 }
-.pill-btn:hover {
-  filter: brightness(1.06);
-}
-.pill-btn:active {
-  transform: scale(0.98);
-}
-.pill-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
+.pill-btn:hover:not(:disabled) { filter: brightness(1.06); }
+.pill-btn:active:not(:disabled) { transform: scale(0.985); }
 
 .pill-btn-outline {
+  border: 1.5px solid var(--gold-300);
+  color: var(--gold-600);
+  background: transparent;
+}
+.pill-btn-outline:hover:not(:disabled) {
+  background: var(--gold-50);
+  border-color: var(--gold-400);
+}
+.pill-btn-outline:active:not(:disabled) { transform: scale(0.985); }
+
+.pill-btn-ghost {
+  color: var(--ink-2);
+  background: transparent;
+  font-weight: 600;
+}
+.pill-btn-ghost:hover:not(:disabled) { background: var(--sunken); color: var(--ink); }
+
+.pill-btn-danger {
+  border: 1.5px solid var(--danger);
+  color: var(--danger);
+  background: transparent;
+}
+.pill-btn-danger:hover:not(:disabled) { background: var(--danger-bg); }
+
+.pill-btn:disabled,
+.pill-btn-outline:disabled,
+.pill-btn-ghost:disabled,
+.pill-btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+/* Compact variant for dense rows — still meets the WCAG 24px target minimum
+   and keeps 8px of separation from its neighbours. */
+.pill-btn-sm {
+  min-height: 2rem;
+  padding: 0.25rem 0.9rem;
+  font-size: var(--text-xs);
+  gap: 0.35rem;
+}
+
+/* Icon-only control. Always give it an aria-label at the call site. */
+.icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  width: var(--tap);
+  height: var(--tap);
   border-radius: 9999px;
-  padding: 0.6rem 1.4rem;
-  font-weight: 600;
-  border: 1.5px solid var(--gold);
-  color: var(--gold-dark);
-  background: transparent;
-  transition: background 0.15s ease;
+  color: var(--ink-2);
+  transition: background 0.18s ease, color 0.18s ease;
 }
-.pill-btn-outline:hover {
-  background: rgba(176, 141, 87, 0.08);
-}
+.icon-btn:hover:not(:disabled) { background: var(--sunken); color: var(--ink); }
 
-/* ---------- Cards & surfaces ---------- */
+/* Legacy name still referenced in a few places. */
+.btn-gold {
+  background: linear-gradient(180deg, var(--gold-400), var(--gold-500));
+  color: #fff;
+  transition: filter 0.18s ease, transform 0.12s ease;
+}
+.btn-gold:hover:not(:disabled) { filter: brightness(1.05); }
+.btn-gold:active:not(:disabled) { transform: scale(0.98); }
+.btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================================================
+   Cards & surfaces
+   ========================================================================= */
 
 .card {
-  background: #fff;
-  border: 1px solid #eee0cc;
-  border-radius: 1.25rem;
-  box-shadow: 0 4px 20px rgba(139, 109, 63, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.card-flat {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* The invitation card carries a very faint eight-point star tessellation —
+   the geometry you'd find on a real Arabic wedding card, at an opacity where
+   you feel it before you notice it. Drawn as a tiled SVG rather than an image
+   so it stays crisp at any zoom and costs no extra request. */
+.card-ornate {
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath fill='none' stroke='%23b08d57' stroke-width='0.7' stroke-opacity='0.075' d='M17 3.5 L20.4 13.6 L30.5 17 L20.4 20.4 L17 30.5 L13.6 20.4 L3.5 17 L13.6 13.6 Z'/%3E%3C/svg%3E");
+  background-position: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
 }
 
 /* A dark "wall" surface for the guest well-wish feed on the invitation
-   page, echoing the reference site's contrast between the cream
-   invitation card and a near-black wishes wall. */
+   page — the contrast against the cream invitation card is what makes the
+   wall read as a different place rather than another section. */
 .wall-section {
   background: var(--near-black);
-  border-radius: 1.25rem;
-  color: #f3ede0;
+  border-radius: var(--radius);
+  color: var(--on-dark);
 }
 
 .wish-card {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-sm);
+  transition: background 0.18s ease;
 }
+.wish-card:hover { background: rgba(255, 255, 255, 0.09); }
 
 .avatar-circle {
   display: inline-flex;
@@ -112,69 +316,193 @@ body {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 9999px;
-  background: linear-gradient(180deg, #c8a06a, var(--gold));
+  background: linear-gradient(180deg, var(--gold-400), var(--gold-500));
   color: #fff;
   font-weight: 700;
   flex-shrink: 0;
 }
 
-/* ---------- Tab switcher (الدعوة / رسائل التهنئة) ---------- */
+/* ============================================================================
+   Forms
+   ========================================================================= */
+
+.field {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+  font-size: var(--text-base); /* 16px keeps iOS from zooming on focus */
+  font-family: inherit;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.field::placeholder { color: var(--ink-3); opacity: 1; }
+.field:hover:not(:disabled) { border-color: var(--gold-200); }
+.field:focus {
+  outline: none;
+  border-color: var(--gold-400);
+  box-shadow: 0 0 0 3px var(--gold-100);
+}
+.field:disabled { background: var(--sunken); color: var(--ink-3); cursor: not-allowed; }
+.field[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-bg);
+}
+
+/* Visible label, always — a placeholder disappears the moment someone types,
+   which is exactly when they need to check what the field was for. */
+.label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.hint  { font-size: var(--text-xs); color: var(--ink-3); margin-top: 0.35rem; }
+.error { font-size: var(--text-sm); color: var(--danger); margin-top: 0.35rem; font-weight: 500; }
+
+/* ============================================================================
+   Status chips — colour is never the only signal; each carries its own icon
+   at the call site.
+   ========================================================================= */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 9999px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chip-ok      { background: var(--ok-bg);     color: var(--ok); }
+.chip-warn    { background: var(--warn-bg);   color: var(--warn); }
+.chip-danger  { background: var(--danger-bg); color: var(--danger); }
+.chip-info    { background: var(--info-bg);   color: var(--info); }
+.chip-neutral { background: var(--sunken);    color: var(--ink-2); }
+.chip-gold    { background: var(--gold-50);   color: var(--gold-600); }
+
+/* ============================================================================
+   Stats
+   ========================================================================= */
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+}
+.stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--gold-600);
+  font-variant-numeric: tabular-nums;
+}
+.stat-label { font-size: var(--text-xs); color: var(--ink-3); font-weight: 600; }
+
+/* ============================================================================
+   Tab switcher
+   ========================================================================= */
 
 .tab-switch {
   display: inline-flex;
   padding: 0.25rem;
   border-radius: 9999px;
-  background: rgba(44, 38, 32, 0.06);
+  background: var(--sunken);
   gap: 0.25rem;
 }
 .tab-switch button {
-  border-radius: 9999px;
+  min-height: 2.5rem;
   padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-size: var(--text-sm);
   font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--ink);
-  opacity: 0.6;
-  transition: background 0.15s ease, opacity 0.15s ease, color 0.15s ease;
+  color: var(--ink-2);
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
+.tab-switch button:hover:not([data-active="true"]) { color: var(--ink); }
 .tab-switch button[data-active="true"] {
-  background: #fff;
-  opacity: 1;
-  color: var(--gold-dark);
-  box-shadow: 0 2px 8px rgba(139, 109, 63, 0.15);
+  background: var(--surface);
+  color: var(--gold-600);
+  box-shadow: var(--shadow-sm);
 }
 
-/* ---------- Small ornamental divider ---------- */
+/* ============================================================================
+   Ornament
+   ========================================================================= */
 
 .ornament-divider {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
-  color: var(--gold);
-  opacity: 0.7;
+  color: var(--gold-400);
 }
 .ornament-divider::before,
 .ornament-divider::after {
   content: "";
   flex: 1;
   height: 1px;
-  background: currentColor;
-  opacity: 0.4;
+  max-width: 5rem;
+  background: linear-gradient(90deg, transparent, var(--gold-300), transparent);
 }
 
-/* Full-screen red flash on a rejected door-scan (e.g. an already-used QR),
-   paired with an audio alert — see src/app/scan/page.js. */
-@keyframes da3wa-flash {
-  0% { opacity: 1; }
-  100% { opacity: 0; }
+/* ============================================================================
+   Empty states
+   ========================================================================= */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  color: var(--ink-3);
+  text-align: center;
 }
-.da3wa-flash-overlay {
-  animation: da3wa-flash 0.5s ease-out;
-}
+.empty svg { color: var(--gold-300); }
+
+/* ============================================================================
+   Motion
+   ========================================================================= */
 
 @keyframes da3wa-fade-in {
-  0% { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.da3wa-fade-in {
-  animation: da3wa-fade-in 0.35s ease-out;
+.da3wa-fade-in { animation: da3wa-fade-in 0.35s ease-out; }
+
+/* Full-screen flash on a rejected door-scan, paired with an audio alert —
+   see src/app/scan/page.js. Deliberately loud: the door is noisy and the
+   phone is often not being looked at when the code is rejected. */
+@keyframes da3wa-flash {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.da3wa-flash-overlay { animation: da3wa-flash 0.5s ease-out; }
+
+@keyframes da3wa-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+.da3wa-pulse { animation: da3wa-pulse 1.6s ease-in-out infinite; }
+
+/* The rejection flash and its siren are safety signals, so they stay. Every
+   decorative movement is dropped. */
+@media (prefers-reduced-motion: reduce) {
+  .da3wa-fade-in,
+  .da3wa-pulse {
+    animation: none;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -3,10 +3,48 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { formatEventDateArabic } from "@/lib/date";
+import {
+  MapPinIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  AlertIcon,
+  MessageIcon,
+  HeartIcon,
+  StarOrnamentIcon,
+  QrIcon,
+  InboxIcon,
+} from "@/components/icons";
+
+// Arabic counts don't take a plural noun the way English does — "1 مرافقين"
+// reads as broken to a native speaker. Singular, dual and plural each need
+// their own form.
+function companionLimitLabel(n) {
+  if (n === 1) return "مرافق واحد";
+  if (n === 2) return "مرافقَين";
+  if (n <= 10) return `${n} مرافقين`;
+  return `${n} مرافقًا`;
+}
+
+function PageShell({ children }) {
+  return <main className="min-h-screen flex flex-col items-center p-5 gap-4">{children}</main>;
+}
+
+function LoadingCard() {
+  return (
+    <PageShell>
+      <div className="card max-w-md w-full p-8 flex flex-col items-center gap-4">
+        <div className="da3wa-pulse" style={{ color: "var(--gold-300)" }}>
+          <StarOrnamentIcon size={32} />
+        </div>
+        <p className="meta">جارٍ فتح الدعوة...</p>
+      </div>
+    </PageShell>
+  );
+}
 
 export default function InvitePage() {
   return (
-    <Suspense fallback={<main className="min-h-screen flex items-center justify-center">جاري التحميل...</main>}>
+    <Suspense fallback={<LoadingCard />}>
       <InviteContent />
     </Suspense>
   );
@@ -89,17 +127,21 @@ function InviteContent() {
     }
   }
 
-  if (state.loading) {
-    return <main className="min-h-screen flex items-center justify-center">جاري التحميل...</main>;
-  }
+  if (state.loading) return <LoadingCard />;
 
   if (state.error) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-6">
-        <div className="card max-w-sm w-full p-8 text-center">
-          <p className="text-red-600 font-medium">{state.error}</p>
+      <PageShell>
+        <div className="card max-w-sm w-full p-8 text-center flex flex-col items-center gap-3">
+          <span style={{ color: "var(--danger)" }}>
+            <AlertIcon size={32} />
+          </span>
+          <p style={{ color: "var(--danger)", fontWeight: 600 }}>{state.error}</p>
+          <p className="meta">
+            لو الرابط وصلك من العروسين، تواصل معهم للحصول على رابط جديد.
+          </p>
         </div>
-      </main>
+      </PageShell>
     );
   }
 
@@ -107,63 +149,101 @@ function InviteContent() {
   const prettyDate = formatEventDateArabic(event.eventDate);
 
   return (
-    <main className="min-h-screen flex flex-col items-center p-6 gap-4">
-      <div className="tab-switch">
-        <button data-active={tab === "invite"} onClick={() => setTab("invite")}>الدعوة</button>
-        <button data-active={tab === "wall"} onClick={() => setTab("wall")}>رسائل التهنئة</button>
+    <PageShell>
+      <div className="tab-switch" role="tablist">
+        <button
+          role="tab"
+          aria-selected={tab === "invite"}
+          data-active={tab === "invite"}
+          onClick={() => setTab("invite")}
+        >
+          الدعوة
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === "wall"}
+          data-active={tab === "wall"}
+          onClick={() => setTab("wall")}
+        >
+          رسائل التهنئة
+        </button>
       </div>
 
       {tab === "invite" ? (
-        <div className="card max-w-md w-full p-8 text-center space-y-5 da3wa-fade-in">
-          <div className="ornament-divider text-xs tracking-widest">
-            <span>✦</span>
+        <article className="card-ornate max-w-md w-full p-8 text-center flex flex-col gap-5 da3wa-fade-in">
+          <div className="ornament-divider" aria-hidden="true">
+            <StarOrnamentIcon size={14} />
           </div>
-          <p className="text-sm font-display" style={{ color: "var(--gold-dark)", fontSize: "1.1rem" }}>
+
+          {/* Aref Ruqaa is a calligraphic face — its letterforms need more
+              size and leading than a UI font at the same optical weight, or
+              the strokes collide and the line stops being readable. */}
+          <p
+            className="font-display"
+            style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", lineHeight: 1.85 }}
+          >
             بسم الله نبدأ فرحتنا، وبالحب نكتب أجمل بدايات العمر
           </p>
-          <h1 className="font-display text-4xl leading-tight" style={{ color: "var(--ink)" }}>
+
+          <h1 className="font-display" style={{ fontSize: "var(--text-4xl)", color: "var(--ink)" }}>
             {event.coupleNames}
           </h1>
-          {prettyDate && <p className="text-sm text-gray-500 tracking-wide">{prettyDate}</p>}
 
-          <div className="ornament-divider text-xs tracking-widest">
-            <span>✦</span>
+          {prettyDate && (
+            <p className="meta" style={{ letterSpacing: "0.04em" }}>
+              {prettyDate}
+            </p>
+          )}
+
+          <div className="ornament-divider" aria-hidden="true">
+            <StarOrnamentIcon size={14} />
           </div>
 
-          <h2 className="text-xl font-bold" style={{ color: "var(--gold-dark)" }}>
-            أهلًا {guest.name} 🌸
+          <h2 className="title" style={{ color: "var(--gold-600)" }}>
+            أهلًا {guest.name}
           </h2>
-          <p className="text-gray-600 leading-relaxed text-sm">{event.welcomeMessage}</p>
+          <p className="body">{event.welcomeMessage}</p>
 
-          {(prettyDate || event.venueName) && (
-            <div className="text-sm text-gray-500 border-t border-b py-3 space-y-1" style={{ borderColor: "#f1e8d8" }}>
-              {prettyDate && <p>📅 {prettyDate}</p>}
-              {event.venueName && <p>📍 {event.venueName}</p>}
+          {/* The date already sits under the couple's names above, where it
+              belongs ceremonially — repeating it here just made the card look
+              like a form. This block is the practical "where" detail only. */}
+          {event.venueName && (
+            <div
+              className="flex flex-col gap-2.5 py-4 text-right"
+              style={{ borderTop: "1px solid var(--line-soft)", borderBottom: "1px solid var(--line-soft)" }}
+            >
+              {event.venueName && (
+                <p className="flex items-center gap-2.5" style={{ fontSize: "var(--text-sm)", color: "var(--ink-2)" }}>
+                  <span style={{ color: "var(--gold-500)" }}><MapPinIcon size={18} /></span>
+                  {event.venueName}
+                </p>
+              )}
               {event.venueMapUrl && (
                 <a
                   href={event.venueMapUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="pill-btn-outline inline-flex mt-2 text-xs"
+                  className="pill-btn-outline pill-btn-sm self-start mt-1"
                 >
-                  📍 اضغط لعرض الموقع
+                  <MapPinIcon size={15} />
+                  اعرض الموقع على الخريطة
                 </a>
               )}
             </div>
           )}
 
           {guest.status === "pending" && (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               {guest.maxCompanions > 0 && (
-                <div>
-                  <label className="block text-sm text-gray-500 mb-2">
-                    عدد المرافقين معك (بحد أقصى {guest.maxCompanions})
+                <div className="text-right">
+                  <label htmlFor="companions" className="label">
+                    عدد المرافقين معك
                   </label>
                   <select
+                    id="companions"
                     value={companions}
                     onChange={(e) => setCompanions(Number(e.target.value))}
-                    className="border rounded-lg px-4 py-2"
-                    style={{ borderColor: "#eee0cc" }}
+                    className="field tnum"
                   >
                     {Array.from({ length: guest.maxCompanions + 1 }, (_, i) => (
                       <option key={i} value={i}>
@@ -171,98 +251,176 @@ function InviteContent() {
                       </option>
                     ))}
                   </select>
+                  <p className="hint">بحد أقصى {companionLimitLabel(guest.maxCompanions)}</p>
                 </div>
               )}
-              <div className="flex gap-3">
+              {/* Stacked rather than side by side: at 375px two pill buttons
+                  force the primary label onto a second line, and confirming
+                  is the action almost everyone came here to take. */}
+              <div className="flex flex-col gap-2.5">
                 <button
                   disabled={submitting}
                   onClick={() => respond(true)}
-                  className="pill-btn flex-1"
+                  className="pill-btn w-full whitespace-nowrap"
                 >
-                  أكد الحضور ✅
+                  <CheckCircleIcon size={18} />
+                  {submitting ? "جارٍ التأكيد..." : "أكّد الحضور"}
                 </button>
                 <button
                   disabled={submitting}
                   onClick={() => respond(false)}
-                  className="pill-btn-outline flex-1"
+                  className="pill-btn-outline w-full"
                 >
-                  أعتذر
+                  أعتذر عن الحضور
                 </button>
               </div>
             </div>
           )}
 
           {guest.status === "confirmed" && (
-            <div className="space-y-4">
-              <p className="text-green-700 font-semibold">
-                تم تأكيد حضورك{guest.confirmedCompanions ? ` مع ${guest.confirmedCompanions} من المرافقين` : ""} 🎉
+            <div className="flex flex-col gap-4" aria-live="polite">
+              <p
+                className="chip chip-ok self-center"
+                style={{ fontSize: "var(--text-sm)", padding: "0.4rem 0.9rem" }}
+              >
+                <CheckCircleIcon size={16} />
+                تم تأكيد حضورك
+                {guest.confirmedCompanions ? ` مع ${guest.confirmedCompanions} من المرافقين` : ""}
               </p>
+
               {guest.qrDataUrl ? (
-                <div className="space-y-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={guest.qrDataUrl} alt="QR Code للدخول" className="mx-auto rounded-xl border" style={{ borderColor: "#eee0cc" }} />
-                  <p className="text-xs text-gray-400">سيصلك الرمز نفسه على واتساب — أظهره للموظف يوم الزفاف</p>
-                </div>
+                <figure className="flex flex-col items-center gap-2 m-0">
+                  <div
+                    className="p-3 rounded-2xl"
+                    style={{ background: "var(--surface)", border: "1px solid var(--line)", boxShadow: "var(--shadow)" }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={guest.qrDataUrl}
+                      alt={`رمز الدخول الخاص بـ ${guest.name}`}
+                      className="rounded-xl block"
+                      width={280}
+                      height={280}
+                      style={{ width: "100%", maxWidth: 280, height: "auto" }}
+                    />
+                  </div>
+                  <figcaption className="meta flex items-center gap-2">
+                    <QrIcon size={15} />
+                    أظهر الرمز للموظف عند الباب — وصلتك نسخة على واتساب
+                  </figcaption>
+                </figure>
               ) : (
-                <p className="text-sm text-gray-400">جارٍ تجهيز رمز الدخول...</p>
+                <p className="meta da3wa-pulse">جارٍ تجهيز رمز الدخول...</p>
               )}
             </div>
           )}
 
           {guest.status === "declined" && (
-            <p className="text-gray-500">تم تسجيل اعتذارك، نتمنى أن نراك في مناسبة أخرى 🌷</p>
+            <p className="flex items-center justify-center gap-2 body" aria-live="polite">
+              <span style={{ color: "var(--ink-3)" }}><XCircleIcon size={18} /></span>
+              تم تسجيل اعتذارك، نتمنى أن نراك في مناسبة أخرى
+            </p>
           )}
 
           {guest.status !== "pending" && (
-            <div className="text-right space-y-2 border-t pt-4" style={{ borderColor: "#f1e8d8" }}>
-              <label className="block text-sm text-gray-500">
-                {guest.wishMessage ? "تعديل رسالتك للعروسين" : "اترك رسالة تهنئة للعروسين 💌"}
+            <div
+              className="text-right flex flex-col gap-2 pt-5"
+              style={{ borderTop: "1px solid var(--line-soft)" }}
+            >
+              <label htmlFor="wish" className="label flex items-center gap-2">
+                <span style={{ color: "var(--gold-500)" }}><MessageIcon size={16} /></span>
+                {guest.wishMessage ? "تعديل رسالتك للعروسين" : "اترك رسالة تهنئة للعروسين"}
               </label>
               <textarea
+                id="wish"
                 value={wishText}
                 onChange={(e) => setWishText(e.target.value)}
                 maxLength={500}
                 rows={3}
                 placeholder="اكتب هنا رسالتك أو تهنئتك..."
-                className="w-full border rounded-lg px-3 py-2 outline-none text-sm"
-                style={{ borderColor: "#eee0cc" }}
+                className="field"
+                aria-invalid={wishError ? "true" : undefined}
+                style={{ resize: "vertical" }}
               />
-              {wishError && <p className="text-red-600 text-xs">{wishError}</p>}
+              {/* ltr so the counter reads "66 / 500" and not "500 / 66" —
+                  a slash-separated pair gets reordered by the bidi algorithm
+                  inside an RTL paragraph. */}
+              <p className="hint tnum ltr text-left">{wishText.length} / 500</p>
+              {wishError && <p className="error">{wishError}</p>}
               <button
                 onClick={sendWish}
                 disabled={wishSubmitting || !wishText.trim()}
                 className="pill-btn w-full"
               >
-                {wishSubmitting ? "جارٍ الإرسال..." : guest.wishMessage ? "تحديث الرسالة" : "إرسال الرسالة"}
+                {wishSubmitting
+                  ? "جارٍ الإرسال..."
+                  : guest.wishMessage
+                    ? "تحديث الرسالة"
+                    : "إرسال الرسالة"}
               </button>
               {guest.wishMessage && (
-                <p className="text-xs text-green-700">تم إرسال رسالتك، ويمكنك تعديلها في أي وقت.</p>
+                <p
+                  className="flex items-center gap-2"
+                  style={{ fontSize: "var(--text-xs)", color: "var(--ok)" }}
+                  aria-live="polite"
+                >
+                  <CheckCircleIcon size={14} />
+                  تم إرسال رسالتك، ويمكنك تعديلها في أي وقت.
+                </p>
               )}
             </div>
           )}
-        </div>
+        </article>
       ) : (
-        <div className="wall-section max-w-md w-full p-5 da3wa-fade-in">
-          <h2 className="font-display text-2xl text-center mb-4" style={{ color: "#e7d2a4" }}>
+        <section className="wall-section max-w-md w-full p-5 da3wa-fade-in">
+          <h2
+            className="font-display text-center mb-1 flex items-center justify-center gap-2"
+            style={{ fontSize: "var(--text-2xl)", color: "var(--gold-300)" }}
+          >
+            <HeartIcon size={20} />
             رسائل التهنئة
           </h2>
-          <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-            {wishesLoading && <p className="text-center text-sm opacity-60 py-6">جارٍ التحميل...</p>}
-            {!wishesLoading && wishes.length === 0 && (
-              <p className="text-center text-sm opacity-60 py-6">لم تصل رسائل تهنئة بعد — كن أول من يهنّئ العروسين</p>
+          <p
+            className="text-center mb-4"
+            style={{ fontSize: "var(--text-xs)", color: "rgba(243,237,224,0.55)" }}
+          >
+            من كل من شارك العروسين فرحتهم
+          </p>
+
+          <div className="flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: "70vh" }}>
+            {wishesLoading && (
+              <p className="text-center py-8 da3wa-pulse" style={{ color: "rgba(243,237,224,0.6)" }}>
+                جارٍ التحميل...
+              </p>
             )}
+
+            {!wishesLoading && wishes.length === 0 && (
+              <div className="empty" style={{ color: "rgba(243,237,224,0.65)" }}>
+                <span style={{ color: "var(--gold-400)" }}><InboxIcon size={30} /></span>
+                <p style={{ fontSize: "var(--text-sm)" }}>
+                  لم تصل رسائل تهنئة بعد — كن أول من يهنّئ العروسين
+                </p>
+              </div>
+            )}
+
             {wishes.map((w, i) => (
               <div key={i} className="wish-card p-3 flex items-start gap-3">
-                <span className="avatar-circle text-sm">{w.name?.trim()?.[0] || "؟"}</span>
+                <span className="avatar-circle" style={{ fontSize: "var(--text-sm)" }}>
+                  {w.name?.trim()?.[0] || "؟"}
+                </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: "#e7d2a4" }}>{w.name}</p>
-                  <p className="text-sm leading-relaxed mt-0.5">{w.wishMessage}</p>
+                  <p style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--gold-300)" }}>
+                    {w.name}
+                  </p>
+                  <p style={{ fontSize: "var(--text-sm)", lineHeight: 1.7, marginTop: "0.15rem" }}>
+                    {w.wishMessage}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
-    </main>
+    </PageShell>
   );
 }
