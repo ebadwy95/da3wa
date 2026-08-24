@@ -57,6 +57,64 @@ export function normalizePhone(phone) {
   return String(phone || "").replace(/[^\d]/g, "");
 }
 
+// Wati stores a template's text with positional placeholders ({{1}}, {{2}})
+// and keeps the readable names in customParams, whose ORDER defines which
+// placeholder each name fills. So a template knows exactly which parameters it
+// wants, and how many.
+//
+// Callers here pass a superset — everything any configured template might ask
+// for — because which template is active is an environment variable, not a
+// code path. This looks the real list up and trims the superset down to it, in
+// the declared order. Without that, main_msg (name, link) would receive five
+// parameters and da3wa_qr_delivery four.
+//
+// Cached because a bulk send loops over every guest and the template list
+// changes about as often as someone edits it in the Wati dashboard.
+const TEMPLATE_CACHE_MS = 10 * 60 * 1000;
+let templateCache = { at: 0, byName: null };
+
+async function fetchTemplateParamNames(templateName) {
+  const now = Date.now();
+  if (!templateCache.byName || now - templateCache.at > TEMPLATE_CACHE_MS) {
+    const res = await fetch(endpoint("/api/v1/getMessageTemplates"), {
+      headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error(`getMessageTemplates ${res.status}`);
+    const json = await res.json();
+    const byName = new Map();
+    for (const t of json.messageTemplates || []) {
+      const name = t.elementName || t.name;
+      if (!name) continue;
+      byName.set(
+        name,
+        (t.customParams || []).map((p) => p.paramName).filter(Boolean)
+      );
+    }
+    templateCache = { at: now, byName };
+  }
+  return templateCache.byName.get(templateName) || null;
+}
+
+/**
+ * Narrows a superset of parameters to the ones this template declares, in the
+ * order it declares them. Returns the original list untouched if the template
+ * can't be looked up — a lookup problem should never block a send that would
+ * otherwise have worked.
+ */
+async function alignParamsToTemplate(templateName, params) {
+  let declared;
+  try {
+    declared = await fetchTemplateParamNames(templateName);
+  } catch (err) {
+    console.warn("[wati] could not read template parameters, sending as-is:", err.message);
+    return params;
+  }
+  if (!declared || declared.length === 0) return params;
+
+  const supplied = new Map(params.map((p) => [p.name, p.value]));
+  return declared.map((name) => ({ name, value: supplied.get(name) ?? "" }));
+}
+
 async function callWati(path, body) {
   const res = await fetch(endpoint(path), {
     method: "POST",
@@ -100,7 +158,7 @@ export async function sendTemplateMessage({ phone, templateName, broadcastName, 
     const body = {
       template_name: templateName,
       broadcast_name: broadcastName || templateName,
-      parameters: params,
+      parameters: await alignParamsToTemplate(templateName, params),
     };
     // Wati's v1 docs list channel_number as a required field on accounts
     // with more than one connected WhatsApp number. Only include it if the
