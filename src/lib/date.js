@@ -92,6 +92,25 @@ export function formatEventTimeArabic(isoTime) {
   return `${hour12}:${minute} ${period}`;
 }
 
+// Timestamps in the admin feeds. toLocaleString("ar-EG") renders Arabic-Indic
+// digits (٢٠٢٦/٨/٢٤), which clashes with the Western digits used for every
+// other number in this app — guest counts, phone numbers, event dates. Same
+// locale, same month names, digits that match everything around them.
+export function formatDateTimeArabic(value) {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("ar", {
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      numberingSystem: "latn",
+    }).format(new Date(value));
+  } catch {
+    return "";
+  }
+}
+
 // Formats a stored "YYYY-MM-DD" into a clean Arabic date for guests, e.g.
 // "٢٠ نوفمبر ٢٠٢٦" -> we deliberately keep Western digits (already the
 // convention used elsewhere in this app) and just localize the month name.

@@ -7,6 +7,7 @@
 
 import { useRef, useState } from "react";
 import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon } from "@/components/icons";
+import { formatDateTimeArabic } from "@/lib/date";
 
 export function StatCard({ label, value, accent }) {
   return (
@@ -301,12 +302,12 @@ export function WhatsappFeed({ messages, watiConfigured }) {
           {watiConfigured ? "متصل بـ Wati — إرسال حقيقي" : "غير متصل — محاكاة فقط"}
         </span>
       </div>
-      <div className="space-y-2 max-h-80 overflow-y-auto">
+      <div className="log-scroll">
         {messages.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لا توجد رسائل بعد</p>}
         {messages.map((m) => (
-          <div key={m.id} className="field" style={{ borderColor: "var(--line-soft)" }}>
+          <div key={m.id} className="log-row">
             <div className="flex justify-between items-start gap-2">
-              <span className="font-medium">{m.content}</span>
+              <span className="font-medium min-w-0 flex-1">{m.content}</span>
               <span
                 className="text-xs shrink-0 px-2 py-0.5 rounded-full"
                 style={{
@@ -329,7 +330,7 @@ export function WhatsappFeed({ messages, watiConfigured }) {
                 {m.error}
               </p>
             )}
-            <p className="text-ink-3 text-xs mt-1">{new Date(m.createdAt).toLocaleString("ar-EG")}</p>
+            <p className="text-ink-3 text-xs mt-1">{formatDateTimeArabic(m.createdAt)}</p>
           </div>
         ))}
       </div>
@@ -349,14 +350,14 @@ export function WishWall({ guests }) {
   return (
     <div className="card p-4">
       <h2 className="font-bold mb-3">رسائل التهنئة من الضيوف</h2>
-      <div className="space-y-2 max-h-80 overflow-y-auto">
+      <div className="log-scroll">
         {wishes.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لم تصل رسائل تهنئة بعد</p>}
         {wishes.map((g) => (
-          <div key={g.id} className="field" style={{ borderColor: "var(--line-soft)" }}>
+          <div key={g.id} className="log-row">
             <p className="text-ink leading-relaxed">{g.wishMessage}</p>
             <p className="text-ink-3 text-xs mt-1">
               — {g.name}
-              {g.wishMessageAt && <> · {new Date(g.wishMessageAt).toLocaleString("ar-EG")}</>}
+              {g.wishMessageAt && <> · {formatDateTimeArabic(g.wishMessageAt)}</>}
             </p>
           </div>
         ))}
@@ -373,16 +374,16 @@ export function CheckinLogFeed({ logs }) {
   return (
     <div className="card p-4">
       <h2 className="font-bold mb-3">سجلّ الدخول عند الباب</h2>
-      <div className="space-y-2 max-h-80 overflow-y-auto">
+      <div className="log-scroll">
         {logs.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لا توجد عمليات دخول مسجَّلة بعد</p>}
         {logs.map((l) => (
           <div
             key={l.id}
-            className="field"
-            style={{ borderColor: l.ok ? "var(--line-soft)" : "var(--danger)", background: l.ok ? "transparent" : "var(--danger-bg)" }}
+            className="log-row"
+            style={l.ok ? undefined : { borderColor: "var(--danger)", background: "var(--danger-bg)" }}
           >
             <div className="flex justify-between items-start gap-2">
-              <span className="font-medium">{l.guestName || "رمز غير معروف"}</span>
+              <span className="font-medium min-w-0 flex-1">{l.guestName || "رمز غير معروف"}</span>
               <span
                 className="text-xs shrink-0 px-2 py-0.5 rounded-full font-semibold"
                 style={{ background: l.ok ? "var(--ok-bg)" : "var(--danger-bg)", color: l.ok ? "var(--ok)" : "var(--danger)" }}
@@ -392,7 +393,7 @@ export function CheckinLogFeed({ logs }) {
             </div>
             <p className="text-ink-2 text-xs mt-1">{l.message}</p>
             <p className="text-ink-3 text-xs mt-1">
-              بواسطة: {l.staffName || "غير معروف"} — {new Date(l.createdAt).toLocaleString("ar-EG")}
+              بواسطة: {l.staffName || "غير معروف"} — {formatDateTimeArabic(l.createdAt)}
             </p>
           </div>
         ))}

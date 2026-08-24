@@ -365,6 +365,37 @@ body {
 .error { font-size: var(--text-sm); color: var(--danger); margin-top: 0.35rem; font-weight: 500; }
 
 /* ============================================================================
+   Feed rows
+   ----------------------------------------------------------------------------
+   The message, check-in and wishes feeds were built out of `.field` — the
+   INPUT style. That gave every row a form control's fixed height and padding,
+   so multi-line Arabic and long API errors were squeezed into a box sized for
+   one line of typing. These rows hold prose of unpredictable length: they grow
+   with their content and wrap instead.
+   ========================================================================= */
+
+.log-row {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.9rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+/* Scroll containers for those feeds. Tall enough to read a few entries
+   without scrolling, capped relative to the viewport so a long log never
+   pushes the rest of the dashboard off the screen. */
+.log-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: min(32rem, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* ============================================================================
    Status chips — colour is never the only signal; each carries its own icon
    at the call site.
    ========================================================================= */

@@ -892,8 +892,12 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       <BulkUpload eventId={event.id} onDone={() => refresh()} />
       <SendInvitesButton eventId={event.id} guests={guests} onDone={() => refresh()} />
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 card p-4 overflow-x-auto">
+      {/* The guest table and the feeds used to share one row, three columns
+          wide, which left the feeds about a third of the page — too narrow for
+          a WhatsApp API error, which then wrapped into a ribbon. The table has
+          eight columns and wants the full width too, so they're stacked. */}
+      <div className="flex flex-col gap-6">
+        <div className="card p-4 overflow-x-auto">
           <h2 className="font-bold mb-3">قائمة الضيوف</h2>
           <table className="w-full text-right">
             <thead>
@@ -924,7 +928,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="grid lg:grid-cols-2 gap-6 items-start">
           <WhatsappFeed messages={feed.messages} watiConfigured={feed.watiConfigured} />
           <WishWall guests={guests} />
         </div>
