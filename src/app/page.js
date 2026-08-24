@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
+import { Logo } from "@/components/Logo";
 import {
   RingsIcon,
   StarOrnamentIcon,
@@ -16,7 +17,7 @@ import {
 } from "@/components/icons";
 
 export const metadata = {
-  title: "دعوات أفراح إلكترونية",
+  title: "دعوات إلكترونية لمناسباتك",
   description:
     "رابط دعوة شخصي لكل ضيف على واتساب، تأكيد حضور بعدد المرافقين، ورمز دخول يُمسح على الباب — من لوحة واحدة.",
 };
@@ -43,18 +44,18 @@ const STEPS = [
 const DOOR = [
   {
     Icon: CheckCircleIcon,
-    title: "المسح وحده لا يُدخل أحدًا",
-    body: "قراءة الرمز تعرض الاسم والعدد المتبقّي فقط. لا يُحتسب دخول إلا بعد أن يختار الموظف كم فردًا يدخل الآن ويؤكد — فلا أحد يدخل بالخطأ لأن كاميرا التقطت رمزًا.",
+    title: "لا أحد يدخل بالخطأ",
+    body: "قراءة الرمز تعرض الاسم والعدد المسموح فقط. لا يُحتسب دخول إلا بعد أن يؤكّد موظف الاستقبال كم فردًا يدخل فعلًا — فلا يضيع مقعد على أحد، ولا يدخل أحد مرتين.",
   },
   {
     Icon: ShieldIcon,
-    title: "كل ماسح باسمه",
-    body: "الإدارة تُنشئ رمزًا لكل موظف وتربطه باسمه مسبقًا، فلا يكتب أحد اسم زميله. وكل عملية دخول تُسجَّل بمن قام بها.",
+    title: "تعرف من استقبل من",
+    body: "كل موظف له رمزه المرتبط باسمه مسبقًا، وكل عملية دخول تُسجَّل بمن قام بها. فإن سألت بعد الليلة عن أي اسم، الإجابة موجودة.",
   },
   {
     Icon: ScanIcon,
-    title: "الأفراح معزولة عن بعضها",
-    body: "ماسح فرحٍ لا يستطيع إدخال ضيف فرحٍ آخر مهما كان الرمز صحيحًا — حتى لو أُقيم فرحان في الليلة نفسها.",
+    title: "مناسبتك وحدها",
+    body: "بيانات كل مناسبة معزولة تمامًا عن غيرها. ماسح مناسبتك لا يرى ولا يُدخل ضيوف أحد آخر — حتى لو أُقيمت مناسبتان في الليلة نفسها.",
   },
 ];
 
@@ -68,14 +69,18 @@ export default function HomePage() {
   return (
     <main>
       <header className="site-header">
-        <div className="wrap flex items-center justify-between gap-4" style={{ padding: "0.75rem 1.25rem" }}>
-          <span className="font-display flex items-center gap-2" style={{ fontSize: "var(--text-xl)", color: "var(--gold-300)" }}>
-            <StarOrnamentIcon size={16} />
-            دعوة
+        <div className="wrap flex items-center justify-between gap-4" style={{ padding: "0.7rem 1.25rem" }}>
+          <span style={{ color: "var(--gold-300)" }}>
+            <Logo size={34} animated />
           </span>
-          <Link href="/admin" className="pill-btn pill-btn-sm">
-            دخول
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/start" className="pill-btn pill-btn-sm">
+              اطلب مناسبتك
+            </Link>
+            <Link href="/admin" className="pill-btn-ghost pill-btn-sm" style={{ color: "rgba(244,237,224,0.7)" }}>
+              دخول
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -92,7 +97,7 @@ export default function HomePage() {
             <Reveal className="flex justify-center lg:justify-start">
               <span className="hero-eyebrow">
                 <StarOrnamentIcon size={13} />
-                دعوات أفراح إلكترونية
+                دعوات إلكترونية للمناسبات
               </span>
             </Reveal>
 
@@ -116,7 +121,7 @@ export default function HomePage() {
             </Reveal>
 
             <Reveal delay={240} className="flex flex-wrap gap-3 justify-center lg:justify-start">
-              <Link href="/admin" className="pill-btn">
+              <Link href="/start" className="pill-btn">
                 <RingsIcon size={18} />
                 ابدأ الآن
               </Link>
@@ -140,7 +145,7 @@ export default function HomePage() {
                   loop
                   playsInline
                   preload="metadata"
-                  aria-label="نموذج لدعوة زفاف إلكترونية"
+                  aria-label="نموذج لدعوة إلكترونية"
                 />
               </div>
             </div>
@@ -153,7 +158,7 @@ export default function HomePage() {
         <div className="wrap flex flex-col gap-10">
           <Reveal className="flex flex-col gap-3">
             <h2 className="section-title">من قائمة أسماء إلى ليلة منظّمة</h2>
-            <p className="section-lede">أربع خطوات، تبدأ قبل الفرح بأسابيع وتنتهي عند بابه.</p>
+            <p className="section-lede">أربع خطوات، تبدأ قبل الزفاف بأسابيع وتنتهي عند بابه.</p>
           </Reveal>
 
           <ol className="flex flex-col gap-8">
@@ -175,12 +180,12 @@ export default function HomePage() {
           <Reveal className="flex flex-col gap-3">
             <span className="hero-eyebrow self-start">
               <QrIcon size={13} />
-              الباب
+              الاستقبال
             </span>
-            <h2 className="section-title">أصعب نصف ساعة في الفرح</h2>
+            <h2 className="section-title">الاستقبال؟ خليها علينا</h2>
             <p className="section-lede">
-              كل شيء قبلها يمكن إصلاحه. أما الباب فيحدث مرة واحدة، وأمام الضيوف —
-              ولذلك بُني هذا الجزء بعناية أكثر من غيره.
+              أنتم مشغولون بليلتكم، لا بمن وصل ومن ما زال في الطريق. نحن نتكفّل
+              بالباب: كل ضيف يدخل باسمه وفي وقته، بلا قوائم ورقية ولا انتظار.
             </p>
           </Reveal>
 
@@ -204,7 +209,7 @@ export default function HomePage() {
           <Reveal className="flex flex-col gap-3">
             <h2 className="section-title">وللعروسين لوحتهما الخاصة</h2>
             <p className="section-lede">
-              بحساب مستقل يريان فيه فرحهما وحده — لا يحتاجان إلى أحد ليسألاه كم
+              بحساب مستقل يريان فيها مناسبتهما وحدها — لا يحتاجان إلى أحد ليسألاه كم
               شخصًا أكّد.
             </p>
           </Reveal>
@@ -232,13 +237,13 @@ export default function HomePage() {
                 <StarOrnamentIcon size={16} />
               </div>
               <h2 className="font-display" style={{ fontSize: "clamp(1.9rem, 5vw, 2.75rem)", color: "var(--gold-600)" }}>
-                فرحكم يستاهل
+                ليلتكم تستاهل
               </h2>
               <p className="section-lede" style={{ textAlign: "center" }}>
                 جهّز دعوتك، وارفع قائمة ضيوفك، وسلّم الباب لنظام يعرف كل اسم.
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
-                <Link href="/admin" className="pill-btn">
+                <Link href="/start" className="pill-btn">
                   <SendIcon size={18} />
                   ابدأ الآن
                 </Link>
@@ -258,11 +263,11 @@ export default function HomePage() {
 
       <footer className="band-dark" style={{ padding: "2.5rem 1.25rem", textAlign: "center" }}>
         <div className="wrap flex flex-col items-center gap-3">
-          <span className="font-display" style={{ fontSize: "var(--text-xl)", color: "var(--gold-300)" }}>
-            Da3wa · دعوة
+          <span style={{ color: "var(--gold-300)" }}>
+            <Logo size={38} showLatin />
           </span>
           <p style={{ fontSize: "var(--text-xs)", color: "rgba(244,237,224,0.5)" }}>
-            دعوات أفراح إلكترونية
+            دعوات إلكترونية للمناسبات · hello@da3wa.digital
           </p>
         </div>
       </footer>

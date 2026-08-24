@@ -67,9 +67,11 @@ function run(cmd, args) {
 }
 
 const args = parseArgs(process.argv);
-const names = args.names || "عبدالله و نور";
-const date = args.date || "20 نوفمبر 2026";
-const venue = args.venue || "";
+// `??` not `||`: passing --date "" is how you ask for no date line at all, and
+// `||` treated that as "unset" and substituted the default back in.
+const names = args.names ?? "ليلة العمر";
+const date = args.date ?? "";
+const venue = args.venue ?? "";
 const outPath = path.resolve(args.out || "public/samples/invite.mp4");
 const audioPath = args.audio ? path.resolve(args.audio) : null;
 

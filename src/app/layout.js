@@ -29,11 +29,11 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.da3wa.digital";
 export const metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "Da3wa — دعوات أفراح إلكترونية",
+    default: "Da3wa — دعوات إلكترونية للمناسبات",
     template: "%s — Da3wa",
   },
   description:
-    "دعوة زفاف إلكترونية بلينك شخصي لكل ضيف، تأكيد حضور، وQR للدخول يوم الفرح.",
+    "دعوة إلكترونية بلينك شخصي لكل ضيف، تأكيد حضور، ورمز دخول يُمسح على الباب.",
   // Invite links are shared almost entirely over WhatsApp, which renders a
   // preview card from these tags. Without them the guest's first impression
   // of the invitation is a bare URL.
@@ -41,7 +41,7 @@ export const metadata = {
     type: "website",
     locale: "ar_AR",
     siteName: "Da3wa",
-    title: "دعوة زفاف إلكترونية",
+    title: "دعوة إلكترونية",
     description: "افتح دعوتك الشخصية وأكّد حضورك.",
   },
   robots: {
