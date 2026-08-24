@@ -73,7 +73,7 @@ export function normalizePhone(phone) {
 const TEMPLATE_CACHE_MS = 10 * 60 * 1000;
 let templateCache = { at: 0, byName: null };
 
-async function fetchTemplateParamNames(templateName) {
+async function loadTemplates() {
   const now = Date.now();
   if (!templateCache.byName || now - templateCache.at > TEMPLATE_CACHE_MS) {
     const res = await fetch(endpoint("/api/v1/getMessageTemplates"), {
@@ -85,14 +85,55 @@ async function fetchTemplateParamNames(templateName) {
     for (const t of json.messageTemplates || []) {
       const name = t.elementName || t.name;
       if (!name) continue;
-      byName.set(
-        name,
-        (t.customParams || []).map((p) => p.paramName).filter(Boolean)
-      );
+      byName.set(name, {
+        status: String(t.status || "").toUpperCase(),
+        paramNames: (t.customParams || []).map((p) => p.paramName).filter(Boolean),
+      });
     }
     templateCache = { at: now, byName };
   }
-  return templateCache.byName.get(templateName) || null;
+  return templateCache.byName;
+}
+
+async function fetchTemplateParamNames(templateName) {
+  const byName = await loadTemplates();
+  return byName.get(templateName)?.paramNames || null;
+}
+
+/**
+ * Checks a configured template name against the Wati account before anything
+ * is sent. Meta only delivers APPROVED templates, so a name that is missing or
+ * still in review fails per-guest with an opaque "Wati API error 400 … code:
+ * Template" — repeated once for every guest in the batch. Catching it once,
+ * up front, with the account's actual approved names in the message, turns
+ * that into something the person clicking Send can act on.
+ *
+ * Returns null when everything is fine, or a ready-to-show Arabic reason.
+ * Returns null too if the account can't be reached — never block a send over
+ * a failed metadata lookup.
+ */
+export async function describeTemplateProblem(templateName) {
+  if (!isConfigured()) return null;
+  let byName;
+  try {
+    byName = await loadTemplates();
+  } catch {
+    return null;
+  }
+
+  const approved = [...byName.entries()]
+    .filter(([, t]) => t.status === "APPROVED")
+    .map(([name]) => name);
+  const approvedList = approved.length ? approved.join("، ") : "لا يوجد أي قالب معتمد بعد";
+
+  const found = byName.get(templateName);
+  if (!found) {
+    return `القالب "${templateName}" غير موجود في حساب Wati. القوالب المعتمدة حاليًا: ${approvedList}`;
+  }
+  if (found.status !== "APPROVED") {
+    return `القالب "${templateName}" حالته ${found.status} — واتساب لا يرسل إلا القوالب المعتمدة. استخدم أحد المعتمدة حاليًا: ${approvedList}`;
+  }
+  return null;
 }
 
 /**

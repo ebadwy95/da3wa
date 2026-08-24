@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getDb, withDb } from "@/lib/db";
 import { makeInviteToken } from "@/lib/token";
-import { sendTemplateMessage, watiIsConfigured, isUsableTemplateName } from "@/lib/wati";
+import {
+  sendTemplateMessage,
+  watiIsConfigured,
+  isUsableTemplateName,
+  describeTemplateProblem,
+} from "@/lib/wati";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { resolveCoupleParts } from "@/lib/couple";
 
@@ -48,6 +53,15 @@ export async function POST(request, { params }) {
     );
   }
 
+  // Ask Wati whether this template is actually usable before messaging
+  // anyone. Without this, a name that is missing or still awaiting Meta
+  // review fails once per guest with an opaque 400, and the batch marks every
+  // one of them as "invited" on the way past.
+  const templateProblem = await describeTemplateProblem(templateName);
+  if (templateProblem) {
+    return NextResponse.json({ error: templateProblem }, { status: 503 });
+  }
+
   const db = await getDb();
   const event = db.events.find((e) => e.id === eventId);
   if (!event) return NextResponse.json({ error: "الزفاف غير موجود" }, { status: 404 });
@@ -89,10 +103,10 @@ export async function POST(request, { params }) {
       // label in the admin feed.
       templateName: templateName || "da3wa_invite",
       broadcastName: "da3wa_invite_link",
-      // A superset of what any of the configured templates might ask for, so
-      // the same code works whether WATI_INVITE_TEMPLATE_NAME points at
-      // main_msg (name, link) or da3wa_invite_link (name, groom, bride,
-      // link). Wati matches parameters by name and ignores the extras.
+      // A superset of what any configured template might ask for, since which
+      // one is active is an environment variable. sendTemplateMessage trims
+      // this to exactly the parameters the template declares, in its own
+      // order — main_msg takes two of these, da3wa_invite_link takes four.
       params: [
         { name: "name", value: guest.name },
         { name: "groom", value: coupleParts.groomName },
@@ -108,7 +122,12 @@ export async function POST(request, { params }) {
 
     await withDb((freshDb) => {
       const g = freshDb.guests.find((x) => x.id === guest.id);
-      if (g) g.invitedAt = new Date().toISOString();
+      // Only a guest who actually received something counts as invited. This
+      // used to be stamped unconditionally, so a failed send still marked
+      // them invited — and since this endpoint deliberately skips anyone with
+      // invitedAt set, clicking Send again silently did nothing. A failure has
+      // to leave the guest retryable, or the fix for the failure is useless.
+      if (g && status !== "failed") g.invitedAt = new Date().toISOString();
       freshDb.messages.push({
         id: randomUUID(),
         eventId,
@@ -117,7 +136,10 @@ export async function POST(request, { params }) {
         phone: guest.phoneDisplay || guest.phone,
         type: "invite_sent",
         status,
-        content: `تم إرسال رابط الدعوة إلى ${guest.name}`,
+        content:
+          status === "failed"
+            ? `تعذّر إرسال رابط الدعوة إلى ${guest.name}`
+            : `تم إرسال رابط الدعوة إلى ${guest.name}`,
         error: waResult.error || null,
         createdAt: new Date().toISOString(),
       });

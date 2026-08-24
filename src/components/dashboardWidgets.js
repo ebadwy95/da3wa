@@ -317,7 +317,18 @@ export function WhatsappFeed({ messages, watiConfigured }) {
                 {{ sent: "تم الإرسال فعليًا", simulated: "محاكاة", failed: "فشل الإرسال", logged: "مسجَّلة" }[m.status]}
               </span>
             </div>
-            {m.error && <p className="text-danger text-xs mt-1">{m.error}</p>}
+            {/* API errors arrive as one long unbroken JSON string, which used
+                to run off the side of this narrow panel and get clipped —
+                exactly when the text matters most. Forced to wrap, and left
+                selectable so it can be copied straight into a bug report. */}
+            {m.error && (
+              <p
+                className="text-danger text-xs mt-1 ltr text-left select-all"
+                style={{ wordBreak: "break-word", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}
+              >
+                {m.error}
+              </p>
+            )}
             <p className="text-ink-3 text-xs mt-1">{new Date(m.createdAt).toLocaleString("ar-EG")}</p>
           </div>
         ))}
