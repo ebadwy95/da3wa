@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Rubik:wght@300;400;500&display=swap">
+<style>
+  /* Deliberately no CSS animations anywhere in this scene.
+     Every frame is drawn by calling render(t) with an explicit time, so the
+     renderer can seek to an exact moment and get a byte-identical result.
+     CSS animation would tie the output to wall-clock timing and make the
+     encode jitter — the same reason a screenshot mid-transition came out
+     blank earlier in this project. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 1080px;
+    height: 1920px;
+    overflow: hidden;
+    background: #0b0906;
+  }
+
+  #stage {
+    position: relative;
+    width: 1080px;
+    height: 1920px;
+    background:
+      radial-gradient(ellipse 90% 55% at 50% 42%, #2a2114 0%, #14100a 55%, #0b0906 100%);
+    font-family: "Rubik", sans-serif;
+    color: #f4ede0;
+    overflow: hidden;
+  }
+
+  /* Slow drifting motes. Gold dust rather than snow — sparse, uneven, and
+     never crossing the centre where the names sit. */
+  .mote {
+    position: absolute;
+    border-radius: 50%;
+    background: #e0c48d;
+    will-change: transform, opacity;
+  }
+
+  #vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 75% 60% at 50% 45%, transparent 40%, rgba(4,3,2,0.75) 100%);
+  }
+
+  .layer {
+    position: absolute;
+    inset-inline: 0;
+    text-align: center;
+    will-change: transform, opacity;
+  }
+
+  #bismillah {
+    top: 545px;
+    font-family: "Aref Ruqaa", serif;
+    /* Aref Ruqaa runs small for its point size — at 46px this line read as an
+       afterthought next to the names rather than as the opening of the card. */
+    font-size: 62px;
+    line-height: 1.85;
+    color: #d9b877;
+  }
+
+  #names {
+    top: 780px;
+    font-family: "Aref Ruqaa", serif;
+    font-weight: 700;
+    font-size: 132px;
+    line-height: 1.5;
+    color: #fdf6e6;
+    text-shadow: 0 0 60px rgba(224, 196, 141, 0.35);
+  }
+
+  #date {
+    top: 1108px;
+    font-size: 44px;
+    font-weight: 300;
+    letter-spacing: 0.16em;
+    color: #cdbfa4;
+  }
+
+  #venue {
+    top: 1210px;
+    font-size: 36px;
+    font-weight: 300;
+    color: #a1937e;
+  }
+
+  /* The gold sweep that crosses the names once, like light moving over foil. */
+  #shimmer {
+    position: absolute;
+    top: 760px;
+    height: 320px;
+    width: 420px;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent, rgba(255, 240, 205, 0.5), transparent);
+    filter: blur(28px);
+    mix-blend-mode: screen;
+  }
+
+  svg { overflow: visible; }
+  #starTop { position: absolute; top: 300px; left: 50%; transform: translateX(-50%); }
+  /* The wrapper is what's positioned; the svg inside stays in normal flow so
+     the flex centring actually applies to it. Making the svg itself absolute
+     took it out of the flex context and the rule never appeared. */
+  #ruleWrap { position: absolute; top: 1030px; inset-inline: 0; display: flex; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="motes"></div>
+
+  <!-- Eight-point star: the same geometry used across the product's cards,
+       drawn stroke-first so it can be written on rather than faded in. -->
+  <svg id="starTop" width="220" height="220" viewBox="0 0 100 100">
+    <path id="starPath"
+      d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z"
+      fill="none" stroke="#d9b877" stroke-width="1.6" stroke-linejoin="round"/>
+  </svg>
+
+  <div class="layer" id="bismillah">بسم الله نبدأ فرحتنا</div>
+  <div class="layer" id="names"></div>
+
+  <div id="ruleWrap">
+    <svg width="620" height="24" viewBox="0 0 620 24">
+      <line id="ruleL" x1="310" y1="12" x2="310" y2="12" stroke="#b08d57" stroke-width="1.4"/>
+      <line id="ruleR" x1="310" y1="12" x2="310" y2="12" stroke="#b08d57" stroke-width="1.4"/>
+      <path id="ruleDot" d="M310 4 L313 11 L320 12 L313 13 L310 20 L307 13 L300 12 L307 11 Z" fill="#d9b877"/>
+    </svg>
+  </div>
+
+  <div class="layer" id="date"></div>
+  <div class="layer" id="venue"></div>
+
+  <div id="shimmer"></div>
+  <div id="vignette"></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// Timeline. Everything is a pure function of t (seconds), so render(t) can be
+// called in any order and always produces the same frame.
+// ---------------------------------------------------------------------------
+const DURATION = 8;
+
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+// Ease used for anything entering — fast start, long settle. Motion that
+// decelerates reads as "placed" rather than "thrown".
+const easeOut = (v) => 1 - Math.pow(1 - clamp01(v), 3);
+const easeInOut = (v) => (v < 0.5 ? 4 * v * v * v : 1 - Math.pow(-2 * v + 2, 3) / 2);
+// Normalised progress of t through [start, end].
+const span = (t, start, end) => clamp01((t - start) / (end - start));
+
+const $ = (id) => document.getElementById(id);
+
+// --- Motes: fixed pseudo-random field, seeded so every render matches ------
+let seed = 7;
+const rand = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+
+const MOTES = Array.from({ length: 46 }, () => ({
+  x: rand() * 1080,
+  y: rand() * 1920,
+  r: 1.5 + rand() * 4.5,
+  drift: 18 + rand() * 46,      // px travelled over the whole clip
+  phase: rand() * Math.PI * 2,
+  peak: 0.18 + rand() * 0.5,
+}));
+
+const motesEl = $("motes");
+MOTES.forEach((m) => {
+  const el = document.createElement("div");
+  el.className = "mote";
+  el.style.width = el.style.height = m.r * 2 + "px";
+  el.style.left = m.x + "px";
+  el.style.top = m.y + "px";
+  motesEl.appendChild(el);
+  m.el = el;
+});
+
+const starLength = $("starPath").getTotalLength();
+$("starPath").style.strokeDasharray = starLength;
+
+let CONTENT = { names: "", date: "", venue: "" };
+
+function setContent(c) {
+  CONTENT = { ...CONTENT, ...c };
+  $("names").textContent = CONTENT.names || "";
+  $("date").textContent = CONTENT.date || "";
+  $("venue").textContent = CONTENT.venue || "";
+}
+
+function render(t) {
+  // --- 0.0–1.6s  the star writes itself ----------------------------------
+  const star = easeOut(span(t, 0.15, 1.7));
+  $("starPath").style.strokeDashoffset = starLength * (1 - star);
+  $("starTop").style.opacity = clamp01(span(t, 0.1, 0.6));
+
+  // --- 1.1–2.3s  the opening line ----------------------------------------
+  const bis = easeOut(span(t, 1.1, 2.3));
+  $("bismillah").style.opacity = bis;
+  $("bismillah").style.transform = `translateY(${(1 - bis) * 26}px)`;
+
+  // --- 2.2–4.0s  the names, the moment the whole clip is built around ----
+  const nm = easeOut(span(t, 2.2, 4.0));
+  $("names").style.opacity = nm;
+  // Settles from slightly large rather than growing into place: the name
+  // arrives already present and comes to rest, instead of zooming at you.
+  $("names").style.transform = `scale(${1.06 - nm * 0.06}) translateY(${(1 - nm) * 18}px)`;
+
+  // --- 3.4–5.0s  one pass of light across the names ----------------------
+  const sh = span(t, 3.4, 5.0);
+  $("shimmer").style.opacity = sh > 0 && sh < 1 ? 0.9 * Math.sin(sh * Math.PI) : 0;
+  $("shimmer").style.transform = `translateX(${-520 + easeInOut(sh) * 1180}px) skewX(-12deg)`;
+
+  // --- 4.0–5.2s  the rule opens outward from its centre ornament ---------
+  const rule = easeOut(span(t, 4.0, 5.2));
+  $("ruleL").setAttribute("x2", String(310 - rule * 265));
+  $("ruleR").setAttribute("x2", String(310 + rule * 265));
+  $("ruleDot").style.opacity = clamp01(span(t, 3.9, 4.5));
+  $("ruleL").style.opacity = rule;
+  $("ruleR").style.opacity = rule;
+
+  // --- 4.7–6.0s  date, then venue ----------------------------------------
+  const dt = easeOut(span(t, 4.7, 6.0));
+  $("date").style.opacity = dt;
+  $("date").style.transform = `translateY(${(1 - dt) * 16}px)`;
+
+  const vn = easeOut(span(t, 5.3, 6.6));
+  $("venue").style.opacity = vn;
+  $("venue").style.transform = `translateY(${(1 - vn) * 16}px)`;
+
+  // --- motes drift the whole way through ---------------------------------
+  const p = t / DURATION;
+  MOTES.forEach((m) => {
+    const y = -m.drift * p;
+    const x = Math.sin(m.phase + p * Math.PI * 1.4) * 12;
+    m.el.style.transform = `translate(${x}px, ${y}px)`;
+    // Fade in over the first second, hold, then out over the last.
+    const inOut = Math.min(clamp01(t / 1.0), clamp01((DURATION - t) / 1.2));
+    m.el.style.opacity = m.peak * inOut;
+  });
+
+  // --- final half second dims everything so the loop point is soft -------
+  const out = span(t, DURATION - 0.55, DURATION);
+  $("stage").style.opacity = 1 - out * 0.85;
+}
+
+window.__scene = { render, setContent, DURATION };
+render(0);
+</script>
+</body>
+</html>
