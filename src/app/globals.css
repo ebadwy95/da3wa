@@ -103,6 +103,223 @@
 }
 
 /* ============================================================================
+   Invitation theme
+   ----------------------------------------------------------------------------
+   Each wedding picks how its own invitation reads: the cream-and-gold card, or
+   a dark one. Only the guest-facing invitation changes — the dashboards stay
+   light, because they're tools, not the invitation.
+
+   This redefines the same tokens the components already use, so nothing below
+   needs to know a theme exists.
+   ========================================================================= */
+
+.invite-dark {
+  --paper:   #0e0c09;
+  --sunken:  #1a1611;
+  --surface: #16120d;
+  --line:      #33291c;
+  --line-soft: #241d14;
+
+  /* On a near-black ground the darkest golds disappear, so the scale is
+     re-pointed at its light end — and the ink tones become creams. */
+  --gold-600: #d9b877;
+  --gold-500: #c8a06a;
+  --gold-400: #e0c48d;
+  --gold-300: #ecd9ae;
+  --gold-50:  rgba(200, 160, 106, 0.12);
+  --gold-100: rgba(200, 160, 106, 0.22);
+  --gold-200: rgba(200, 160, 106, 0.34);
+
+  --ink:   #f4ede0;
+  --ink-2: #cdc1ad;
+  --ink-3: #a1937e;
+
+  --ok:        #7fb08c;
+  --ok-bg:     rgba(127, 176, 140, 0.14);
+  --warn:      #d6a94c;
+  --warn-bg:   rgba(214, 169, 76, 0.14);
+  --danger:    #e0836c;
+  --danger-bg: rgba(224, 131, 108, 0.14);
+  --info:      #8fa9c9;
+  --info-bg:   rgba(143, 169, 201, 0.14);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow:    0 2px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* The pill button's gradient is calibrated for white text on cream. On the
+   dark card it needs to sit brighter to stay the obvious primary action. */
+.invite-dark .pill-btn {
+  background: linear-gradient(180deg, var(--gold-300), var(--gold-500));
+  color: #17140f;
+}
+.invite-dark .card-ornate {
+  background-color: var(--surface);
+  /* Same eight-point tessellation, lifted so it reads on a dark ground. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath fill='none' stroke='%23e0c48d' stroke-width='0.7' stroke-opacity='0.10' d='M17 3.5 L20.4 13.6 L30.5 17 L20.4 20.4 L17 30.5 L13.6 20.4 L3.5 17 L13.6 13.6 Z'/%3E%3C/svg%3E");
+}
+.invite-dark .tab-switch { background: rgba(255, 255, 255, 0.07); }
+.invite-dark .tab-switch button[data-active="true"] { background: var(--surface); }
+
+/* ============================================================================
+   Invitation opener
+   ----------------------------------------------------------------------------
+   A full-screen cover holding the couple's own film. It is not decoration:
+   browsers refuse to start audio without a gesture, so the invitation needs a
+   deliberate tap before any music can play. That constraint is turned into the
+   moment the invitation opens.
+   ========================================================================= */
+
+.opener {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b0906;
+  overflow: hidden;
+}
+.opener[data-closing="true"] { animation: opener-out 0.7s ease forwards; }
+
+@keyframes opener-out {
+  to { opacity: 0; visibility: hidden; }
+}
+
+/* The film is shot 9:16. `cover` keeps it filling any screen without bars;
+   the poster sits underneath so there's never a black flash while it buffers. */
+.opener-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.opener-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 9, 6, 0.45), rgba(11, 9, 6, 0.15) 40%, rgba(11, 9, 6, 0.75));
+}
+
+/* The whole cover is the button — on a phone, held one-handed, the target
+   should be the screen rather than something to aim at. */
+.opener-tap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  color: #f4ede0;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Aref Ruqaa's ascenders and descenders reach well outside a normal line box,
+   so the couple's name needs its own leading here — at the default it sat on
+   top of the button underneath it. */
+.opener-title {
+  display: block;
+  line-height: 1.75;
+  padding-block: 0.2rem;
+  max-width: 15ch;
+}
+
+.opener-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.8rem 2rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  font-weight: 700;
+  font-size: var(--text-base);
+  animation: opener-breathe 2.6s ease-in-out infinite;
+}
+
+@keyframes opener-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(224, 196, 141, 0.35); }
+  50%      { transform: scale(1.04); box-shadow: 0 0 0 14px rgba(224, 196, 141, 0); }
+}
+
+/* Small, quiet, and out of the way — but always reachable. A guest opening
+   this in a waiting room needs a way past the film immediately. */
+.opener-skip {
+  position: absolute;
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  inset-inline-end: 1.25rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f4ede0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  backdrop-filter: blur(6px);
+}
+
+/* Sound control, once inside. Guests open invitations in offices and on
+   buses; music that can't be silenced is music that gets the tab closed.
+   Pinned top-start rather than bottom: the invitation's confirm and decline
+   buttons live at the bottom of the card, and a floating control sat right
+   on top of them. */
+.sound-toggle {
+  position: fixed;
+  top: max(0.85rem, env(safe-area-inset-top));
+  inset-inline-start: 0.85rem;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--gold-600);
+  box-shadow: var(--shadow);
+}
+
+/* Staggered entrance once the cover lifts, so the card assembles line by line
+   instead of appearing all at once. Staggered by position rather than a
+   per-child variable — the invitation's contents are conditional, and hand
+   numbering them would drift the first time one is added. */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise > * {
+  animation: rise-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.rise > *:nth-child(1)  { animation-delay: 0ms; }
+.rise > *:nth-child(2)  { animation-delay: 80ms; }
+.rise > *:nth-child(3)  { animation-delay: 160ms; }
+.rise > *:nth-child(4)  { animation-delay: 240ms; }
+.rise > *:nth-child(5)  { animation-delay: 320ms; }
+.rise > *:nth-child(6)  { animation-delay: 400ms; }
+.rise > *:nth-child(7)  { animation-delay: 470ms; }
+.rise > *:nth-child(8)  { animation-delay: 530ms; }
+.rise > *:nth-child(n + 9) { animation-delay: 580ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .opener-pill { animation: none; }
+  .opener[data-closing="true"] { animation: none; opacity: 0; visibility: hidden; }
+  .rise > * { animation: none; }
+}
+
+/* ============================================================================
    Base
    ========================================================================= */
 

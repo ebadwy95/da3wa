@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
+import { InviteOpener } from "@/components/InviteOpener";
 import {
   MapPinIcon,
   CheckCircleIcon,
@@ -25,8 +26,17 @@ function companionLimitLabel(n) {
   return `${n} مرافقًا`;
 }
 
-function PageShell({ children }) {
-  return <main className="min-h-screen flex flex-col items-center p-5 gap-4">{children}</main>;
+// The invitation is the only surface a couple can restyle — the dashboards
+// stay light because they're tools. `invite-dark` just redefines the colour
+// tokens, so nothing inside has to know which theme it's rendering in.
+function PageShell({ children, theme = "light" }) {
+  return (
+    <main
+      className={`min-h-screen flex flex-col items-center p-5 gap-4${theme === "dark" ? " invite-dark" : ""}`}
+    >
+      {children}
+    </main>
+  );
 }
 
 function LoadingCard() {
@@ -64,6 +74,9 @@ function InviteContent() {
   const [tab, setTab] = useState("invite"); // invite | wall
   const [wishes, setWishes] = useState([]);
   const [wishesLoading, setWishesLoading] = useState(false);
+  // Drives the staged reveal: the card only animates in once the cover has
+  // lifted, so the two never play over each other.
+  const [opened, setOpened] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -148,9 +161,20 @@ function InviteContent() {
   const { guest, event } = state;
   const prettyDate = formatEventDateArabic(event.eventDate);
   const prettyTime = formatEventTimeArabic(event.eventTime);
+  const hasOpener = Boolean(event.inviteVideoUrl || event.inviteAudioUrl);
 
   return (
-    <PageShell>
+    <PageShell theme={event.inviteTheme}>
+      {hasOpener && (
+        <InviteOpener
+          videoUrl={event.inviteVideoUrl}
+          posterUrl={event.invitePosterUrl}
+          audioUrl={event.inviteAudioUrl}
+          coupleNames={event.coupleNames}
+          onOpened={() => setOpened(true)}
+        />
+      )}
+
       <div className="tab-switch" role="tablist">
         <button
           role="tab"
@@ -171,7 +195,12 @@ function InviteContent() {
       </div>
 
       {tab === "invite" ? (
-        <article className="card-ornate max-w-md w-full p-8 text-center flex flex-col gap-5 da3wa-fade-in">
+        <article
+          className={
+            "card-ornate max-w-md w-full p-8 text-center flex flex-col gap-5 " +
+            (hasOpener ? (opened ? "rise" : "invisible") : "da3wa-fade-in")
+          }
+        >
           <div className="ornament-divider" aria-hidden="true">
             <StarOrnamentIcon size={14} />
           </div>

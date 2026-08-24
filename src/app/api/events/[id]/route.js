@@ -55,6 +55,10 @@ export async function PATCH(request, { params }) {
       "venueMapUrl",
       "welcomeMessage",
       "packageLimit",
+      "inviteVideoUrl",
+      "invitePosterUrl",
+      "inviteAudioUrl",
+      "inviteTheme",
     ];
     for (const key of editable) {
       if (body[key] !== undefined) {

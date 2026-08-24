@@ -39,6 +39,10 @@ export async function GET(request, { params }) {
     venueAddress: fullEvent.venueAddress || "",
     venueMapUrl: fullEvent.venueMapUrl || "",
     welcomeMessage: fullEvent.welcomeMessage || "",
+    inviteVideoUrl: fullEvent.inviteVideoUrl || "",
+    invitePosterUrl: fullEvent.invitePosterUrl || "",
+    inviteAudioUrl: fullEvent.inviteAudioUrl || "",
+    inviteTheme: fullEvent.inviteTheme === "dark" ? "dark" : "light",
   };
 
   return NextResponse.json({ guest, event });

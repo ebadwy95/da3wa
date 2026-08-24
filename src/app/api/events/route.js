@@ -84,6 +84,10 @@ export async function POST(request) {
     eventDate,
     eventTime,
     venueName,
+    inviteVideoUrl,
+    invitePosterUrl,
+    inviteAudioUrl,
+    inviteTheme,
     venueAddress,
     venueMapUrl,
     welcomeMessage,
@@ -126,6 +130,16 @@ export async function POST(request) {
     eventDate: eventDate || "",
     // "HH:MM". Needed by the reminder template's {{time}} variable.
     eventTime: eventTime || "",
+
+    // The couple's own film and music, played behind a tap-to-open cover on
+    // the invitation. Stored as URLs rather than uploads — the film is made by
+    // whoever designs it and already lives somewhere, so the platform stays
+    // out of the business of hosting large media.
+    inviteVideoUrl: inviteVideoUrl || "",
+    invitePosterUrl: invitePosterUrl || "",
+    inviteAudioUrl: inviteAudioUrl || "",
+    // "light" (cream and gold) or "dark". The invitation only.
+    inviteTheme: inviteTheme === "dark" ? "dark" : "light",
     venueName: venueName || "",
     venueAddress: venueAddress || "",
     venueMapUrl: venueMapUrl || "",

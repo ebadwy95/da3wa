@@ -338,6 +338,74 @@ export function SearchIcon(props) {
   );
 }
 
+/* ---------- Invitation opener ---------- */
+
+export function PlayIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M7 4.8v14.4a.7.7 0 0 0 1.07.6l11.3-7.2a.7.7 0 0 0 0-1.2L8.07 4.2A.7.7 0 0 0 7 4.8Z" />
+    </Icon>
+  );
+}
+
+export function SoundOnIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M11 4.8 6.5 8.5H3.5v7h3L11 19.2Z" />
+      <path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.3 6.4a8 8 0 0 1 0 11.2" />
+    </Icon>
+  );
+}
+
+export function SoundOffIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M11 4.8 6.5 8.5H3.5v7h3L11 19.2Z" />
+      <path d="m16 9.5 5 5M21 9.5l-5 5" />
+    </Icon>
+  );
+}
+
+export function VideoIcon(props) {
+  return (
+    <Icon {...props}>
+      <rect x="2.5" y="6" width="13" height="12" rx="2.5" />
+      <path d="m15.5 11 6-3.2v8.4l-6-3.2Z" />
+    </Icon>
+  );
+}
+
+export function MusicIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M9 18V6.2l10-2v11.6" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="16.5" cy="15.8" r="2.5" />
+    </Icon>
+  );
+}
+
+export function ImageIcon(props) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="4.5" width="18" height="15" rx="2.5" />
+      <circle cx="8.5" cy="10" r="1.6" />
+      <path d="m4 17 4.8-4.5a1.6 1.6 0 0 1 2.2 0L20 20.5" />
+    </Icon>
+  );
+}
+
+export function PaletteIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3.2a8.8 8.8 0 0 0 0 17.6c1.2 0 1.9-.8 1.9-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7h1.6a4.6 4.6 0 0 0 4.6-4.6c0-3.9-4-7.2-8.8-7.2Z" />
+      <circle cx="7.8" cy="11.5" r="1.1" />
+      <circle cx="10.8" cy="7.6" r="1.1" />
+      <circle cx="15.6" cy="8.3" r="1.1" />
+    </Icon>
+  );
+}
+
 export function InboxIcon(props) {
   return (
     <Icon {...props}>

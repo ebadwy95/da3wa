@@ -12,7 +12,7 @@ import {
   CheckinLogFeed,
   WishWall,
 } from "@/components/dashboardWidgets";
-import { WrenchIcon, ChevronDownIcon } from "@/components/icons";
+import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon } from "@/components/icons";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { joinCoupleNames, resolveCoupleParts } from "@/lib/couple";
 
@@ -84,6 +84,98 @@ function CoupleNamePreview({ groomName, brideName }) {
   );
 }
 
+// The invitation's film, music, poster and colour. Shared by the create and
+// edit forms so a wedding set up in either place offers the same options.
+//
+// URLs rather than uploads: the film is produced by whoever designs it and
+// already lives somewhere, so the platform doesn't take on hosting large
+// media. Any direct link works — Vercel Blob, Supabase, S3 — as long as it
+// points at the file itself and not a preview page.
+function InviteMediaFields({ form, setForm }) {
+  return (
+    <div className="flex flex-col gap-3 pt-4" style={{ borderTop: "1px solid var(--line-soft)" }}>
+      <h3 className="font-bold text-sm flex items-center gap-2">
+        <VideoIcon size={16} />
+        الافتتاحية والموسيقى (اختياري)
+      </h3>
+      <p className="hint m-0">
+        لو أضفت فيديو أو موسيقى، هتفتح الدعوة بشاشة كاملة يضغط عليها الضيف
+        لتشغيلها — الضغطة مطلوبة لأن المتصفحات تمنع تشغيل الصوت تلقائيًا.
+        استخدم روابط مباشرة للملفات، ويفضّل فيديو رأسي 9:16.
+      </p>
+
+      <div>
+        <label className="label flex items-center gap-2">
+          <VideoIcon size={15} />
+          رابط الفيديو (mp4)
+        </label>
+        <input
+          value={form.inviteVideoUrl}
+          onChange={(e) => setForm({ ...form, inviteVideoUrl: e.target.value })}
+          dir="ltr"
+          placeholder="https://.../invite.mp4"
+          className="field"
+        />
+      </div>
+
+      <div>
+        <label className="label flex items-center gap-2">
+          <ImageIcon size={15} />
+          صورة الغلاف (تظهر قبل تشغيل الفيديو)
+        </label>
+        <input
+          value={form.invitePosterUrl}
+          onChange={(e) => setForm({ ...form, invitePosterUrl: e.target.value })}
+          dir="ltr"
+          placeholder="https://.../poster.jpg"
+          className="field"
+        />
+      </div>
+
+      <div>
+        <label className="label flex items-center gap-2">
+          <MusicIcon size={15} />
+          رابط الموسيقى (mp3)
+        </label>
+        <input
+          value={form.inviteAudioUrl}
+          onChange={(e) => setForm({ ...form, inviteAudioUrl: e.target.value })}
+          dir="ltr"
+          placeholder="https://.../music.mp3"
+          className="field"
+        />
+        <p className="hint">
+          تأكّد من حقوق استخدام الموسيقى — أغاني الفنانين محمية، والدعوة صفحة
+          عامة على الإنترنت.
+        </p>
+      </div>
+
+      <div>
+        <label className="label flex items-center gap-2">
+          <PaletteIcon size={15} />
+          مظهر الدعوة
+        </label>
+        <div className="tab-switch">
+          <button
+            type="button"
+            data-active={form.inviteTheme !== "dark"}
+            onClick={() => setForm({ ...form, inviteTheme: "light" })}
+          >
+            كريمي وذهبي
+          </button>
+          <button
+            type="button"
+            data-active={form.inviteTheme === "dark"}
+            onClick={() => setForm({ ...form, inviteTheme: "dark" })}
+          >
+            غامق فاخر
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CreateEventForm({ onCreated }) {
   const [form, setForm] = useState({
     groomPhone: "",
@@ -93,6 +185,10 @@ function CreateEventForm({ onCreated }) {
     eventTime: "",
     venueName: "",
     packageLimit: 100,
+    inviteVideoUrl: "",
+    invitePosterUrl: "",
+    inviteAudioUrl: "",
+    inviteTheme: "light",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -194,6 +290,7 @@ function CreateEventForm({ onCreated }) {
           className="field"
         />
       </div>
+      <InviteMediaFields form={form} setForm={setForm} />
       {error && <p className="text-danger text-sm">{error}</p>}
       <button disabled={saving} className="pill-btn px-6">
         {saving ? "..." : "إنشاء الزفاف"}
@@ -217,6 +314,10 @@ function EditEventForm({ event, onUpdated, onClose }) {
     venueMapUrl: event.venueMapUrl || "",
     welcomeMessage: event.welcomeMessage || "",
     packageLimit: event.packageLimit || 100,
+    inviteVideoUrl: event.inviteVideoUrl || "",
+    invitePosterUrl: event.invitePosterUrl || "",
+    inviteAudioUrl: event.inviteAudioUrl || "",
+    inviteTheme: event.inviteTheme === "dark" ? "dark" : "light",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -325,6 +426,7 @@ function EditEventForm({ event, onUpdated, onClose }) {
           className="field"
         />
       </div>
+      <InviteMediaFields form={form} setForm={setForm} />
       {error && <p className="text-danger text-sm">{error}</p>}
       <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الحفظ..." : "حفظ التعديلات"}</button>
     </form>
