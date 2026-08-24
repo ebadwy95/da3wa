@@ -13,7 +13,8 @@ import {
   WishWall,
 } from "@/components/dashboardWidgets";
 import { WrenchIcon, ChevronDownIcon } from "@/components/icons";
-import { formatEventDateArabic } from "@/lib/date";
+import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
+import { joinCoupleNames, resolveCoupleParts } from "@/lib/couple";
 
 function LoginForm({ onLoggedIn }) {
   const [password, setPassword] = useState("");
@@ -69,11 +70,27 @@ function LoginForm({ onLoggedIn }) {
   );
 }
 
+// Shows the exact phrase the two name fields produce — the same string the
+// invitation renders and the same one da3wa_invite_link builds from
+// {{groom}} and {{bride}}. Cheap to show, and it's the difference between an
+// admin trusting the split and guessing at it.
+function CoupleNamePreview({ groomName, brideName }) {
+  const joined = joinCoupleNames(groomName, brideName);
+  if (!joined) return null;
+  return (
+    <p className="hint">
+      سيظهر للضيوف باسم: <strong style={{ color: "var(--gold-600)" }}>{joined}</strong>
+    </p>
+  );
+}
+
 function CreateEventForm({ onCreated }) {
   const [form, setForm] = useState({
     groomPhone: "",
-    coupleNames: "",
+    groomName: "",
+    brideName: "",
     eventDate: "",
+    eventTime: "",
     venueName: "",
     packageLimit: 100,
   });
@@ -114,15 +131,31 @@ function CreateEventForm({ onCreated }) {
           className="field"
         />
       </div>
-      <div>
-        <label className="label">اسم العروسين</label>
-        <input
-          value={form.coupleNames}
-          onChange={(e) => setForm({ ...form, coupleNames: e.target.value })}
-          required
-          className="field"
-        />
+      {/* Two fields rather than one: the WhatsApp templates take {{groom}}
+          and {{bride}} as separate variables and join them themselves. The
+          preview underneath shows the phrase guests will actually read, so
+          the split never feels abstract. */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label">اسم العريس</label>
+          <input
+            value={form.groomName}
+            onChange={(e) => setForm({ ...form, groomName: e.target.value })}
+            required
+            className="field"
+          />
+        </div>
+        <div>
+          <label className="label">اسم العروسة</label>
+          <input
+            value={form.brideName}
+            onChange={(e) => setForm({ ...form, brideName: e.target.value })}
+            required
+            className="field"
+          />
+        </div>
       </div>
+      <CoupleNamePreview groomName={form.groomName} brideName={form.brideName} />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">تاريخ الزفاف</label>
@@ -134,15 +167,24 @@ function CreateEventForm({ onCreated }) {
           />
         </div>
         <div>
-          <label className="label">الحد الأقصى للباقة (عدد الدعوات)</label>
+          <label className="label">وقت الحفل</label>
           <input
-            type="number"
-            min={1}
-            value={form.packageLimit}
-            onChange={(e) => setForm({ ...form, packageLimit: e.target.value })}
+            type="time"
+            value={form.eventTime}
+            onChange={(e) => setForm({ ...form, eventTime: e.target.value })}
             className="field"
           />
         </div>
+      </div>
+      <div>
+        <label className="label">الحد الأقصى للباقة (عدد الدعوات)</label>
+        <input
+          type="number"
+          min={1}
+          value={form.packageLimit}
+          onChange={(e) => setForm({ ...form, packageLimit: e.target.value })}
+          className="field"
+        />
       </div>
       <div>
         <label className="label">اسم القاعة (اختياري)</label>
@@ -161,9 +203,15 @@ function CreateEventForm({ onCreated }) {
 }
 
 function EditEventForm({ event, onUpdated, onClose }) {
+  // For weddings created before the names were split, the server filled these
+  // in by splitting the joined name. That guess shows up here as ordinary
+  // editable text so it gets checked by a human before any message goes out.
+  const initialParts = resolveCoupleParts(event);
   const [form, setForm] = useState({
-    coupleNames: event.coupleNames || "",
+    groomName: initialParts.groomName,
+    brideName: initialParts.brideName,
     eventDate: event.eventDate || "",
+    eventTime: event.eventTime || "",
     venueName: event.venueName || "",
     venueAddress: event.venueAddress || "",
     venueMapUrl: event.venueMapUrl || "",
@@ -200,15 +248,27 @@ function EditEventForm({ event, onUpdated, onClose }) {
         <h2 className="font-bold text-lg">تعديل تفاصيل الزفاف</h2>
         <button type="button" onClick={onClose} className="pill-btn-ghost pill-btn-sm">إغلاق</button>
       </div>
-      <div>
-        <label className="label">اسم العروسين</label>
-        <input
-          value={form.coupleNames}
-          onChange={(e) => setForm({ ...form, coupleNames: e.target.value })}
-          required
-          className="field"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="label">اسم العريس</label>
+          <input
+            value={form.groomName}
+            onChange={(e) => setForm({ ...form, groomName: e.target.value })}
+            required
+            className="field"
+          />
+        </div>
+        <div>
+          <label className="label">اسم العروسة</label>
+          <input
+            value={form.brideName}
+            onChange={(e) => setForm({ ...form, brideName: e.target.value })}
+            required
+            className="field"
+          />
+        </div>
       </div>
+      <CoupleNamePreview groomName={form.groomName} brideName={form.brideName} />
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">تاريخ الزفاف</label>
@@ -220,15 +280,24 @@ function EditEventForm({ event, onUpdated, onClose }) {
           />
         </div>
         <div>
-          <label className="label">الحد الأقصى للباقة (عدد الدعوات)</label>
+          <label className="label">وقت الحفل</label>
           <input
-            type="number"
-            min={1}
-            value={form.packageLimit}
-            onChange={(e) => setForm({ ...form, packageLimit: e.target.value })}
+            type="time"
+            value={form.eventTime}
+            onChange={(e) => setForm({ ...form, eventTime: e.target.value })}
             className="field"
           />
         </div>
+      </div>
+      <div>
+        <label className="label">الحد الأقصى للباقة (عدد الدعوات)</label>
+        <input
+          type="number"
+          min={1}
+          value={form.packageLimit}
+          onChange={(e) => setForm({ ...form, packageLimit: e.target.value })}
+          className="field"
+        />
       </div>
       <div>
         <label className="label">اسم القاعة</label>

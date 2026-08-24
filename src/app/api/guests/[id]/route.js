@@ -22,7 +22,25 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: "رابط الدعوة غير صالح" }, { status: 403 });
   }
 
-  const event = db.events.find((e) => e.id === guest.eventId) || null;
+  const fullEvent = db.events.find((e) => e.id === guest.eventId) || null;
+
+  // Whitelist, not blacklist. This endpoint is reachable by anyone holding a
+  // guest's invite link, and the event record carries the couple's dashboard
+  // password in plain text, their phone number, and the door scanners' codes.
+  // Returning the record as-is handed all of that to every guest — the
+  // scanner codes alone would let someone check people in at the door. Only
+  // what the invitation actually renders goes out.
+  const event = fullEvent && {
+    id: fullEvent.id,
+    coupleNames: fullEvent.coupleNames,
+    eventDate: fullEvent.eventDate,
+    eventTime: fullEvent.eventTime || "",
+    venueName: fullEvent.venueName || "",
+    venueAddress: fullEvent.venueAddress || "",
+    venueMapUrl: fullEvent.venueMapUrl || "",
+    welcomeMessage: fullEvent.welcomeMessage || "",
+  };
+
   return NextResponse.json({ guest, event });
 }
 

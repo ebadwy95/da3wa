@@ -3,6 +3,7 @@ import { getDb, withDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { computeDisplayStatus, isTodayOrFuture, daysSinceDeleted } from "@/lib/date";
+import { joinCoupleNames } from "@/lib/couple";
 
 export async function GET(request, { params }) {
   const { id } = await params;
@@ -44,8 +45,11 @@ export async function PATCH(request, { params }) {
     if (!event) return { error: "الزفاف غير موجود" };
 
     const editable = [
+      "groomName",
+      "brideName",
       "coupleNames",
       "eventDate",
+      "eventTime",
       "venueName",
       "venueAddress",
       "venueMapUrl",
@@ -57,6 +61,16 @@ export async function PATCH(request, { params }) {
         event[key] = key === "packageLimit" ? Math.max(1, parseInt(body[key], 10) || event.packageLimit) : body[key];
       }
     }
+
+    // coupleNames is what guests read; groomName/brideName are what the
+    // WhatsApp templates fill in. Recomputing here keeps them from drifting
+    // apart — otherwise an admin could fix a misspelt bride's name and the
+    // invitation page would still show the old one.
+    if (body.groomName !== undefined || body.brideName !== undefined) {
+      const joined = joinCoupleNames(event.groomName, event.brideName);
+      if (joined) event.coupleNames = joined;
+    }
+
     return { event };
   });
 

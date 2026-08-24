@@ -5,6 +5,7 @@ import { isAdminAuthed } from "@/lib/auth";
 import { normalizePhone } from "@/lib/phone";
 import { generateScannerCode, generateCoupleUsername, generateCouplePassword } from "@/lib/token";
 import { computeDisplayStatus } from "@/lib/date";
+import { splitCoupleNames, joinCoupleNames } from "@/lib/couple";
 
 function withCounts(event, guests) {
   const eventGuests = guests.filter((g) => g.eventId === event.id);
@@ -25,11 +26,26 @@ export async function GET() {
   // generate and persist on first read so every event (old or new) always
   // has everything it needs to show/share.
   const needsBackfill = (await getDb()).events.some(
-    (e) => !e.coupleUsername || !e.couplePassword || !e.scanners || !e.status
+    (e) =>
+      !e.coupleUsername ||
+      !e.couplePassword ||
+      !e.scanners ||
+      !e.status ||
+      (!e.groomName && !e.brideName)
   );
   const db = needsBackfill
     ? await withDb((db) => {
         db.events.forEach((e) => {
+          // Events created before the names were split only have the joined
+          // string. Split it on a best effort basis so the admin sees both
+          // halves in the edit form and can correct them — the WhatsApp send
+          // paths refuse to run on an empty groom/bride, so a failed split
+          // surfaces as a blocked send, never as a wrong message.
+          if (!e.groomName && !e.brideName) {
+            const parts = splitCoupleNames(e.coupleNames);
+            e.groomName = parts.groomName;
+            e.brideName = parts.brideName;
+          }
           if (!e.coupleUsername) e.coupleUsername = generateCoupleUsername();
           if (!e.couplePassword) {
             e.couplePassword = generateCouplePassword();
@@ -60,7 +76,19 @@ export async function POST(request) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
   const body = await request.json().catch(() => ({}));
-  const { groomPhone, coupleNames, eventDate, venueName, venueAddress, venueMapUrl, welcomeMessage, packageLimit } = body;
+  const {
+    groomPhone,
+    groomName,
+    brideName,
+    coupleNames,
+    eventDate,
+    eventTime,
+    venueName,
+    venueAddress,
+    venueMapUrl,
+    welcomeMessage,
+    packageLimit,
+  } = body;
 
   // Required: every event MUST be tied to the groom/couple's phone number —
   // it's the only identifier we have for a wedding before real per-couple
@@ -72,16 +100,32 @@ export async function POST(request) {
   if (!phone.valid) {
     return NextResponse.json({ error: `رقم العريس غير صالح: ${phone.error}` }, { status: 400 });
   }
-  if (!coupleNames) {
-    return NextResponse.json({ error: "اسم العروسين مطلوب" }, { status: 400 });
+  // The two names are stored separately because the WhatsApp templates take
+  // {{groom}} and {{bride}} as separate variables. A caller that only sends
+  // the old joined coupleNames still works: we split it here rather than
+  // rejecting, and the admin sees both halves in the edit form.
+  const fallback = splitCoupleNames(coupleNames);
+  const resolvedGroom = String(groomName || fallback.groomName || "").trim();
+  const resolvedBride = String(brideName || fallback.brideName || "").trim();
+  const resolvedCoupleNames =
+    joinCoupleNames(resolvedGroom, resolvedBride) || String(coupleNames || "").trim();
+
+  if (!resolvedCoupleNames) {
+    return NextResponse.json({ error: "اسم العريس واسم العروسة مطلوبان" }, { status: 400 });
   }
 
   const event = {
     id: randomUUID(),
     groomPhone: phone.digits,
     groomPhoneDisplay: phone.e164,
-    coupleNames: String(coupleNames).trim(),
+    groomName: resolvedGroom,
+    brideName: resolvedBride,
+    // Derived from the two names above — what guests read on the invitation,
+    // kept identical to what the templates produce when they join them.
+    coupleNames: resolvedCoupleNames,
     eventDate: eventDate || "",
+    // "HH:MM". Needed by the reminder template's {{time}} variable.
+    eventTime: eventTime || "",
     venueName: venueName || "",
     venueAddress: venueAddress || "",
     venueMapUrl: venueMapUrl || "",

@@ -4,6 +4,7 @@ import { getDb, withDb } from "@/lib/db";
 import { makeInviteToken } from "@/lib/token";
 import { sendTemplateMessage, watiIsConfigured, isUsableTemplateName } from "@/lib/wati";
 import { canAccessEvent } from "@/lib/coupleAuth";
+import { resolveCoupleParts } from "@/lib/couple";
 
 // One-click bulk send: sends the "you're invited, tap to confirm" message
 // (a Meta-approved template with the guest's personal link) to every guest
@@ -37,6 +38,23 @@ export async function POST(request, { params }) {
   const event = db.events.find((e) => e.id === eventId);
   if (!event) return NextResponse.json({ error: "الزفاف غير موجود" }, { status: 404 });
 
+  const coupleParts = resolveCoupleParts(event);
+
+  // da3wa_invite_link renders "{{groom}} و {{bride}}" in its body, so sending
+  // it a blank half would reach guests as a dangling "و". Legacy events whose
+  // joined name couldn't be split automatically land here until the admin
+  // fills the two fields in.
+  const needsSplitNames = templateName !== "main_msg";
+  if (watiIsConfigured() && needsSplitNames && (!coupleParts.groomName || !coupleParts.brideName)) {
+    return NextResponse.json(
+      {
+        error:
+          "اسم العريس واسم العروسة غير مفصولين لهذا الزفاف — افتح \"تعديل تفاصيل الزفاف\" واملأ الخانتين قبل الإرسال",
+      },
+      { status: 409 }
+    );
+  }
+
   const pendingGuests = db.guests.filter((g) => g.eventId === eventId && !g.invitedAt);
 
   if (pendingGuests.length === 0) {
@@ -57,9 +75,15 @@ export async function POST(request, { params }) {
       // label in the admin feed.
       templateName: templateName || "da3wa_invite",
       broadcastName: "da3wa_invite_link",
+      // A superset of what any of the configured templates might ask for, so
+      // the same code works whether WATI_INVITE_TEMPLATE_NAME points at
+      // main_msg (name, link) or da3wa_invite_link (name, groom, bride,
+      // link). Wati matches parameters by name and ignores the extras.
       params: [
         { name: "name", value: guest.name },
-        { name: "couple", value: event.coupleNames },
+        { name: "groom", value: coupleParts.groomName },
+        { name: "bride", value: coupleParts.brideName },
+        { name: "couple", value: coupleParts.coupleNames },
         { name: "link", value: link },
       ],
     });

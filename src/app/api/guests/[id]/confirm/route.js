@@ -4,6 +4,7 @@ import { withDb } from "@/lib/db";
 import { verifyInviteToken } from "@/lib/token";
 import { generateGuestQr } from "@/lib/qr";
 import { sendTemplateMessage, watiIsConfigured, isUsableTemplateName } from "@/lib/wati";
+import { resolveCoupleParts } from "@/lib/couple";
 
 // Public endpoint: the guest confirms or declines from their invite page.
 // Body: { token, attending: boolean, companions?: number }
@@ -44,7 +45,7 @@ export async function POST(request, { params }) {
 
     return {
       guest: structuredClone(guest),
-      coupleNames: event?.coupleNames || "",
+      coupleParts: resolveCoupleParts(event),
     };
   });
 
@@ -52,7 +53,7 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: outcome.error }, { status: outcome.status || 400 });
   }
 
-  const { guest, coupleNames } = outcome;
+  const { guest, coupleParts } = outcome;
 
   // 2. Send the QR over WhatsApp — outside any transaction, so a retry can
   //    never send it twice.
@@ -76,7 +77,9 @@ export async function POST(request, { params }) {
       broadcastName: "da3wa_qr_delivery",
       params: [
         { name: "name", value: guest.name },
-        { name: "couple", value: coupleNames },
+        { name: "groom", value: coupleParts.groomName },
+        { name: "bride", value: coupleParts.brideName },
+        { name: "couple", value: coupleParts.coupleNames },
       ],
     });
   }

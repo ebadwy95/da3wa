@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { formatEventDateArabic } from "@/lib/date";
+import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import {
   MapPinIcon,
   CheckCircleIcon,
@@ -147,6 +147,7 @@ function InviteContent() {
 
   const { guest, event } = state;
   const prettyDate = formatEventDateArabic(event.eventDate);
+  const prettyTime = formatEventTimeArabic(event.eventTime);
 
   return (
     <PageShell>
@@ -192,6 +193,7 @@ function InviteContent() {
           {prettyDate && (
             <p className="meta" style={{ letterSpacing: "0.04em" }}>
               {prettyDate}
+              {prettyTime && ` — ${prettyTime}`}
             </p>
           )}
 

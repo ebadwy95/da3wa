@@ -67,6 +67,31 @@ export function computeDisplayStatus(event, now = new Date()) {
   return "active";
 }
 
+// How many whole days from today until this date. Negative once it's past.
+// Used by the reminder job, which fires on events exactly N days out.
+export function daysUntil(isoDate, now = new Date()) {
+  const since = daysSince(isoDate, now);
+  return since === null ? null : -since;
+}
+
+const ISO_TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+export function isIsoTime(value) {
+  return typeof value === "string" && ISO_TIME_RE.test(value);
+}
+
+// Formats a stored "HH:MM" (from <input type="time">) the way an Arabic
+// wedding invitation says it — "8:00 مساءً". Western digits, matching the
+// convention already used for dates elsewhere in this app.
+export function formatEventTimeArabic(isoTime) {
+  if (!isIsoTime(isoTime)) return isoTime || "";
+  const [rawHour, minute] = isoTime.split(":");
+  const hour24 = parseInt(rawHour, 10);
+  const period = hour24 >= 12 ? "مساءً" : "صباحًا";
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${hour12}:${minute} ${period}`;
+}
+
 // Formats a stored "YYYY-MM-DD" into a clean Arabic date for guests, e.g.
 // "٢٠ نوفمبر ٢٠٢٦" -> we deliberately keep Western digits (already the
 // convention used elsewhere in this app) and just localize the month name.
