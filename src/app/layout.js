@@ -44,11 +44,11 @@ export const metadata = {
     title: "دعوة إلكترونية",
     description: "افتح دعوتك الشخصية وأكّد حضورك.",
   },
-  robots: {
-    // Personal invite links must never end up in a search index.
-    index: false,
-    follow: false,
-  },
+  // No robots block here on purpose. Personal invite links must never end up
+  // in a search index, but setting that on the root layout hid the landing
+  // page too — and a noindex page cannot pass Meta's business verification,
+  // whatever legal name is printed on it. The private routes now opt out
+  // individually; see src/lib/seo.js.
 };
 
 export const viewport = {
