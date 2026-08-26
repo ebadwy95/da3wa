@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Rubik:wght@300;400;500;600&display=swap">
+<style>
+  /* Same discipline as the invitation film: no CSS animation anywhere. Every
+     frame comes from calling render(t) with an explicit time, so a still can be
+     captured at any moment and a reel encodes deterministically. A card caught
+     mid-transition is the exact failure this avoids. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { overflow: hidden; background: #0b0906; }
+
+  #stage {
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(ellipse 95% 60% at 50% 40%, #2a2114 0%, #14100a 55%, #0b0906 100%);
+    font-family: "Rubik", sans-serif;
+    color: #f4ede0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Clearance the wordmark can rely on. A card that fitBody() had to scale
+       lands right up against the mark otherwise, which reads as a crop rather
+       than a composition. */
+    gap: 56px;
+  }
+  /* Story padding is deliberately top-heavy: Instagram and TikTok both put
+     chrome over the bottom ~15% of a 9:16 frame, and the wordmark sitting
+     under a Follow button was the first thing that looked amateur. */
+  #stage.square { width: 1080px; height: 1080px; padding: 96px 88px; }
+  #stage.story  { width: 1080px; height: 1920px; padding: 300px 96px 300px; }
+
+  .mote { position: absolute; border-radius: 50%; background: #e0c48d; }
+
+  #vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 78% 62% at 50% 45%, transparent 38%, rgba(4,3,2,0.8) 100%);
+  }
+
+  #body {
+    position: relative; z-index: 2; flex: 1; width: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center;
+    /* Without this a flex item defaults to min-height:auto and refuses to
+       shrink below its content, so #body silently grew past the frame, pushed
+       the wordmark off the bottom, and fitBody() measured no overflow to
+       correct. This is what makes the measurement mean anything. */
+    min-height: 0;
+  }
+
+  .el { will-change: transform, opacity; }
+
+  /* No letter-spacing here, deliberately. Arabic is cursive: tracking pushes
+     the glyphs apart and stretches the joins, so an eyebrow like «الباقات»
+     comes out looking broken. Size, weight and the gold carry the hierarchy
+     instead. Tracking stays on #handle below, which is Latin. */
+  #kicker {
+    font-size: 34px; font-weight: 500;
+    color: #b08d57; margin-top: 46px;
+  }
+
+  #headline {
+    font-family: "Aref Ruqaa", serif; font-weight: 700;
+    color: #fdf6e6; text-shadow: 0 0 70px rgba(224,196,141,0.3);
+    line-height: 1.55; margin-top: 34px;
+  }
+  /* Tuned by eye against the invitation film rather than taken from the web
+     type scale — Aref Ruqaa renders small for its point size. */
+  #stage.square #headline { font-size: 94px; }
+  #stage.story  #headline { font-size: 112px; }
+  /* One breakpoint, not a fitting loop: past roughly 26 characters the display
+     face wraps to four lines and the block stops reading as a headline. */
+  #headline.long { font-size: 72px; }
+
+  #subline {
+    margin-top: 40px; font-weight: 300; line-height: 1.85;
+    color: #cdbfa4; max-width: 20ch;
+  }
+  #stage.square #subline { font-size: 39px; }
+  #stage.story  #subline { font-size: 45px; max-width: 18ch; }
+
+  #list { margin-top: 52px; display: flex; flex-direction: column; gap: 32px; width: 100%; max-width: 790px; }
+  .item { display: flex; align-items: flex-start; gap: 26px; text-align: right; }
+  .item svg { flex: none; margin-top: 12px; }
+  .item span { font-size: 41px; font-weight: 300; line-height: 1.6; color: #e4dac6; }
+
+  #tiers { margin-top: 52px; display: flex; gap: 24px; width: 100%; justify-content: center; }
+  .tier {
+    flex: 1; border: 1.5px solid rgba(176,141,87,0.45); border-radius: 28px;
+    padding: 38px 20px; background: rgba(224,196,141,0.05);
+  }
+  .tier.feature { border-color: #d9b877; background: rgba(224,196,141,0.12); }
+  .tier .nm { font-size: 33px; font-weight: 500; color: #d9b877; }
+  .tier .qt { font-family: "Aref Ruqaa", serif; font-size: 66px; color: #fdf6e6; margin: 12px 0 4px; }
+  .tier .un { font-size: 27px; font-weight: 300; color: #a1937e; }
+
+  #mark { position: relative; z-index: 2; flex: none; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  #wordmark { font-family: "Aref Ruqaa", serif; font-size: 54px; color: #d9b877; }
+  #handle { font-size: 29px; font-weight: 300; letter-spacing: 0.2em; color: #8d8069; }
+
+  #ruleWrap { display: flex; align-items: center; justify-content: center; margin-top: 34px; }
+  svg { overflow: visible; }
+</style>
+</head>
+<body>
+<div id="stage" class="square">
+  <div id="motes"></div>
+
+  <div id="body">
+    <div class="el" id="starWrap">
+      <svg width="128" height="128" viewBox="0 0 100 100">
+        <path id="starPath" d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z"
+              fill="none" stroke="#d9b877" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="el" id="kicker"></div>
+    <div class="el" id="headline"></div>
+
+    <div class="el" id="ruleWrap">
+      <svg width="520" height="24" viewBox="0 0 520 24">
+        <line id="ruleL" x1="260" y1="12" x2="260" y2="12" stroke="#b08d57" stroke-width="1.4"/>
+        <line id="ruleR" x1="260" y1="12" x2="260" y2="12" stroke="#b08d57" stroke-width="1.4"/>
+        <path d="M260 4 L263 11 L270 12 L263 13 L260 20 L257 13 L250 12 L257 11 Z" fill="#d9b877"/>
+      </svg>
+    </div>
+
+    <div class="el" id="subline"></div>
+    <div class="el" id="list"></div>
+    <div class="el" id="tiers"></div>
+  </div>
+
+  <div class="el" id="mark">
+    <div id="wordmark">دعوة</div>
+    <div id="handle">DA3WA.DIGITAL</div>
+  </div>
+
+  <div id="vignette"></div>
+</div>
+
+<script>
+const DURATION = 6;
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+const easeOut = (v) => 1 - Math.pow(1 - clamp01(v), 3);
+const span = (t, a, b) => clamp01((t - a) / (b - a));
+const $ = (id) => document.getElementById(id);
+
+// Seeded so a re-render of the same card is byte-identical.
+let seed = 11;
+const rand = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+let MOTES = [];
+
+function buildMotes(height) {
+  $("motes").innerHTML = "";
+  seed = 11;
+  MOTES = Array.from({ length: 34 }, () => {
+    const m = {
+      x: rand() * 1080, y: rand() * height, r: 1.5 + rand() * 4,
+      drift: 14 + rand() * 34, phase: rand() * Math.PI * 2, peak: 0.16 + rand() * 0.42,
+    };
+    const el = document.createElement("div");
+    el.className = "mote";
+    el.style.width = el.style.height = m.r * 2 + "px";
+    el.style.left = m.x + "px";
+    el.style.top = m.y + "px";
+    $("motes").appendChild(el);
+    m.el = el;
+    return m;
+  });
+}
+
+const STAR_LEN = $("starPath").getTotalLength();
+$("starPath").style.strokeDasharray = STAR_LEN;
+
+const STAR_BULLET =
+  '<svg width="26" height="26" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 ' +
+  'L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>';
+
+// Text goes in through textContent, never innerHTML — a caption with an
+// angle bracket in it should render, not become markup.
+function itemRow(text) {
+  const row = document.createElement("div");
+  row.className = "item";
+  row.innerHTML = STAR_BULLET;
+  // Not named `span` — that is the timeline helper above, and shadowing it
+  // here is the kind of thing that only breaks once someone adds a cue.
+  const label = document.createElement("span");
+  label.textContent = text;
+  row.appendChild(label);
+  return row;
+}
+
+function tierCard(t) {
+  const el = document.createElement("div");
+  el.className = "tier" + (t.feature ? " feature" : "");
+  for (const [cls, val] of [["nm", t.name], ["qt", t.quantity], ["un", t.unit]]) {
+    const d = document.createElement("div");
+    d.className = cls;
+    d.textContent = val;
+    el.appendChild(d);
+  }
+  return el;
+}
+
+function setContent(c) {
+  $("stage").className = c.format === "story" ? "story" : "square";
+  buildMotes(c.format === "story" ? 1920 : 1080);
+
+  $("kicker").textContent = c.kicker || "";
+  $("kicker").style.display = c.kicker ? "" : "none";
+
+  $("headline").textContent = c.headline || "";
+  $("headline").classList.toggle("long", (c.headline || "").length > 26);
+
+  $("subline").textContent = c.subline || "";
+  $("subline").style.display = c.subline ? "" : "none";
+
+  const items = c.items || [];
+  $("list").replaceChildren(...items.map(itemRow));
+  $("list").style.display = items.length ? "" : "none";
+
+  const tiers = c.tiers || [];
+  $("tiers").replaceChildren(...tiers.map(tierCard));
+  $("tiers").style.display = tiers.length ? "" : "none";
+
+  $("ruleWrap").style.display = c.subline || items.length || tiers.length ? "" : "none";
+  fitBody();
+}
+
+// A four-item list overran the frame and pushed the wordmark off the bottom
+// edge. Rather than hand-tuning sizes per card — which breaks the moment
+// someone edits posts.json — the body is measured and scaled down to fit.
+//
+// The children are summed rather than read off scrollHeight: the body is a
+// centred flex column, so content overflows equally top and bottom and
+// scrollHeight only ever reports the half below the fold. offsetHeight is
+// layout-based and unaffected by the transforms render(t) leaves behind.
+function fitBody() {
+  const body = $("body");
+  body.style.transform = "";
+
+  let needed = 0;
+  for (const el of body.children) {
+    if (el.style.display === "none") continue;
+    const cs = getComputedStyle(el);
+    needed += el.offsetHeight + parseFloat(cs.marginTop) + parseFloat(cs.marginBottom);
+  }
+
+  const avail = body.clientHeight;
+  if (needed <= avail || needed === 0) return;
+  // Floored: below about 0.72 the card is asking to be two posts, and silently
+  // shrinking it to fit would just produce something nobody can read on a phone.
+  body.style.transform = `scale(${Math.max(0.72, avail / needed)})`;
+}
+
+// Each element owns a window on the timeline. A still is captured at
+// t = DURATION, by which point every window has closed and the card is at rest.
+const CUES = [
+  ["starWrap", 0.10, 1.10],
+  ["kicker",   0.55, 1.45],
+  ["headline", 0.95, 2.15],
+  ["ruleWrap", 1.70, 2.50],
+  ["subline",  2.00, 3.00],
+  ["list",     2.00, 3.20],
+  ["tiers",    2.00, 3.20],
+  ["mark",     2.60, 3.60],
+];
+
+function render(t) {
+  $("starPath").style.strokeDashoffset = STAR_LEN * (1 - easeOut(span(t, 0.10, 1.30)));
+
+  for (const [id, a, b] of CUES) {
+    const p = easeOut(span(t, a, b));
+    const el = $(id);
+    el.style.opacity = String(p);
+    el.style.transform = "translateY(" + (1 - p) * 26 + "px)";
+  }
+
+  // The rule draws outward from its centre ornament rather than fading in.
+  const r = easeOut(span(t, 1.70, 2.60)) * 250;
+  $("ruleL").setAttribute("x2", String(260 - r));
+  $("ruleR").setAttribute("x2", String(260 + r));
+
+  for (const m of MOTES) {
+    const drifted = -m.drift * (t / DURATION);
+    const o = m.peak * (0.55 + 0.45 * Math.sin(t * 0.9 + m.phase));
+    m.el.style.transform = "translateY(" + drifted + "px)";
+    m.el.style.opacity = String(Math.max(0, o));
+  }
+}
+
+render(DURATION);
+window.__card = { setContent, render, DURATION };
+</script>
+</body>
+</html>

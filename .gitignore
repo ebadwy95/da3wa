@@ -9,3 +9,6 @@ data/db.json
 
 # local media used only for previewing the invitation opener
 public/test/
+
+# rendered social media — regenerate with tools/social/render-posts.mjs
+social-out/
