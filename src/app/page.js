@@ -261,6 +261,13 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* The legal entity block is not decoration. Meta's business
+          verification crawls this domain looking for the registered legal
+          name and rejects the portfolio when it can't find it — the brand
+          name alone ("Da3wa") is what the earlier attempt failed on. The
+          Arabic form is the one that has to match: it is the name on the
+          commercial register and in the Meta form. The English line sits
+          beside it for readers, not for the crawler. */}
       <footer className="band-dark" style={{ padding: "2.5rem 1.25rem", textAlign: "center" }}>
         <div className="wrap flex flex-col items-center gap-3">
           <span style={{ color: "var(--gold-300)" }}>
@@ -268,6 +275,39 @@ export default function HomePage() {
           </span>
           <p style={{ fontSize: "var(--text-xs)", color: "rgba(244,237,224,0.5)" }}>
             دعوات إلكترونية للمناسبات · hello@da3wa.digital
+          </p>
+
+          <address
+            style={{
+              fontStyle: "normal",
+              fontSize: "var(--text-xs)",
+              lineHeight: 1.9,
+              color: "rgba(244,237,224,0.42)",
+              maxWidth: "34rem",
+            }}
+          >
+            <span style={{ display: "block" }}>
+              دعوة علامة تجارية مملوكة لشركة{" "}
+              <strong style={{ fontWeight: 600 }}>فيرتكس سكاي ش ذ م م</strong>
+            </span>
+            <span style={{ display: "block" }} dir="ltr">
+              Da3wa is a brand of Vertex Sky LLC
+            </span>
+            <span style={{ display: "block" }}>
+              ٣٩٨ طريق الحرية، برج الفنار، الدور العاشر، مكتب H5 — مصطفى كامل، سيدي جابر، الإسكندرية ٢١٥٢٣، مصر
+            </span>
+            <span style={{ display: "block" }} dir="ltr">
+              398 Tareeq El Horreya, Fanar Tower, Floor 10, Office H5, Alexandria 21523, Egypt
+            </span>
+            <span style={{ display: "block" }} dir="ltr">
+              <a href="tel:+201555229877">+20 155 522 9877</a>
+              {" · "}
+              <a href="mailto:hello@da3wa.digital">hello@da3wa.digital</a>
+            </span>
+          </address>
+
+          <p style={{ fontSize: "var(--text-xs)", color: "rgba(244,237,224,0.35)" }}>
+            © {new Date().getFullYear()} فيرتكس سكاي ش ذ م م — جميع الحقوق محفوظة
           </p>
         </div>
       </footer>
