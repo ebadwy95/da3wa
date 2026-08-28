@@ -1,4 +1,4 @@
-import { Rubik, Aref_Ruqaa } from "next/font/google";
+import { Rubik, Aref_Ruqaa, Amiri } from "next/font/google";
 import "./globals.css";
 import { siteOrigin } from "@/lib/seo";
 
@@ -22,6 +22,18 @@ const arefRuqaa = Aref_Ruqaa({
   subsets: ["arabic"],
   weight: ["400", "700"],
   variable: "--font-display",
+  display: "swap",
+});
+
+// Amiri: a naskh, used on the invitation itself. Rubik is a Latin family with
+// Arabic added — fine for a dashboard, but on a wedding card its Arabic reads
+// like a form control next to Aref Ruqaa's calligraphy. Amiri sits with the
+// display face instead of against it, and stays legible at button size, which
+// Aref Ruqaa does not.
+const amiri = Amiri({
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+  variable: "--font-card",
   display: "swap",
 });
 
@@ -91,7 +103,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl" className={`${rubik.variable} ${arefRuqaa.variable}`}>
+    <html lang="ar" dir="rtl" className={`${rubik.variable} ${arefRuqaa.variable} ${amiri.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );

@@ -1213,3 +1213,32 @@ body {
   .env-mark svg { width: 220px; height: auto; }
   .env-cta { font-size: var(--text-base); }
 }
+
+/* ---------------------------------------------------------------------------
+   The invitation card reads as a card, not a form.
+
+   Rubik stays the face for the dashboards — they are tools, and it draws
+   Arabic and Latin as one family, which the scanner codes and phone numbers
+   there need. But on the invitation its Arabic sits next to Aref Ruqaa's
+   calligraphy and reads like a form control, and the RSVP button was the worst
+   of it: the one moment the guest acts, set in the plainest type on the page.
+
+   Amiri is the brand's supporting face everywhere else already. It stays
+   legible at button size, which Aref Ruqaa does not.
+--------------------------------------------------------------------------- */
+.invite-card,
+.invite-card .pill-btn,
+.invite-card .pill-btn-outline,
+.invite-card .field,
+.invite-card .label {
+  font-family: var(--font-card), "Amiri", serif;
+}
+
+/* Naskh sits smaller on the line than a UI face at the same size, so the
+   actions step up rather than looking shrunken beside the card's headings. */
+.invite-card .pill-btn,
+.invite-card .pill-btn-outline {
+  font-size: 1.32rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}

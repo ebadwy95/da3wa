@@ -210,7 +210,7 @@ function InviteContent() {
       {tab === "invite" ? (
         <article
           className={
-            "card-ornate max-w-md w-full p-8 text-center flex flex-col gap-5 " +
+            "card-ornate invite-card max-w-md w-full p-8 text-center flex flex-col gap-5 " +
             (hasOpener ? (opened ? "rise" : "invisible") : "da3wa-fade-in")
           }
         >
