@@ -24,7 +24,7 @@ export const PRIVATE_ROUTE_METADATA = {
 };
 
 /** Path prefixes disallowed in robots.txt. Keep in step with the layouts. */
-export const PRIVATE_PATHS = ["/invite/", "/admin", "/couple", "/scan", "/api/"];
+export const PRIVATE_PATHS = ["/invite/", "/admin", "/couple", "/scan", "/partners", "/api/"];
 
 /** The canonical origin, for robots.txt and the sitemap. */
 export const CANONICAL_ORIGIN = "https://www.da3wa.digital";

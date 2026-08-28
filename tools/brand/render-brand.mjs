@@ -124,6 +124,18 @@ await page.setViewportSize({ width: 794, height: 1123 });
 await page.goto(pathToFileURL(path.join(HERE, "profile-halls.html")).href, { waitUntil: "networkidle" });
 await page.evaluate(() => document.fonts.ready);
 
+// The envelope and the music control are for the screen. A PDF that a
+// planner opens must be the document and nothing else, so both are removed
+// before anything is captured rather than trusted to a print stylesheet —
+// element screenshots do not honour print media.
+await page.evaluate(() => {
+  document.getElementById("opener")?.remove();
+  document.getElementById("music")?.remove();
+  const doc = document.getElementById("doc");
+  if (doc) { doc.classList.add("shown"); doc.style.opacity = "1"; doc.style.transform = "none"; }
+});
+await page.waitForTimeout(300);
+
 const pages = await page.locator(".page").count();
 for (let i = 0; i < pages; i++) {
   const file = `profile/halls-${String(i + 1).padStart(2, "0")}.png`;
