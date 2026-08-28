@@ -2,6 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دعوة — ملف الشراكة</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&display=swap">
@@ -69,8 +71,65 @@
     font-size: 19px; color: #cdbfa4; line-height: 1.8; margin-top: 6px;
   }
 
+  /* ---- product shots ---- */
+  .shot {
+    border: 1px solid rgba(176,141,87,.35); border-radius: 16px; overflow: hidden;
+    background: #14100a; box-shadow: 0 18px 40px rgba(0,0,0,.45);
+  }
+  .shot img { display: block; width: 100%; height: auto; }
+  .shot-cap { font-size: 16px; color: #a1937e; margin: 10px 2px 0; }
+
+  .shot-row { display: flex; gap: 22px; align-items: flex-start; }
+  .shot-row > div { flex: 1; min-width: 0; }
+
+  /* The invite is a 9:19.5 phone capture; showing all of it here would make it
+     a thumbnail, so it is cropped from the top down to the entry code. */
+  .phone { height: 330px; overflow: hidden; }
+  .phone img { object-fit: cover; object-position: top center; height: 100%; }
+
   .spacer { flex: 1; }
   .foot { font-size: 15px; color: #6f6455; display: flex; justify-content: space-between; }
+
+  /* ---- phone ----------------------------------------------------------
+     The A4 box above is what render-brand.mjs screenshots, so it stays
+     exact. Below 820px the page stops being paper: fluid width, its own
+     height, and type that steps down rather than being scaled to nothing by
+     a browser fitting 794px into 390. */
+  @media (max-width: 820px) {
+    body { background: #0b0906; }
+    .page { width: 100%; height: auto; min-height: auto; padding: 54px 26px 44px; }
+    .page + .page { margin-top: 0; border-top: 1px solid rgba(176,141,87,.22); }
+    .cover { min-height: 88vh; }
+
+    h2 { font-size: 33px; margin-bottom: 20px; }
+    .cover h1 { font-size: 68px; }
+    .cover .sub { font-size: 20px; }
+    .cover .for { font-size: 19px; margin-top: 40px; }
+    p, li span { font-size: 17px; line-height: 1.85; }
+    .eyebrow { font-size: 16px; }
+    .step b { font-size: 19px; }
+    .step p, .note { font-size: 16px; }
+    .step .num { width: 38px; height: 38px; font-size: 19px; }
+    th, td { font-size: 16px; padding: 12px 7px; }
+
+    /* Two shots side by side become unreadable on a phone. */
+    .shot-row { flex-direction: column; }
+    .phone { height: 380px; }
+
+    .spacer { display: none; }
+    .foot { margin-top: 34px; font-size: 13px; }
+  }
+
+  /* ---- the music gate (screen only) ---- */
+  #music {
+    position: fixed; inset-inline-end: 18px; inset-block-end: 18px; z-index: 50;
+    width: 52px; height: 52px; border-radius: 50%; cursor: pointer;
+    background: rgba(20,16,10,.92); border: 1px solid rgba(176,141,87,.55);
+    color: #d9b877; display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(6px);
+  }
+  #music[hidden] { display: none; }
+  @media print { #music { display: none !important; } }
 </style>
 </head>
 <body>
@@ -87,30 +146,26 @@
   <h1>دعوة</h1>
   <div class="sub">من أول دعوة، لين آخر معزوم يدخل الباب</div>
 
-  <div class="for">ملف الشراكة — للقاعات ومنظّمي الحفلات</div>
-  <div class="ent">فيرتكس سكاي ش ذ م م · da3wa.digital</div>
+  <div class="for">ملف الشراكة — لمنظّمي الأعراس</div>
+  <div class="ent">Vertex Sky · da3wa.digital</div>
 </section>
 
 <!-- ══════════════ 2 · the problem ══════════════ -->
 <section class="page">
   <div class="eyebrow">المشكلة</div>
-  <h2>الزحمة على الباب،<br>والناس تلوم القاعة</h2>
+  <h2>«كم واحد أكّد؟»<br>وما عندكم جواب</h2>
 
-  <p>تجهّزون كل شي — الإضاءة والعشا والخدمة. وبعدين تجي الليلة، ويوقف عشرين معزوم برّه الباب ينتظرون.</p>
+  <p>العميل يسألكم كل يوم. وانتم تفتحون الإكسل، وتتصلون، وترسلون واتساب واحد واحد — وبعد كل هذا الرقم يبقى تقريبي.</p>
 
   <ul>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span>قوائم ورق، وأسماء ما أحد يلقاها، ومعازيم واقفين ينتظرون</span></li>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span>عدد ما أحد يعرفه بالضبط — فالعشا إما زايد وينرمى، أو ناقص</span></li>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span>ناس يدخلون مرتين، وناس ما كانوا مدعوين أصلاً</span></li>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span>وإحراج مع معزوم على باب قاعتكم — والاسم اللي ينذكر اسمكم</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span>تلاحقون التأكيدات بالتلفون والواتساب، اسم اسم</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span>ترسلون رقم لشركة البوفيه، وانتم مو متأكدين منه</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span>ليلة العرس تكونون على الباب بدل ما تكونون تنظّمون</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span>وأي شي يصير، انتم المسؤولين — حتى لو مو شغلكم</span></li>
   </ul>
 
   <div class="rule"></div>
-  <p class="note">المعزوم ما يفرّق بين شركة الدعوات والقاعة. هو واقف على بابكم، فاللوم عليكم.</p>
+  <p class="note">انتم مو مسؤولين عن الأكل ولا عن الصالة. بس الرقم اللي تعطونه للبوفيه، والباب اللي يستقبل المعازيم — هذا شغلكم، وعليه يتحاسبون معكم.</p>
 
   <div class="spacer"></div>
   <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٢</span></div>
@@ -127,7 +182,7 @@
 
   <div class="step"><div class="num">٢</div><div>
     <b>المعزوم يأكّد ويقول كم واحد جاي معه</b>
-    <p>والعدد يتحدّث لحظة بلحظة. تحجزون العشا والطاولات على رقم، مو على تخمين.</p></div></div>
+    <p>والعدد يتحدّث لحظة بلحظة. الرقم اللي تعطونه للبوفيه وللصالة يكون رقم حقيقي، مو تقدير.</p></div></div>
 
   <div class="step"><div class="num">٣</div><div>
     <b>يوصله رمز خاص فيه</b>
@@ -135,7 +190,7 @@
 
   <div class="step"><div class="num">٤</div><div>
     <b>موظف من عندنا على الباب</b>
-    <p>يدخل المعزوم في ثانية. بدون طابور، بدون قوائم ورق، وبدون أحد يدخل مرتين. وانتم تشوفون العدد الداخل أول بأول.</p></div></div>
+    <p>يدخل المعزوم في ثانية. بدون طابور، بدون قوائم ورق، وبدون أحد يدخل مرتين. وانتم فاضين تنظّمون بدل ما تقفون على الباب.</p></div></div>
 
   <div class="step"><div class="num">٥</div><div>
     <b>وبعد الليلة</b>
@@ -145,29 +200,50 @@
   <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٣</span></div>
 </section>
 
-<!-- ══════════════ 4 · what the hall gets ══════════════ -->
+<!-- ══════════════ 4 · what it looks like ══════════════ -->
+<section class="page">
+  <div class="eyebrow">شكل النظام</div>
+  <h2>هذي اللي تشوفونها انتم</h2>
+
+  <div class="shot"><img src="shots/stats.png" alt="لوحة المتابعة"></div>
+  <p class="shot-cap">الأرقام تتحدّث أول بأول — بدون ما تتصلون بأحد.</p>
+
+  <div style="height:26px"></div>
+
+  <div class="shot-row">
+    <div>
+      <div class="shot phone"><img src="shots/invite-code.png" alt="الدعوة على جوال المعزوم"></div>
+      <p class="shot-cap">دعوة المعزوم — ورمز دخوله</p>
+    </div>
+    <div>
+      <div class="shot phone"><img src="shots/guest-list.png" alt="قائمة المعازيم"></div>
+      <p class="shot-cap">قائمة المعازيم وحالة كل واحد</p>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٤</span></div>
+</section>
+
+<!-- ══════════════ 4 · what the planner gets ══════════════ -->
 <section class="page">
   <div class="eyebrow">وش تكسبون</div>
   <h2>خدمة تبيعونها،<br>وشغل ما تشيلونه</h2>
 
   <ul>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span><strong>خدمة إضافية في باقتكم</strong> — تبيعونها بسعركم وتاخذون الفرق</span></li>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span><strong>العدد الصحيح قبل الليلة</strong> — تجهيز العشا والطاولات على رقم حقيقي</span></li>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span><strong>باب منظّم</strong> — موظفنا يشتغل معكم، مو بدلكم ولا عليكم</span></li>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span><strong>باسمكم إذا تبون</strong> — الدعوة ولوحة المتابعة بهوية قاعتكم</span></li>
-    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
-      <span><strong>تقرير بعد كل مناسبة</strong> — كم دعوة، كم أكّد، كم دخل فعلاً</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span><strong>خدمة إضافية في عرضكم</strong> — تبيعونها بالسعر اللي تشوفونه مناسب</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span><strong>جواب جاهز للعميل</strong> — «كم أكّد؟» يصير رقم على الشاشة، مو تخمين</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span><strong>ما تلاحقون أحد</strong> — التأكيدات والتذكيرات تمشي لحالها</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span><strong>موظف على الباب من عندنا</strong> — وانتم فاضين للتنظيم</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span><strong>باسمكم إذا تبون</strong> — الدعوة ولوحة المتابعة بهويتكم</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg><span><strong>تقرير بعد كل مناسبة</strong> — كم دعوة، كم أكّد، كم دخل فعلاً</span></li>
   </ul>
 
   <div class="rule"></div>
   <p><strong>وما نتواصل مع عميلكم من ورا ظهركم.</strong> العلاقة معكم، والعميل يبقى عميلكم.</p>
 
   <div class="spacer"></div>
-  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٤</span></div>
+  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٥</span></div>
 </section>
 
 <!-- ══════════════ 5 · partner pricing ══════════════ -->
@@ -176,24 +252,24 @@
   <h2>سعر للعرس،<br>مو حساب على كل معزوم</h2>
 
   <table>
-    <thead><tr><th>الباقة</th><th>المعازيم</th><th>السعر المعلن</th><th>سعركم</th><th>هامشكم</th></tr></thead>
+    <thead><tr><th>الباقة</th><th>المعازيم</th><th>سعركم كشركاء</th></tr></thead>
     <tbody>
-      <tr><td>أساسية</td><td class="tnum">٢٠٠</td><td class="tnum">١٠٠ د.ك</td><td class="tnum gold">٨٠ د.ك</td><td class="tnum">٢٠ د.ك</td></tr>
-      <tr class="feature"><td><strong>المميزة</strong></td><td class="tnum">٣٥٠</td><td class="tnum">١٧٠ د.ك</td><td class="tnum gold">١٣٠ د.ك</td><td class="tnum">٤٠ د.ك</td></tr>
-      <tr><td>الكبرى</td><td class="tnum">٧٠٠</td><td class="tnum">٢٩٠ د.ك</td><td class="tnum gold">٢٢٠ د.ك</td><td class="tnum">٧٠ د.ك</td></tr>
+      <tr><td>أساسية</td><td class="tnum">لين ٢٠٠</td><td class="tnum gold">٨٠ د.ك</td></tr>
+      <tr class="feature"><td><strong>المميزة</strong></td><td class="tnum">لين ٣٥٠</td><td class="tnum gold">١٣٠ د.ك</td></tr>
+      <tr><td>الكبرى</td><td class="tnum">لين ٧٠٠</td><td class="tnum gold">٢٢٠ د.ك</td></tr>
     </tbody>
   </table>
 
   <p class="note">
-    سعر الشريك يبدأ من <strong>٥ مناسبات</strong> في السنة. فوق <strong>١٢ مناسبة</strong> نراجع السعر لصالحكم.
-    وتقدرون تبيعون بسعركم انتم — الفرق كله لكم.
+    هذا سعركم انتم. <strong>بيعوها بالرقم اللي تشوفونه مناسب لعميلكم</strong> — الفرق كله لكم، وما نتدخل فيه.
+    <br>سعر الشريك يبدأ من <strong>٥ مناسبات</strong> في السنة، وفوق <strong>١٢</strong> نراجعه لصالحكم.
   </p>
 
   <div class="rule"></div>
   <p><strong>كل باقة شاملة كل شي:</strong> الدعوة بتصميمكم · الإرسال لكل معزوم باسمه · تأكيد الحضور · موظف على الباب · كلمات المعازيم · لوحة متابعة · تقرير بعد المناسبة.</p>
 
   <div class="spacer"></div>
-  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٥</span></div>
+  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٦</span></div>
 </section>
 
 <!-- ══════════════ 6 · contact ══════════════ -->
@@ -211,17 +287,45 @@
 
   <div class="rule" style="width:200px; background:linear-gradient(90deg,rgba(176,141,87,0),#b08d57,rgba(176,141,87,0))"></div>
 
-  <div style="font-size:23px; line-height:2.1; color:#e4dac6; text-align:center" dir="ltr">
-    da3wa.digital<br>
+  <div style="font-size:23px; line-height:2.05; color:#e4dac6; text-align:center" dir="ltr">
+    <span style="color:#d9b877">Kuwait</span> &nbsp; +965 6161 5767<br>
+    <span style="color:#d9b877">KSA</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; +966 53 097 7565<br>
+    <br>
     hello@da3wa.digital<br>
-    +20 155 522 9877
+    da3wa.digital
   </div>
 
-  <div class="ent" style="margin-top:46px; text-align:center; line-height:1.8">
-    فيرتكس سكاي ش ذ م م — Vertex Sky LLC<br>
-    ٣٩٨ طريق الحرية، برج الفنار، الإسكندرية، مصر
-  </div>
+  <div class="ent" style="margin-top:46px; text-align:center" dir="ltr">Vertex Sky</div>
 </section>
 
+
+<!-- Soft music, opt-in.
+     Every browser blocks audio that starts without a gesture, so this is a
+     button rather than an autoplay tag — the same reason the invitation
+     opener has a tap gate. The button hides itself if the file is missing, so
+     the profile is never shipped with a control that does nothing.
+     Drop a track at tools/brand/music.mp3 — see BRAND.md for the source. -->
+<button id="music" aria-label="تشغيل الموسيقى" title="موسيقى">
+  <svg id="ico-on" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/>
+  </svg>
+</button>
+<audio id="track" loop preload="none" src="music.mp3"></audio>
+<script>
+  const btn = document.getElementById("music");
+  const track = document.getElementById("track");
+  // No file, no button. Checked rather than assumed: a dead control on a
+  // document you are sending to a client is worse than no control.
+  track.addEventListener("error", () => { btn.hidden = true; });
+  btn.addEventListener("click", () => {
+    if (track.paused) {
+      track.volume = 0.35;
+      track.play().then(() => { btn.style.color = "#fdf6e6"; }).catch(() => { btn.hidden = true; });
+    } else {
+      track.pause();
+      btn.style.color = "#d9b877";
+    }
+  });
+</script>
 </body>
 </html>
