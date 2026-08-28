@@ -1061,3 +1061,79 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   The envelope on the partner page.
+
+   Mirrors tools/brand/profile-halls.html so the link and the PDF open the same
+   way — they were two separate implementations, and the link quietly had
+   neither the envelope nor the music.
+--------------------------------------------------------------------------- */
+.env-open {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: radial-gradient(ellipse 80% 60% at 50% 45%, #241d12 0%, #0f0c08 60%, #070504 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  cursor: pointer;
+  transition: opacity 0.9s ease;
+}
+.env-open.opening { opacity: 0; pointer-events: none; }
+
+/* Scaled and faded as one unit: it grows toward you and dissolves rather than
+   sliding away. */
+.env-mark {
+  transition: transform 1.25s cubic-bezier(0.3, 0, 0.2, 1), opacity 1.1s ease 0.15s;
+  transform-origin: 50% 55%;
+}
+.env-open.opening .env-mark { transform: scale(2.2); opacity: 0; }
+
+/* Hinged on the envelope's top edge. scaleY(-1), not rotateX — an SVG child
+   gets no perspective from its parent, so the 3D version does nothing at all. */
+.env-flap {
+  transform-box: view-box;
+  transform-origin: 150px 46px;
+  transition: transform 0.72s cubic-bezier(0.34, 0, 0.2, 1);
+}
+.env-open.opening .env-flap { transform: scaleY(-1); }
+
+.env-seal { transition: opacity 0.3s ease; }
+.env-open.opening .env-seal { opacity: 0; }
+
+.env-cta {
+  font-size: var(--text-3xl);
+  color: var(--gold-300, #d9b877);
+  transition: opacity 0.45s ease;
+}
+.env-hint {
+  font-size: var(--text-sm);
+  color: #8d8069;
+  margin-top: -1.6rem;
+  transition: opacity 0.45s ease;
+}
+.env-open.opening .env-cta,
+.env-open.opening .env-hint { opacity: 0; }
+
+/* The document waits behind the envelope and rises as it dissolves. */
+.env-doc {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 1.1s ease 0.35s, transform 1.1s ease 0.35s;
+}
+.env-doc.shown { opacity: 1; transform: none; }
+
+/* Nothing here should hide the page from someone who cannot run the script,
+   or from a printer. */
+@media print { .env-open { display: none; } .env-doc { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .env-mark, .env-flap, .env-doc, .env-cta, .env-hint, .env-seal { transition-duration: 0.01ms; }
+}
+
+@media (max-width: 640px) {
+  .env-mark svg { width: 220px; height: auto; }
+  .env-cta { font-size: var(--text-2xl); }
+}
