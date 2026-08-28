@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&display=swap">
+<style>
+  /* A4 at 96dpi = 794x1123. Rendered a page at a time by
+     tools/brand/render-brand.mjs, so each .page is its own screenshot target
+     and nothing is allowed to flow across a boundary. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0b0906; font-family: "Amiri", serif; }
+
+  .page {
+    position: relative;
+    width: 794px; height: 1123px;
+    overflow: hidden;
+    background: radial-gradient(ellipse 95% 60% at 50% 30%, #241d12 0%, #14100a 55%, #0b0906 100%);
+    color: #f4ede0;
+    padding: 78px 72px 64px;
+    display: flex; flex-direction: column;
+  }
+  .page + .page { margin-top: 40px; }
+
+  h1, h2, .num { font-family: "Aref Ruqaa", serif; }
+
+  .eyebrow { font-size: 19px; color: #b08d57; margin-bottom: 14px; }
+  h2 { font-size: 46px; color: #fdf6e6; line-height: 1.45; margin-bottom: 26px; }
+  p  { font-size: 21px; line-height: 1.95; color: #d6cab4; margin-bottom: 18px; }
+  strong { color: #fdf6e6; font-weight: 700; }
+  .gold { color: #d9b877; }
+
+  .rule { height: 1px; background: linear-gradient(90deg, #b08d57, rgba(176,141,87,0)); margin: 26px 0; }
+
+  /* ---- cover ---- */
+  .cover { align-items: center; justify-content: center; text-align: center; }
+  .cover h1 { font-size: 96px; color: #fdf6e6; margin: 26px 0 10px; text-shadow: 0 0 70px rgba(224,196,141,.3); }
+  .cover .sub { font-size: 27px; color: #cdbfa4; }
+  .cover .for { margin-top: 60px; font-size: 24px; color: #d9b877; }
+  .cover .ent { margin-top: 8px; font-size: 17px; color: #8d8069; }
+
+  /* ---- lists ---- */
+  ul { list-style: none; }
+  li { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 20px; }
+  li svg { flex: none; margin-top: 9px; }
+  li span { font-size: 21px; line-height: 1.75; color: #e4dac6; }
+
+  /* ---- numbered steps ---- */
+  .step { display: flex; gap: 22px; margin-bottom: 26px; align-items: flex-start; }
+  .step .num {
+    flex: none; width: 46px; height: 46px; border-radius: 50%;
+    border: 1.5px solid #b08d57; color: #d9b877;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  }
+  .step b { display: block; font-size: 23px; color: #fdf6e6; margin-bottom: 5px; }
+  .step p { font-size: 19px; margin: 0; }
+
+  /* ---- table ---- */
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; }
+  th, td { padding: 15px 12px; text-align: right; font-size: 20px; }
+  th { color: #d9b877; border-bottom: 1.5px solid rgba(176,141,87,.5); font-size: 18px; }
+  td { border-bottom: 1px solid rgba(176,141,87,.18); color: #e4dac6; }
+  tr.feature td { background: rgba(224,196,141,.07); color: #fdf6e6; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  .note {
+    border-inline-start: 2px solid #b08d57; padding: 4px 20px;
+    font-size: 19px; color: #cdbfa4; line-height: 1.8; margin-top: 6px;
+  }
+
+  .spacer { flex: 1; }
+  .foot { font-size: 15px; color: #6f6455; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ 1 · cover ══════════════ -->
+<section class="page cover">
+  <svg width="120" height="120" viewBox="0 0 64 64" fill="none" style="color:#d9b877">
+    <circle cx="32" cy="32" r="29.5" stroke="currentColor" stroke-width="1" opacity=".28" stroke-dasharray="6 10"/>
+    <circle cx="32" cy="32" r="24.5" stroke="currentColor" stroke-width=".8" opacity=".18"/>
+    <path d="M32 5 L37.8 26.2 L59 32 L37.8 37.8 L32 59 L26.2 37.8 L5 32 L26.2 26.2 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M32 17.5 L35 29 L46.5 32 L35 35 L32 46.5 L29 35 L17.5 32 L29 29 Z" fill="currentColor"/>
+  </svg>
+
+  <h1>دعوة</h1>
+  <div class="sub">من أول دعوة، لين آخر معزوم يدخل الباب</div>
+
+  <div class="for">ملف الشراكة — للقاعات ومنظّمي الحفلات</div>
+  <div class="ent">فيرتكس سكاي ش ذ م م · da3wa.digital</div>
+</section>
+
+<!-- ══════════════ 2 · the problem ══════════════ -->
+<section class="page">
+  <div class="eyebrow">المشكلة</div>
+  <h2>اللي يصير على الباب<br>مو غلطتكم — بس هو انطباعكم</h2>
+
+  <p>القاعة تجهّز كل شي: الإضاءة، العشا، الخدمة. وبعدين تجي ليلة العرس، والزحمة تبدأ من برّه الباب.</p>
+
+  <ul>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span>قوائم ورق، وأسماء ما أحد يلقاها، ومعازيم واقفين ينتظرون</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span>عدد ما أحد يعرفه بالضبط — فالعشا إما زايد وينرمى، أو ناقص</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span>ناس يدخلون مرتين، وناس ما كانوا مدعوين أصلاً</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span>وإحراج مع معزوم على باب قاعتكم — والاسم اللي ينذكر اسمكم</span></li>
+  </ul>
+
+  <div class="rule"></div>
+  <p class="note">العميل ما يفرّق بين «تنظيم الدعوات» و«القاعة». الليلة عندكم، والانطباع عنكم.</p>
+
+  <div class="spacer"></div>
+  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٢</span></div>
+</section>
+
+<!-- ══════════════ 3 · the system ══════════════ -->
+<section class="page">
+  <div class="eyebrow">الحل</div>
+  <h2>نظام كامل، مو تصميم دعوة</h2>
+
+  <div class="step"><div class="num">١</div><div>
+    <b>الدعوة توصل باسم كل معزوم</b>
+    <p>على واتساب، لكل واحد باسمه — مو رابط عام ينتشر.</p></div></div>
+
+  <div class="step"><div class="num">٢</div><div>
+    <b>المعزوم يأكّد ويقول كم واحد جاي معه</b>
+    <p>والعدد يتحدّث لحظة بلحظة. تحجزون العشا والطاولات على رقم، مو على تخمين.</p></div></div>
+
+  <div class="step"><div class="num">٣</div><div>
+    <b>يوصله رمز خاص فيه</b>
+    <p>على جواله. ما يحتاج يطبع ولا يحفظ شي.</p></div></div>
+
+  <div class="step"><div class="num">٤</div><div>
+    <b>موظف من عندنا على الباب</b>
+    <p>يدخل المعزوم في ثانية. بدون طابور، بدون قوائم ورق، وبدون أحد يدخل مرتين. وانتم تشوفون العدد الداخل أول بأول.</p></div></div>
+
+  <div class="step"><div class="num">٥</div><div>
+    <b>وبعد الليلة</b>
+    <p>كل معزوم يترك كلمة، وتبقى للعروسين. وانتم تستلمون تقرير كامل بالحضور.</p></div></div>
+
+  <div class="spacer"></div>
+  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٣</span></div>
+</section>
+
+<!-- ══════════════ 4 · what the hall gets ══════════════ -->
+<section class="page">
+  <div class="eyebrow">وش تكسبون</div>
+  <h2>خدمة تبيعونها،<br>وشغل ما تشيلونه</h2>
+
+  <ul>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span><strong>خدمة إضافية في باقتكم</strong> — تبيعونها بسعركم وتاخذون الفرق</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span><strong>العدد الصحيح قبل الليلة</strong> — تجهيز العشا والطاولات على رقم حقيقي</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span><strong>باب منظّم</strong> — موظفنا يشتغل معكم، مو بدلكم ولا عليكم</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span><strong>باسمكم إذا تبون</strong> — الدعوة ولوحة المتابعة بهوية قاعتكم</span></li>
+    <li><svg width="22" height="22" viewBox="0 0 100 100"><path d="M50 8 L59.5 40.5 L92 50 L59.5 59.5 L50 92 L40.5 59.5 L8 50 L40.5 40.5 Z" fill="#b08d57"/></svg>
+      <span><strong>تقرير بعد كل مناسبة</strong> — كم دعوة، كم أكّد، كم دخل فعلاً</span></li>
+  </ul>
+
+  <div class="rule"></div>
+  <p><strong>وما نتواصل مع عميلكم من ورا ظهركم.</strong> العلاقة معكم، والعميل يبقى عميلكم.</p>
+
+  <div class="spacer"></div>
+  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٤</span></div>
+</section>
+
+<!-- ══════════════ 5 · partner pricing ══════════════ -->
+<section class="page">
+  <div class="eyebrow">أسعار الشركاء</div>
+  <h2>سعر للعرس،<br>مو حساب على كل معزوم</h2>
+
+  <table>
+    <thead><tr><th>الباقة</th><th>المعازيم</th><th>السعر المعلن</th><th>سعركم</th><th>هامشكم</th></tr></thead>
+    <tbody>
+      <tr><td>أساسية</td><td class="tnum">٢٠٠</td><td class="tnum">١٠٠ د.ك</td><td class="tnum gold">٨٠ د.ك</td><td class="tnum">٢٠ د.ك</td></tr>
+      <tr class="feature"><td><strong>المميزة</strong></td><td class="tnum">٣٥٠</td><td class="tnum">١٧٠ د.ك</td><td class="tnum gold">١٣٠ د.ك</td><td class="tnum">٤٠ د.ك</td></tr>
+      <tr><td>الكبرى</td><td class="tnum">٧٠٠</td><td class="tnum">٢٩٠ د.ك</td><td class="tnum gold">٢٢٠ د.ك</td><td class="tnum">٧٠ د.ك</td></tr>
+    </tbody>
+  </table>
+
+  <p class="note">
+    سعر الشريك يبدأ من <strong>٥ مناسبات</strong> في السنة. فوق <strong>١٢ مناسبة</strong> نراجع السعر لصالحكم.
+    وتقدرون تبيعون بسعركم انتم — الفرق كله لكم.
+  </p>
+
+  <div class="rule"></div>
+  <p><strong>كل باقة شاملة كل شي:</strong> الدعوة بتصميمكم · الإرسال لكل معزوم باسمه · تأكيد الحضور · موظف على الباب · كلمات المعازيم · لوحة متابعة · تقرير بعد المناسبة.</p>
+
+  <div class="spacer"></div>
+  <div class="foot"><span>دعوة · ملف الشراكة</span><span class="tnum">٥</span></div>
+</section>
+
+<!-- ══════════════ 6 · contact ══════════════ -->
+<section class="page cover">
+  <svg width="86" height="86" viewBox="0 0 64 64" fill="none" style="color:#d9b877">
+    <circle cx="32" cy="32" r="29.5" stroke="currentColor" stroke-width="1" opacity=".28" stroke-dasharray="6 10"/>
+    <path d="M32 5 L37.8 26.2 L59 32 L37.8 37.8 L32 59 L26.2 37.8 L5 32 L26.2 26.2 Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M32 17.5 L35 29 L46.5 32 L35 35 L32 46.5 L29 35 L17.5 32 L29 29 Z" fill="currentColor"/>
+  </svg>
+
+  <h2 style="margin-top:34px">نجرّب مناسبة وحدة؟</h2>
+  <p style="max-width:30ch; text-align:center">
+    أول مناسبة معكم نمشّيها خطوة بخطوة، وانتم تشوفون النتيجة قبل ما تلتزمون بأي شي.
+  </p>
+
+  <div class="rule" style="width:200px; background:linear-gradient(90deg,rgba(176,141,87,0),#b08d57,rgba(176,141,87,0))"></div>
+
+  <div style="font-size:23px; line-height:2.1; color:#e4dac6; text-align:center" dir="ltr">
+    da3wa.digital<br>
+    hello@da3wa.digital<br>
+    +20 155 522 9877
+  </div>
+
+  <div class="ent" style="margin-top:46px; text-align:center; line-height:1.8">
+    فيرتكس سكاي ش ذ م م — Vertex Sky LLC<br>
+    ٣٩٨ طريق الحرية، برج الفنار، الإسكندرية، مصر
+  </div>
+</section>
+
+</body>
+</html>

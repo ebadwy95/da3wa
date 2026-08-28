@@ -12,3 +12,6 @@ public/test/
 
 # rendered social media — regenerate with tools/social/render-posts.mjs
 social-out/
+
+# rendered brand assets — regenerate with tools/brand/render-brand.mjs
+brand-out/
