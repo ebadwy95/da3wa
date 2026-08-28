@@ -105,8 +105,10 @@
   }
   .tier.feature { border-color: #d9b877; background: rgba(224,196,141,0.12); }
   .tier .nm { font-size: 33px; font-weight: 500; color: #d9b877; }
-  .tier .qt { font-family: "Aref Ruqaa", serif; font-size: 66px; color: #fdf6e6; margin: 12px 0 4px; }
-  .tier .un { font-size: 27px; font-weight: var(--body-weight); color: #a1937e; }
+  .tier .qt { font-family: "Aref Ruqaa", serif; font-size: 64px; color: #fdf6e6; margin: 10px 0 0; }
+  .tier .un { font-size: 26px; font-weight: var(--body-weight); color: #cdbfa4; }
+  .tier .gu { font-size: 25px; font-weight: var(--body-weight); color: #a1937e; margin-top: 14px;
+              padding-top: 14px; border-top: 1px solid rgba(176,141,87,0.3); }
 
   #mark { position: relative; z-index: 2; flex: none; display: flex; flex-direction: column; align-items: center; gap: 16px; }
   #wordmark { font-family: "Aref Ruqaa", serif; font-size: 54px; color: #d9b877; }
@@ -207,7 +209,9 @@ function itemRow(text) {
 function tierCard(t) {
   const el = document.createElement("div");
   el.className = "tier" + (t.feature ? " feature" : "");
-  for (const [cls, val] of [["nm", t.name], ["qt", t.quantity], ["un", t.unit]]) {
+  // `gu` is optional, so a tier can still be written as name/price/unit alone.
+  for (const [cls, val] of [["nm", t.name], ["qt", t.price], ["un", t.unit], ["gu", t.guests]]) {
+    if (!val) continue;
     const d = document.createElement("div");
     d.className = cls;
     d.textContent = val;
