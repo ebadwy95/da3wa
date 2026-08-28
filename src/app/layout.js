@@ -1,5 +1,6 @@
 import { Rubik, Aref_Ruqaa } from "next/font/google";
 import "./globals.css";
+import { siteOrigin } from "@/lib/seo";
 
 // Rubik: the UI face for dashboards, forms and body text. Chosen over a
 // single-script Arabic face because this app constantly mixes scripts —
@@ -24,10 +25,13 @@ const arefRuqaa = Aref_Ruqaa({
   display: "swap",
 });
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.da3wa.digital";
-
 export const metadata = {
-  metadataBase: new URL(baseUrl),
+  // siteOrigin() rather than NEXT_PUBLIC_BASE_URL directly: that variable is
+  // whatever the current deployment answers on, and a build carrying the local
+  // value emitted `og:image = http://localhost:3000/og.png`. A preview card
+  // pointing at localhost is broken for every person who sees the link, so
+  // anything that is not the real site falls back to the canonical origin.
+  metadataBase: new URL(siteOrigin()),
   title: {
     default: "Da3wa — دعوات إلكترونية للمناسبات",
     template: "%s — Da3wa",
@@ -43,6 +47,17 @@ export const metadata = {
     siteName: "Da3wa",
     title: "دعوة إلكترونية",
     description: "افتح دعوتك الشخصية وأكّد حضورك.",
+    // Meta's sharing debugger flagged the missing image: without it the link
+    // renders as a bare grey box wherever it is pasted. Regenerate with
+    // `node tools/social/render-og.mjs` — it uses the same scene as the
+    // social cards, so the preview and the grid read as one brand.
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "دعوة — دعوات إلكترونية للأعراس والمناسبات" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "دعوة إلكترونية",
+    description: "افتح دعوتك الشخصية وأكّد حضورك.",
+    images: ["/og.png"],
   },
   // No robots block here on purpose. Personal invite links must never end up
   // in a search index, but setting that on the root layout hid the landing
