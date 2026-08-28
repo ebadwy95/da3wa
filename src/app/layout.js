@@ -64,6 +64,20 @@ export const metadata = {
   // page too — and a noindex page cannot pass Meta's business verification,
   // whatever legal name is printed on it. The private routes now opt out
   // individually; see src/lib/seo.js.
+
+  // This is what actually associates the domain with the business portfolio.
+  // Four verification attempts failed on "we can't verify your website is
+  // associated with فيرتكس سكاي ش ذ م م" while the legal name sat in the
+  // footer in plain text — the association was never something written on the
+  // page, it is this token matched against the one Meta issued. The domain had
+  // simply never been added to the account.
+  //
+  // Token issued for da3wa.digital (the root domain — Meta verifies the root,
+  // which covers www). Do not change or remove it: the WhatsApp Business API
+  // depends on the verification it unlocks.
+  other: {
+    "facebook-domain-verification": "uhzq1vwbgqte75v5fmdtlnaqjg62ua",
+  },
 };
 
 export const viewport = {
