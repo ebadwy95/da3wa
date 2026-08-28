@@ -87,6 +87,19 @@
   .phone { height: 330px; overflow: hidden; }
   .phone img { object-fit: cover; object-position: top center; height: 100%; }
 
+  /* Tapped on a phone, these have to do something. On paper they are just
+     text, so the styling stays flat rather than link-blue. */
+  .call { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .call-row { display: flex; gap: 10px; align-items: center; }
+  .call-row .lbl { font-size: 19px; color: #d9b877; width: 66px; text-align: start; }
+  .call-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(176,141,87,.5); border-radius: 99px;
+    padding: 9px 18px; font-size: 19px; color: #e4dac6; text-decoration: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .call-btn.wa { border-color: rgba(37,211,102,.45); color: #9fe3bb; padding: 9px 13px; }
+
   .spacer { flex: 1; }
   .foot { font-size: 15px; color: #6f6455; display: flex; justify-content: space-between; }
 
@@ -118,6 +131,21 @@
 
     .spacer { display: none; }
     .foot { margin-top: 34px; font-size: 13px; }
+  }
+
+  @media print {
+    /* @page pins the sheet to the same box as .page. Without it Chrome sizes
+       the sheet itself and a sub-pixel rounding difference spills one line
+       onto an eighth sheet — which is how a lone bullet ends up on its own
+       page. The 2px is slack for that rounding, not a design choice. */
+    @page { size: 794px 1123px; margin: 0; }
+    html, body { width: 794px; margin: 0; }
+    .page {
+      break-after: page; page-break-after: always;
+      break-inside: avoid; page-break-inside: avoid;
+      margin: 0 !important; height: 1121px;
+    }
+    .page:last-child { break-after: auto; page-break-after: auto; }
   }
 
   /* ---- the music gate (screen only) ---- */
@@ -287,12 +315,21 @@
 
   <div class="rule" style="width:200px; background:linear-gradient(90deg,rgba(176,141,87,0),#b08d57,rgba(176,141,87,0))"></div>
 
-  <div style="font-size:23px; line-height:2.05; color:#e4dac6; text-align:center" dir="ltr">
-    <span style="color:#d9b877">Kuwait</span> &nbsp; +965 6161 5767<br>
-    <span style="color:#d9b877">KSA</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; +966 53 097 7565<br>
-    <br>
-    hello@da3wa.digital<br>
-    da3wa.digital
+  <div class="call" dir="ltr">
+    <div class="call-row">
+      <span class="lbl">Kuwait</span>
+      <a class="call-btn" href="tel:+96561615767"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8.1 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z"/></svg> +965 6161 5767</a>
+      <a class="call-btn wa" href="https://wa.me/96561615767" target="_blank" rel="noreferrer" aria-label="WhatsApp Kuwait"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.31-1.96 1.35-.5.04-.96.21-3.23-.68-2.72-1.07-4.44-3.85-4.58-4.03-.13-.18-1.09-1.45-1.09-2.77s.69-1.96.94-2.23c.24-.27.53-.34.71-.34h.51c.16 0 .38-.06.6.46.22.53.76 1.85.83 1.98.07.13.11.29.02.47-.09.18-.13.29-.27.44-.13.15-.28.34-.4.45-.13.13-.27.28-.12.55.16.27.7 1.15 1.5 1.86 1.03.92 1.9 1.2 2.17 1.34.27.13.42.11.58-.07.16-.18.67-.78.85-1.05.18-.27.35-.22.6-.13.24.09 1.56.73 1.83.87.27.13.44.2.51.31.07.11.07.64-.17 1.32z"/></svg></a>
+    </div>
+    <div class="call-row">
+      <span class="lbl">KSA</span>
+      <a class="call-btn" href="tel:+966530977565"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.5 2.1L8.1 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2z"/></svg> +966 53 097 7565</a>
+      <a class="call-btn wa" href="https://wa.me/966530977565" target="_blank" rel="noreferrer" aria-label="WhatsApp KSA"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.95 6.45 17.5 2 12.04 2zm5.8 14.16c-.24.68-1.42 1.31-1.96 1.35-.5.04-.96.21-3.23-.68-2.72-1.07-4.44-3.85-4.58-4.03-.13-.18-1.09-1.45-1.09-2.77s.69-1.96.94-2.23c.24-.27.53-.34.71-.34h.51c.16 0 .38-.06.6.46.22.53.76 1.85.83 1.98.07.13.11.29.02.47-.09.18-.13.29-.27.44-.13.15-.28.34-.4.45-.13.13-.27.28-.12.55.16.27.7 1.15 1.5 1.86 1.03.92 1.9 1.2 2.17 1.34.27.13.42.11.58-.07.16-.18.67-.78.85-1.05.18-.27.35-.22.6-.13.24.09 1.56.73 1.83.87.27.13.44.2.51.31.07.11.07.64-.17 1.32z"/></svg></a>
+    </div>
+    <div style="margin-top:14px; font-size:20px; line-height:1.9; color:#cdbfa4; text-align:center">
+      <a href="mailto:hello@da3wa.digital" style="color:inherit; text-decoration:none">hello@da3wa.digital</a><br>
+      <a href="https://da3wa.digital" style="color:inherit; text-decoration:none">da3wa.digital</a>
+    </div>
   </div>
 
   <div class="ent" style="margin-top:46px; text-align:center" dir="ltr">Vertex Sky</div>
