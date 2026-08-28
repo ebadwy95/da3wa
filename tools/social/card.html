@@ -4,12 +4,23 @@
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Rubik:wght@300;400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Amiri:wght@400;700&family=El+Messiri:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@300;400;500&family=Readex+Pro:wght@300;400;500&family=Noto+Naskh+Arabic:wght@400;500;600&family=Rubik:wght@300;400;500;600&display=swap">
 <style>
   /* Same discipline as the invitation film: no CSS animation anywhere. Every
      frame comes from calling render(t) with an explicit time, so a still can be
      captured at any moment and a reel encodes deterministically. A card caught
      mid-transition is the exact failure this avoids. */
+  /* ---- The supporting face. Change these two lines, nothing else. --------
+     --body-font   the face used for everything except the big headline
+     --body-weight naskh faces have no usable 300 and their 400 already reads
+                   light; the sans faces want 300 or they look heavy.
+     Candidates loaded above: Amiri · El Messiri · IBM Plex Sans Arabic ·
+     Readex Pro · Noto Naskh Arabic · Rubik. See the two specimen sheets. */
+  :root {
+    --body-font: "Amiri", serif;
+    --body-weight: 400;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { overflow: hidden; background: #0b0906; }
 
@@ -17,7 +28,7 @@
     position: relative;
     overflow: hidden;
     background: radial-gradient(ellipse 95% 60% at 50% 40%, #2a2114 0%, #14100a 55%, #0b0906 100%);
-    font-family: "Rubik", sans-serif;
+    font-family: var(--body-font);
     color: #f4ede0;
     display: flex;
     flex-direction: column;
@@ -76,7 +87,7 @@
   #headline.long { font-size: 72px; }
 
   #subline {
-    margin-top: 40px; font-weight: 300; line-height: 1.85;
+    margin-top: 40px; font-weight: var(--body-weight); line-height: 1.85;
     color: #cdbfa4; max-width: 20ch;
   }
   #stage.square #subline { font-size: 39px; }
@@ -85,7 +96,7 @@
   #list { margin-top: 52px; display: flex; flex-direction: column; gap: 32px; width: 100%; max-width: 790px; }
   .item { display: flex; align-items: flex-start; gap: 26px; text-align: right; }
   .item svg { flex: none; margin-top: 12px; }
-  .item span { font-size: 41px; font-weight: 300; line-height: 1.6; color: #e4dac6; }
+  .item span { font-size: 41px; font-weight: var(--body-weight); line-height: 1.6; color: #e4dac6; }
 
   #tiers { margin-top: 52px; display: flex; gap: 24px; width: 100%; justify-content: center; }
   .tier {
@@ -95,11 +106,11 @@
   .tier.feature { border-color: #d9b877; background: rgba(224,196,141,0.12); }
   .tier .nm { font-size: 33px; font-weight: 500; color: #d9b877; }
   .tier .qt { font-family: "Aref Ruqaa", serif; font-size: 66px; color: #fdf6e6; margin: 12px 0 4px; }
-  .tier .un { font-size: 27px; font-weight: 300; color: #a1937e; }
+  .tier .un { font-size: 27px; font-weight: var(--body-weight); color: #a1937e; }
 
   #mark { position: relative; z-index: 2; flex: none; display: flex; flex-direction: column; align-items: center; gap: 16px; }
   #wordmark { font-family: "Aref Ruqaa", serif; font-size: 54px; color: #d9b877; }
-  #handle { font-size: 29px; font-weight: 300; letter-spacing: 0.2em; color: #8d8069; }
+  #handle { font-size: 29px; font-weight: var(--body-weight); letter-spacing: 0.2em; color: #8d8069; }
 
   #ruleWrap { display: flex; align-items: center; justify-content: center; margin-top: 34px; }
   svg { overflow: visible; }
