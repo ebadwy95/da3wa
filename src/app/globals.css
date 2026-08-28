@@ -1078,19 +1078,50 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2.5rem;
+  gap: 1.6rem;
   cursor: pointer;
+  overflow: hidden;
   transition: opacity 0.9s ease;
 }
 .env-open.opening { opacity: 0; pointer-events: none; }
 
+/* Gold dust. Seeded in the component so server and client agree — a random
+   field here is a hydration mismatch, and a mote that jumps on first paint is
+   worse than no mote. */
+.env-dust { position: absolute; inset: 0; pointer-events: none; }
+.env-dust span {
+  position: absolute;
+  border-radius: 50%;
+  background: #e0c48d;
+  animation: env-drift linear infinite;
+}
+@keyframes env-drift {
+  0%   { transform: translateY(14px) scale(0.85); }
+  50%  { transform: translateY(-18px) scale(1.1); }
+  100% { transform: translateY(14px) scale(0.85); }
+}
+
+.env-eyebrow {
+  position: relative;
+  font-size: var(--text-sm);
+  letter-spacing: 0.06em;
+  color: #8d8069;
+  transition: opacity 0.45s ease;
+}
+
 /* Scaled and faded as one unit: it grows toward you and dissolves rather than
-   sliding away. */
+   sliding away. Breathing before the tap so the page never looks frozen. */
 .env-mark {
+  position: relative;
+  animation: env-breathe 4.5s ease-in-out infinite;
   transition: transform 1.25s cubic-bezier(0.3, 0, 0.2, 1), opacity 1.1s ease 0.15s;
   transform-origin: 50% 55%;
 }
-.env-open.opening .env-mark { transform: scale(2.2); opacity: 0; }
+@keyframes env-breathe {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-7px); }
+}
+.env-open.opening .env-mark { animation: none; transform: scale(2.2); opacity: 0; }
 
 /* Hinged on the envelope's top edge. scaleY(-1), not rotateX — an SVG child
    gets no perspective from its parent, so the 3D version does nothing at all. */
@@ -1104,19 +1135,63 @@ body {
 .env-seal { transition: opacity 0.3s ease; }
 .env-open.opening .env-seal { opacity: 0; }
 
+/* The couple's names, with one slow pass of light through the letters.
+   The first version painted a blurred gradient element on top and clipped it
+   with overflow:hidden — which produced a hard-edged grey box behind the
+   names, because a blur cannot bleed past the clip and `screen` lifted the
+   whole rectangle off the dark ground. Sweeping the background through the
+   glyphs has no box to leak. */
+.env-title {
+  position: relative;
+  font-size: clamp(2rem, 8vw, 3.1rem);
+  line-height: 1.5;
+  text-align: center;
+  padding: 0 1rem;
+  background-image: linear-gradient(
+    105deg,
+    #f0e6d2 38%,
+    #fffdf6 47%,
+    #ffffff 50%,
+    #fffdf6 53%,
+    #f0e6d2 62%
+  );
+  background-size: 320% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* background-clip:text drops text-shadow, so the glow moves to a filter. */
+  filter: drop-shadow(0 0 26px rgba(224, 196, 141, 0.42));
+  animation: env-sweep 6s ease-in-out 1.2s infinite;
+  transition: opacity 0.45s ease;
+}
+@keyframes env-sweep {
+  0%, 12%   { background-position: 100% 0; }
+  62%, 100% { background-position: 0 0; }
+}
+
 .env-cta {
-  font-size: var(--text-3xl);
+  position: relative;
+  font-size: var(--text-lg);
   color: var(--gold-300, #d9b877);
   transition: opacity 0.45s ease;
 }
 .env-hint {
+  position: relative;
   font-size: var(--text-sm);
   color: #8d8069;
-  margin-top: -1.6rem;
+  margin-top: -0.9rem;
+  animation: env-nudge 2.6s ease-in-out infinite;
   transition: opacity 0.45s ease;
 }
+@keyframes env-nudge {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
 .env-open.opening .env-cta,
-.env-open.opening .env-hint { opacity: 0; }
+.env-open.opening .env-hint,
+.env-open.opening .env-title,
+.env-open.opening .env-eyebrow { opacity: 0; }
 
 /* The document waits behind the envelope and rises as it dissolves. */
 .env-doc {
@@ -1130,10 +1205,11 @@ body {
    or from a printer. */
 @media print { .env-open { display: none; } .env-doc { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .env-mark, .env-flap, .env-doc, .env-cta, .env-hint, .env-seal { transition-duration: 0.01ms; }
+  .env-mark, .env-flap, .env-doc, .env-cta, .env-hint, .env-seal, .env-title { transition-duration: 0.01ms; }
+  .env-dust span, .env-mark, .env-title, .env-hint { animation: none; }
 }
 
 @media (max-width: 640px) {
   .env-mark svg { width: 220px; height: auto; }
-  .env-cta { font-size: var(--text-2xl); }
+  .env-cta { font-size: var(--text-base); }
 }

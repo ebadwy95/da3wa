@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { InviteOpener } from "@/components/InviteOpener";
+import { EnvelopeOpener } from "@/components/EnvelopeOpener";
 import {
   MapPinIcon,
   CheckCircleIcon,
@@ -161,16 +162,28 @@ function InviteContent() {
   const { guest, event } = state;
   const prettyDate = formatEventDateArabic(event.eventDate);
   const prettyTime = formatEventTimeArabic(event.eventTime);
-  const hasOpener = Boolean(event.inviteVideoUrl || event.inviteAudioUrl);
+  // A film, if the couple has one. Otherwise the envelope — which every
+  // invitation gets, because arriving straight at the card skips the one
+  // moment the whole thing is about.
+  const hasFilm = Boolean(event.inviteVideoUrl);
+  const hasOpener = true;
 
   return (
     <PageShell theme={event.inviteTheme}>
-      {hasOpener && (
+      {hasFilm ? (
         <InviteOpener
           videoUrl={event.inviteVideoUrl}
           posterUrl={event.invitePosterUrl}
           audioUrl={event.inviteAudioUrl}
           coupleNames={event.coupleNames}
+          onOpened={() => setOpened(true)}
+        />
+      ) : (
+        <EnvelopeOpener
+          audioUrl={event.inviteAudioUrl || "/samples/music.mp3"}
+          eyebrow={`أهلًا ${guest.name}`}
+          title={event.coupleNames}
+          cta="افتح دعوتك"
           onOpened={() => setOpened(true)}
         />
       )}
