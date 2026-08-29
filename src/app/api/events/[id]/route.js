@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb, withDb } from "@/lib/db";
+import { sanitiseInviteCopy } from "@/lib/inviteCopy";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { computeDisplayStatus, isTodayOrFuture, daysSinceDeleted } from "@/lib/date";
@@ -63,6 +64,15 @@ export async function PATCH(request, { params }) {
       "familyNames",
       "timeline",
     ];
+    // Sanitised rather than assigned: this is free text an admin types and
+    // every guest of the wedding reads. Only known keys survive, only strings,
+    // length-capped, and anything equal to the designed wording is dropped so
+    // a later change to that wording still reaches couples who never overrode
+    // it.
+    if (body.inviteCopy !== undefined) {
+      event.inviteCopy = sanitiseInviteCopy(body.inviteCopy);
+    }
+
     for (const key of editable) {
       if (body[key] !== undefined) {
         event[key] = key === "packageLimit" ? Math.max(1, parseInt(body[key], 10) || event.packageLimit) : body[key];

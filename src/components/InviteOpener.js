@@ -17,7 +17,7 @@ import { EnvelopeMark } from "@/components/EnvelopeMark";
 // video stays muted and `playsInline` (iOS otherwise takes it fullscreen and
 // hands control to the system player), while the audio element carries sound.
 
-export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guestName, onOpened }) {
+export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guestName, copy = {}, onOpened }) {
   const [state, setState] = useState("idle"); // idle | opening | playing | closing | done
   const videoRef = useRef(null);
   const audioRef = useRef(null);
@@ -136,7 +136,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
                 where a name goes. Every guest has their own link, so every
                 guest sees theirs and only theirs. */}
             <span className="opener-label">
-              <i aria-hidden="true" /> دعوة خاصة لـ <i aria-hidden="true" />
+              <i aria-hidden="true" /> {copy.coverLabel || "دعوة خاصة لـ"} <i aria-hidden="true" />
             </span>
             {guestName && (
               <span
@@ -146,7 +146,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
                 {guestName}
               </span>
             )}
-            <span className="opener-label quiet">من</span>
+            <span className="opener-label quiet">{copy.coverFrom || "من"}</span>
             <span
               className="font-display opener-title"
               style={{ fontSize: "var(--text-2xl)", color: "#e6cd97", textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}
@@ -156,7 +156,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
 
             <span className="opener-pill">
               <PlayIcon size={18} />
-              اضغط لفتح دعوتك
+              {copy.openCta || "اضغط لفتح دعوتك"}
             </span>
           </button>
         ) : (

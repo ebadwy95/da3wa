@@ -8,6 +8,7 @@ import { EnvelopeOpener } from "@/components/EnvelopeOpener";
 import { Countdown } from "@/components/Countdown";
 import { Reveal } from "@/components/Reveal";
 import { BrandLoader } from "@/components/BrandLoader";
+import { resolveInviteCopy, splitLines } from "@/lib/inviteCopy";
 import { Timeline } from "@/components/Timeline";
 import {
   MapPinIcon,
@@ -209,6 +210,10 @@ function InviteContent() {
   // The Arabic names get the same ampersand treatment as the Latin ones, so
   // the two settings of the couple's name rhyme rather than each doing its own
   // thing. Split on a free-standing waw; a name that has none is set whole.
+  // Resolved rather than read straight off the event: the endpoint already
+  // sends the merged copy, but an older cached response or a direct call would
+  // otherwise render a card with holes in it.
+  const copy = resolveInviteCopy(event.inviteCopy);
   const arabicPair = (() => {
     const m = (event.coupleNames || "").match(/^(.+?)\s+و\s+(.+)$/);
     return m ? [m[1].trim(), m[2].trim()] : null;
@@ -247,6 +252,7 @@ function InviteContent() {
           audioUrl={event.inviteAudioUrl}
           coupleNames={event.coupleNames}
           guestName={guest.name}
+          copy={copy}
           onOpened={() => setOpened(true)}
         />
       ) : (
@@ -292,9 +298,12 @@ function InviteContent() {
               <StarOrnamentIcon size={14} />
             </div>
             <p className="body" style={{ lineHeight: 2.2, marginTop: "1.5rem" }}>
-              بسم الله نبدأ فرحتنا
-              <br />
-              وبالحب نكتب أجمل بدايات العمر
+              {splitLines(copy.opening, 3).map((line, i) => (
+                <span key={i}>
+                  {i > 0 && <br />}
+                  {line}
+                </span>
+              ))}
             </p>
           </Reveal>
 
@@ -331,9 +340,12 @@ function InviteContent() {
 
           <Reveal className="inv-sec pad" delay={60}>
             <p className="body" style={{ lineHeight: 2.1 }}>
-              إلى كل من نال في قلبنا مكان عزيز
-              <br />
-              بكل حب وود تتشرف
+              {splitLines(copy.dedication, 3).map((line, i) => (
+                <span key={i}>
+                  {i > 0 && <br />}
+                  {line}
+                </span>
+              ))}
             </p>
 
             {families ? (
@@ -357,7 +369,7 @@ function InviteContent() {
                 the card makes, and calligraphy on every line leaves nothing
                 for the names to be. */}
             <p className="body" style={{ lineHeight: 2.1, marginTop: "1.5rem" }}>
-              بدعوتكم لحضور حفل زفاف نجليهما
+              {copy.inviteLine}
             </p>
 
             <h1 className="inv-names-ar" style={{ marginTop: "1.5rem" }}>
@@ -379,8 +391,11 @@ function InviteContent() {
                 capitals to connect — set in caps it stops being handwriting
                 and becomes four unreadable shapes. */}
             <p className="inv-script inv-save" dir="ltr">
-              <span className="l1">Save the</span>
-              <span className="l2">Date</span>
+              {splitLines(copy.saveTheDate).map((line, i) => (
+                <span key={i} className={i === 0 ? "l1" : "l2"}>
+                  {line}
+                </span>
+              ))}
             </p>
           </Reveal>
 
@@ -388,7 +403,7 @@ function InviteContent() {
             <>
               <div className="inv-rule" aria-hidden="true" />
               <Reveal className="inv-sec pad" delay={60}>
-                <p className="inv-eyebrow" dir="ltr" style={{ letterSpacing: "0.3em" }}>AT</p>
+                <p className="inv-eyebrow" dir="ltr" style={{ letterSpacing: "0.3em" }}>{copy.atLabel}</p>
                 <p className="inv-latin" dir="ltr" style={{ fontSize: "var(--text-2xl)" }}>
                   {latinTime}
                 </p>
@@ -409,7 +424,7 @@ function InviteContent() {
             <>
               <div className="inv-rule" aria-hidden="true" />
               <Reveal className="inv-sec pad" delay={60}>
-                <p className="inv-eyebrow">المكان</p>
+                <p className="inv-eyebrow">{copy.venueLabel}</p>
                 <p
                   className="font-display"
                   style={{ fontSize: "var(--text-xl)", lineHeight: 1.75, color: "var(--ink)" }}
@@ -425,7 +440,7 @@ function InviteContent() {
                     style={{ marginTop: "1.1rem" }}
                   >
                     <MapPinIcon size={15} />
-                    اعرض الموقع على الخريطة
+                    {copy.mapCta}
                   </a>
                 )}
               </Reveal>
@@ -434,7 +449,7 @@ function InviteContent() {
 
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={60}>
-            <p className="inv-eyebrow">تفاصيل الليلة</p>
+            <p className="inv-eyebrow">{copy.timelineLabel}</p>
             <Timeline date={event.eventDate} steps={event.timeline} />
           </Reveal>
 
@@ -443,14 +458,14 @@ function InviteContent() {
               nothing at all. */}
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={60}>
-            <p className="inv-eyebrow">باقي على الليلة</p>
+            <p className="inv-eyebrow">{copy.countdownLabel}</p>
             <Countdown date={event.eventDate} time={event.eventTime} />
           </Reveal>
 
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={60}>
             {guest.status === "pending" && (
-              <p className="inv-eyebrow">حضورك يسعدنا</p>
+              <p className="inv-eyebrow">{copy.rsvpLabel}</p>
             )}
 
           {guest.status === "pending" && (
@@ -572,13 +587,13 @@ function InviteContent() {
               className="font-display"
               style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", lineHeight: 1.9, marginBottom: "1.4rem" }}
             >
-              كلماتكم هدية تدوم مدى العمر
+              {copy.wishesTitle}
             </p>
 
             <div className="text-right flex flex-col gap-2">
               <label htmlFor="wish" className="label flex items-center gap-2">
                 <span style={{ color: "var(--gold-500)" }}><MessageIcon size={16} /></span>
-                {guest.wishMessage ? "تعديل رسالتك للعروسين" : "اترك رسالة تهنئة للعروسين"}
+                {guest.wishMessage ? "تعديل رسالتك للعروسين" : copy.wishesLabel}
               </label>
               <textarea
                 id="wish"
@@ -624,7 +639,7 @@ function InviteContent() {
               for. */}
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={80}>
-            <p className="inv-eyebrow">دعوة خاصة بـ</p>
+            <p className="inv-eyebrow">{copy.guestLabel}</p>
             <p
               className="font-display"
               style={{ color: "var(--ink)", fontSize: "var(--text-2xl)", lineHeight: 1.7 }}

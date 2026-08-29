@@ -1,6 +1,7 @@
 "use client";
 
 import { TimelineEditor } from "@/components/TimelineEditor";
+import { InviteCopyEditor } from "@/components/InviteCopyEditor";
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -322,9 +323,16 @@ function EditEventForm({ event, onUpdated, onClose }) {
     latinNames: event.latinNames || "",
     familyNames: event.familyNames || "",
     timeline: Array.isArray(event.timeline) ? event.timeline : [],
+    inviteCopy: event.inviteCopy && typeof event.inviteCopy === "object" ? event.inviteCopy : {},
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Two tabs rather than one long form. The wedding's facts and the
+  // invitation's wording are edited at different times by different people —
+  // the date is set once when the event is booked, the wording is fiddled with
+  // until it reads right — and eighteen text fields under the venue address
+  // buried the fields anyone actually opens this to change.
+  const [tab, setTab] = useState("event"); // event | invite
 
   async function submit(e) {
     e.preventDefault();
@@ -350,9 +358,36 @@ function EditEventForm({ event, onUpdated, onClose }) {
   return (
     <form onSubmit={submit} className="card p-6 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-lg">تعديل تفاصيل الزفاف</h2>
+        <h2 className="font-bold text-lg">تعديل المناسبة</h2>
         <button type="button" onClick={onClose} className="pill-btn-ghost pill-btn-sm">إغلاق</button>
       </div>
+
+      <div className="tab-switch" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "event"}
+          data-active={tab === "event"}
+          onClick={() => setTab("event")}
+        >
+          تفاصيل الزفاف
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "invite"}
+          data-active={tab === "invite"}
+          onClick={() => setTab("invite")}
+        >
+          تفاصيل الدعوة
+        </button>
+      </div>
+
+      {/* Both panels stay mounted and one is hidden. Unmounting the inactive
+          tab would be tidier markup and would throw away anything typed in it
+          the moment someone switched across to check a date — and this is one
+          form with one save button. */}
+      <div hidden={tab !== "event"} className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="label">اسم العريس</label>
@@ -452,12 +487,26 @@ function EditEventForm({ event, onUpdated, onClose }) {
         <p className="hint">تُقرأ: «تتشرّف … بدعوتكم لحضور حفل زفاف نجليهما».</p>
       </div>
 
-      <TimelineEditor
-        value={form.timeline}
-        onChange={(timeline) => setForm({ ...form, timeline })}
-      />
+      </div>
 
-      <InviteMediaFields form={form} setForm={setForm} />
+      <div hidden={tab !== "invite"} className="space-y-4">
+        <TimelineEditor
+          value={form.timeline}
+          onChange={(timeline) => setForm({ ...form, timeline })}
+        />
+
+        <div className="inv-rule" aria-hidden="true" style={{ margin: "1.4rem auto" }} />
+
+        <InviteCopyEditor
+          value={form.inviteCopy}
+          onChange={(inviteCopy) => setForm({ ...form, inviteCopy })}
+        />
+
+        <div className="inv-rule" aria-hidden="true" style={{ margin: "1.4rem auto" }} />
+
+        <InviteMediaFields form={form} setForm={setForm} />
+      </div>
+
       {error && <p className="text-danger text-sm">{error}</p>}
       <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الحفظ..." : "حفظ التعديلات"}</button>
     </form>

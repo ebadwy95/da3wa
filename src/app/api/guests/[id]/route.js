@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDb, withDb } from "@/lib/db";
 import { verifyInviteToken } from "@/lib/token";
+import { resolveInviteCopy, sanitiseInviteCopy } from "@/lib/inviteCopy";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
 
@@ -48,6 +49,11 @@ export async function GET(request, { params }) {
     // a new field that is not listed here silently never arrives.
     latinNames: fullEvent.latinNames || "",
     familyNames: fullEvent.familyNames || "",
+    // Resolved here rather than on the client: the invitation should never
+    // have to know what the default wording is, and sanitising again on the
+    // way out means a record written before the validation existed cannot
+    // reach a guest unchecked.
+    inviteCopy: resolveInviteCopy(sanitiseInviteCopy(fullEvent.inviteCopy)),
     // Each entry is { at: "20:30", label: "دخلة العريس", icon: "groom" }.
     // Validated on the way out rather than trusted: this reaches every guest,
     // and an admin typo should not be able to break the invitation for all of
