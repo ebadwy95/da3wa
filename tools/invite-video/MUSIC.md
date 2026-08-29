@@ -43,5 +43,20 @@ attribution that only exists in a commit message is not attribution.
 
 ## Currently installed
 
-`public/samples/music.mp3` — placeholder. Replace before this goes to a paying
-couple, and record what it is and its licence here when you do.
+| File | Used by | Track | Licence |
+|---|---|---|---|
+| `public/samples/partners.mp3` | The partner page | **Motivation** — PaulYudin, [Pixabay 485931](https://pixabay.com/music/adventure-motivation-485931/) | Pixabay Content Licence — commercial use, no attribution required |
+| `public/samples/music.mp3` | Invitations | placeholder | — |
+
+The two are deliberately separate files. They were one, and pointing the
+partner page at a new track would have changed the music on every wedding
+invitation with it — the partner page is a pitch and the invitations are not,
+and they should never share a soundtrack by accident.
+
+The partner track is re-encoded from Pixabay's 256kbps stereo down to 96kbps
+with a half-second fade-in: 3.5MB is a lot to fetch before a page has shown
+anything, and the source starts on a beat, which sounds like a mistake when
+the audio begins on someone's tap.
+
+`music.mp3` is still a placeholder. Replace it before this goes to a paying
+couple, and record what it is and its licence in this table when you do.

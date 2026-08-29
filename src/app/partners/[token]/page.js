@@ -54,7 +54,7 @@ export default async function PartnersPage({ params }) {
   if (!expected || token !== expected) notFound();
 
   return (
-    <EnvelopeOpener audioUrl="/samples/music.mp3">
+    <EnvelopeOpener audioUrl="/samples/partners.mp3">
     <main className="min-h-screen invite-dark" style={{ background: "var(--paper)" }}>
       <header className="wrap flex items-center justify-between py-6 px-5">
         <Link href="/" aria-label="دعوة" style={{ color: "var(--gold-300)" }}>
