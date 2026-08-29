@@ -420,78 +420,135 @@ export function InboxIcon(props) {
 
    Drawn rather than borrowed so they carry the same 24-grid, stroke weight and
    round joins as everything above — an icon set that mixes provenance reads as
-   mixed no matter how good the individual glyphs are. Each is a silhouette at
-   16px, which is the size that actually matters on the invitation.
+   mixed no matter how good the individual glyphs are.
+
+   These are illustrations, not glyphs. The first set was three or four strokes
+   each, which is right for a toolbar and wrong here: on the invitation they sit
+   at 30px with a lot of quiet around them, and at that size a four-stroke mark
+   reads as a placeholder for an icon rather than as a drawing. Every one of
+   them now says what it is without the label beside it — which is the actual
+   test, because the label is in Arabic and the drawing is what a guest sees
+   first.
+
+   They take a lighter stroke than the interface icons (1.4 against 1.75): more
+   lines in the same box at the same weight fills in and turns to a blob.
 --------------------------------------------------------------------------- */
 
-/** Groom — a head over shoulders, with the line of a bisht. */
+/* Filled, not stroked. The line-art versions were the right call for the
+   toolbar and the wrong one here: at 30px on the invitation a 1.4px stroke
+   describing a bow tie is a grey smudge, and the groom read as a stick figure
+   next to a bride that read as an archway. A silhouette carries at any size,
+   which is why every icon set that has to work small is drawn this way.
+
+   Detail is cut out with fill-rule="evenodd" rather than painted over in the
+   background colour — the card behind these is a textured image, so a "white"
+   patch would be a visible white patch. */
+function Solid({ children, size = 20, className = "", ...rest }) {
+  return (
+    <Icon size={size} fill="currentColor" stroke="none" className={className} {...rest}>
+      {children}
+    </Icon>
+  );
+}
+
+/** Groom — shoulders in a jacket, the shirt showing through the lapels, and a
+ *  bow tie in the opening. The V is cut from the outline rather than drawn on
+ *  it, so it stays open at any size. */
 export function GroomIcon(props) {
   return (
-    <Icon {...props}>
-      <circle cx="12" cy="6" r="3.2" />
-      <path d="M5.5 21v-2.2A5.3 5.3 0 0 1 10.8 13.5h2.4a5.3 5.3 0 0 1 5.3 5.3V21" />
-      <path d="M12 13.8V21" />
-    </Icon>
+    <Solid {...props}>
+      <path d="M12 2.1a2.9 2.9 0 1 1 0 5.8 2.9 2.9 0 0 1 0-5.8Z" />
+      <path d="M9.9 9.3 12 13.1l2.1-3.8 2.5 1.2a4.7 4.7 0 0 1 2.6 4.2v6.7H4.8v-6.7a4.7 4.7 0 0 1 2.6-4.2Z" />
+      {/* the bow tie, sitting in the opening the lapels leave */}
+      <path d="M12 10.2 9.7 8.9v3.6L12 11.2l2.3 1.3V8.9Z" />
+    </Solid>
   );
 }
 
-/** Bride — a veil that falls wide of the shoulders and a bouquet.
- *  The first version reused the groom's silhouette and the two were
- *  indistinguishable at 26px, which is the only size that matters here. */
+/** Bride — a dress with the veil falling either side of it. The first solid
+ *  version wrapped the veil right around the dress and cut the dress out of
+ *  it, which at 30px read as an archway with someone standing in it. Open at
+ *  the sides, the same drawing reads as a bride immediately. */
 export function BrideIcon(props) {
   return (
-    <Icon {...props}>
-      <circle cx="12" cy="6" r="2.6" />
-      {/* the veil, falling past the body on both sides */}
-      <path d="M7.6 5.2C5.6 8 4.6 13.6 5 20.4M16.4 5.2c2 2.8 3 8.4 2.6 15.2" />
-      <path d="M5 20.4h14" />
-      {/* shoulders, narrower than the veil so the two read apart */}
-      <path d="M9.2 11.4c-.9.9-1.4 2.6-1.4 5.2M14.8 11.4c.9.9 1.4 2.6 1.4 5.2" />
-      {/* bouquet */}
-      <circle cx="12" cy="15.4" r="1.7" />
-    </Icon>
+    <Solid {...props}>
+      <path d="M12 2a2.4 2.4 0 1 1 0 4.8A2.4 2.4 0 0 1 12 2Z" />
+      {/* the veil, outside the dress on both sides and past its hem */}
+      {/* Pushed well clear of the dress. The first pass left about one grid
+          unit between the veil and the skirt, which at 30px is a pixel — the
+          two filled in and the whole thing read as one dome. */}
+      <path d="M10.8 6.6Q5.8 10.4 4.6 21.2h1.9Q7.6 11 11.6 7.6ZM13.2 6.6Q18.2 10.4 19.4 21.2h-1.9Q16.4 11 12.4 7.6Z" />
+      {/* the dress, with the bouquet cut out of it — the same trick as the
+          groom's bow tie, and the only way to show detail on a silhouette
+          over a textured card */}
+      <path
+        fillRule="evenodd"
+        d="M12 7.2c-1.8 0-2.8 2.4-3.2 5.2-.3 2.2-.4 5.8-.4 8.8h7.2c0-3-.1-6.6-.4-8.8-.4-2.8-1.4-5.2-3.2-5.2Zm0 5.2a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm-2.1 1.9a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Zm4.2 0a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z"
+      />
+    </Solid>
   );
 }
 
-/** Dinner — a plate between a fork and a knife. */
+/** Dinner — a cloche over a plate, being lifted. A plate between cutlery is
+ *  the icon for a restaurant; this is the icon for dinner being served. */
 export function DinnerIcon(props) {
   return (
-    <Icon {...props}>
-      <circle cx="12" cy="12" r="5.2" />
-      <path d="M5 3v6.5M3.2 3v3.4a1.8 1.8 0 0 0 3.6 0V3M5 9.5V21" />
-      <path d="M19 3c-1.2 1.4-1.8 3-1.8 4.8 0 1.2.6 1.9 1.8 2.1V21" />
-    </Icon>
+    <Solid {...props}>
+      <path d="M12 5a1.1 1.1 0 1 1 0 2.2A1.1 1.1 0 0 1 12 5Z" />
+      <path d="M11.3 7.8h1.4v1.1h-1.4Z" />
+      <path d="M4.5 15.1a7.5 7.5 0 0 1 15 0Z" />
+      <path d="M2.9 15.9h18.2v1.9H2.9Z" />
+      <path d="M7.4 19.3h9.2v1.7H7.4Z" />
+      {/* steam */}
+      <path d="M9.1 2.6c-.8.9-.8 2 0 2.9l.9-.6c-.5-.6-.5-1.1 0-1.7Zm5.8 0c.8.9.8 2 0 2.9l-.9-.6c.5-.6.5-1.1 0-1.7Z" />
+    </Solid>
   );
 }
 
-/** Zaffa — a drum, which is what actually leads one. */
+/** Zaffa — a darbuka. A goblet drum and a trophy are the same silhouette, so
+ *  the drum has to say instrument somewhere: the head is a solid stretched
+ *  skin overhanging the shell, and the shell carries a tuning band and lugs
+ *  cut into it. Without those it read as a cup with brackets around it. */
 export function ZaffaIcon(props) {
   return (
-    <Icon {...props}>
-      <ellipse cx="12" cy="8.5" rx="7.5" ry="3.4" />
-      <path d="M4.5 8.5v7a7.5 3.4 0 0 0 15 0v-7" />
-      <path d="M6.6 11.2 17.4 17M17.4 11.2 6.6 17" />
-    </Icon>
+    <Solid {...props}>
+      {/* the skin, overhanging the shell on both sides */}
+      <path d="M12 3.4c3.6 0 6.5 1.3 6.5 3S15.6 9.4 12 9.4 5.5 8.1 5.5 6.4s2.9-3 6.5-3Z" />
+      {/* the shell, with the tuning band and its lugs cut out */}
+      <path
+        fillRule="evenodd"
+        d="M6.1 7.6c1.1 1 3.4 1.6 5.9 1.6s4.8-.6 5.9-1.6c-.3 3-2 4.3-2.7 6.2-.5 1.6-.6 3.4-.5 5.7H9.3c.1-2.3 0-4.1-.5-5.7-.7-1.9-2.4-3.2-2.7-6.2Zm2.2 3.5h7.4v1.1H8.3Zm1.5 2.3a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Zm4.4 0a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Z"
+      />
+      <path d="M8.4 19.9h7.2v1.6H8.4Z" />
+      {/* sound, both sides */}
+      <path d="M3.4 3.9c-1.3 2-1.3 4.6 0 6.6l1.1-.7c-1.1-1.7-1.1-3.5 0-5.2Zm17.2 0c1.3 2 1.3 4.6 0 6.6l-1.1-.7c1.1-1.7 1.1-3.5 0-5.2Z" />
+    </Solid>
   );
 }
 
-/** Photography — a camera. */
+/** Photography — a camera with the lens cut through the body, so the glass
+ *  reads as glass rather than as a printed circle. */
 export function CameraIcon(props) {
   return (
-    <Icon {...props}>
-      <path d="M3 8.6a2 2 0 0 1 2-2h2.3l1.4-2.1h6.6l1.4 2.1H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
-      <circle cx="12" cy="13" r="3.6" />
-    </Icon>
+    <Solid {...props}>
+      <path
+        fillRule="evenodd"
+        d="M8.6 4.6h6.8l1.4 2.2h2.6a2.4 2.4 0 0 1 2.4 2.4v8.2a2.4 2.4 0 0 1-2.4 2.4H4.6a2.4 2.4 0 0 1-2.4-2.4V9.2a2.4 2.4 0 0 1 2.4-2.4h2.6Zm3.4 4.6a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm6.4.4a.85.85 0 1 0 0 1.7.85.85 0 0 0 0-1.7Z"
+      />
+      <path d="M12 11.2a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" />
+    </Solid>
   );
 }
 
-/** The close of the night — a burst. */
+/** The close of the night — sparks in the sky, on the same four-point geometry
+ *  as the house mark. A symmetrical eight-ray star is a sun, not a firework. */
 export function FireworksIcon(props) {
   return (
-    <Icon {...props}>
-      <path d="M12 3v3.4M12 17.6V21M3 12h3.4M17.6 12H21" />
-      <path d="M5.6 5.6 8 8M16 16l2.4 2.4M18.4 5.6 16 8M8 16l-2.4 2.4" />
-      <circle cx="12" cy="12" r="2.6" />
-    </Icon>
+    <Solid {...props}>
+      <path d="M13.4 3.1c.5 4.4.9 4.8 5.3 5.3-4.4.5-4.8.9-5.3 5.3-.5-4.4-.9-4.8-5.3-5.3 4.4-.5 4.8-.9 5.3-5.3Z" />
+      <path d="M6.6 12.4c.3 2.4.5 2.6 2.9 2.9-2.4.3-2.6.5-2.9 2.9-.3-2.4-.5-2.6-2.9-2.9 2.4-.3 2.6-.5 2.9-2.9Z" />
+      <path d="M17.6 14.6c.2 1.9.4 2.1 2.3 2.3-1.9.2-2.1.4-2.3 2.3-.2-1.9-.4-2.1-2.3-2.3 1.9-.2 2.1-.4 2.3-2.3Z" />
+      <path d="M11.4 18.6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Zm2.8 2a.7.7 0 1 1 0 1.4.7.7 0 0 1 0-1.4Z" />
+    </Solid>
   );
 }

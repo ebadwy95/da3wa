@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { EnvelopeMark } from "@/components/EnvelopeMark";
 
 // The envelope an invitation — and the partner page — opens with.
 //
@@ -111,25 +112,7 @@ export function EnvelopeOpener({
           {eyebrow && <div className="env-eyebrow">{eyebrow}</div>}
 
           <div className="env-mark">
-            <svg width="300" height="210" viewBox="0 0 300 210" fill="none" style={{ overflow: "visible" }}>
-              <rect x="6" y="34" width="288" height="170" rx="12" fill="#14100a" stroke="#b08d57" strokeWidth="1.6" />
-              <path d="M6 46 L150 132 L294 46" stroke="#b08d57" strokeWidth="1.2" opacity=".45" fill="none" />
-              <path d="M6 196 L112 122 M294 196 L188 122" stroke="#b08d57" strokeWidth="1" opacity=".28" />
-              <g className="env-flap">
-                <path d="M6 46 L150 6 L294 46 L150 128 Z" fill="#1c1710" stroke="#b08d57" strokeWidth="1.6" strokeLinejoin="round" />
-              </g>
-              <g className="env-seal" transform="translate(150 118) scale(0.72) translate(-32 -32)">
-                <circle cx="32" cy="32" r="29.5" stroke="#d9b877" strokeWidth="1" opacity=".3" strokeDasharray="6 10" />
-                <path
-                  d="M32 5 L37.8 26.2 L59 32 L37.8 37.8 L32 59 L26.2 37.8 L5 32 L26.2 26.2 Z"
-                  stroke="#d9b877"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                  fill="#14100a"
-                />
-                <path d="M32 17.5 L35 29 L46.5 32 L35 35 L32 46.5 L29 35 L17.5 32 L29 29 Z" fill="#d9b877" />
-              </g>
-            </svg>
+            <EnvelopeMark width={300} seal="star" />
           </div>
 
           {/* The names, with a slow pass of light through the letters — the one

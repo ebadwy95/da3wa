@@ -157,7 +157,7 @@ export function Timeline({ date, steps }) {
             <span className="tl-label">{label}</span>
           </div>
           <span className="tl-icon" aria-hidden="true">
-            <Icon size={26} />
+            <Icon size={30} />
           </span>
         </div>
       ))}

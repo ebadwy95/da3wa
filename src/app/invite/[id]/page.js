@@ -7,6 +7,7 @@ import { InviteOpener } from "@/components/InviteOpener";
 import { EnvelopeOpener } from "@/components/EnvelopeOpener";
 import { Countdown } from "@/components/Countdown";
 import { Reveal } from "@/components/Reveal";
+import { BrandLoader } from "@/components/BrandLoader";
 import { Timeline } from "@/components/Timeline";
 import {
   MapPinIcon,
@@ -30,6 +31,31 @@ function companionLimitLabel(n) {
   return `${n} مرافقًا`;
 }
 
+// The two families, one either side of the waw.
+//
+// Stored as one line ("عائلة بدوي وعائلة عطّاري") because that is how a couple
+// writes it and how it reads in a sentence — but on the card Eslam wants them
+// set apart, one leaning in from each side. So the line is parsed rather than
+// the model being split in two: a couple should not have to fill in two fields
+// to get a sentence they already know how to write.
+//
+// Returns null when there is only one name, and the sentence form is used
+// instead. Guessing a split that is not there is worse than not splitting.
+function splitFamilies(raw) {
+  const t = (raw || "").trim();
+  if (!t) return null;
+  // An explicit bar wins, for a name that genuinely contains a waw.
+  const bar = t.split("|").map((x) => x.trim()).filter(Boolean);
+  if (bar.length === 2) return bar;
+  // "عائلة بدوي وعائلة عطّاري" — the waw is prefixed to the second family, so
+  // it is the space before it that marks the join, not a space after.
+  const m = t.match(/^(.+?)\s+و\s*(عائلة|عائله|آل|ال|بيت|أسرة|اسرة)\s+(.+)$/);
+  if (m) return [m[1].trim(), `${m[2]} ${m[3]}`.trim()];
+  const m2 = t.match(/^(.+?)\s+و\s+(.+)$/);
+  if (m2) return [m2[1].trim(), m2[2].trim()];
+  return null;
+}
+
 // The invitation is the only surface a couple can restyle — the dashboards
 // stay light because they're tools. `invite-dark` just redefines the colour
 // tokens, so nothing inside has to know which theme it's rendering in.
@@ -46,11 +72,10 @@ function PageShell({ children, theme = "light" }) {
 function LoadingCard() {
   return (
     <PageShell>
-      <div className="card max-w-md w-full p-8 flex flex-col items-center gap-4">
-        <div className="da3wa-pulse" style={{ color: "var(--gold-300)" }}>
-          <StarOrnamentIcon size={32} />
-        </div>
-        <p className="meta">جارٍ فتح الدعوة...</p>
+      {/* No "جارٍ فتح الدعوة…" here. The first frame of a wedding invitation
+          should not be a progress message — the mark draws itself instead. */}
+      <div className="flex flex-col items-center justify-center" style={{ minHeight: "60vh" }}>
+        <BrandLoader />
       </div>
     </PageShell>
   );
@@ -173,6 +198,14 @@ function InviteContent() {
   // transliteration guessed from Arabic, which gets names wrong more often
   // than it gets them right.
   const latinNames = event.latinNames || "";
+  // Split on the ampersand so it can be set on its own line and given the
+  // motion — it is the one glyph on the card that stands for the two of them
+  // together. A name without one is set whole rather than guessed at.
+  const latinPair = (() => {
+    const parts = latinNames.split("&").map((x) => x.trim()).filter(Boolean);
+    return parts.length === 2 ? parts : null;
+  })();
+  const families = splitFamilies(event.familyNames || "عائلة بدوي وعائلة عطّاري");
 
   // The "AT" block is set in Latin, so the time is too — 8:00 PM rather than
   // ٨:٠٠ مساءً, which is what prettyTime gives and what the Arabic sections
@@ -206,6 +239,7 @@ function InviteContent() {
           posterUrl={event.invitePosterUrl}
           audioUrl={event.inviteAudioUrl}
           coupleNames={event.coupleNames}
+          guestName={guest.name}
           onOpened={() => setOpened(true)}
         />
       ) : (
@@ -243,25 +277,46 @@ function InviteContent() {
             "inv invite-card w-full " + (opened ? "da3wa-fade-in" : "invisible")
           }
         >
-          {/* The order Eslam specified: date, the names in Latin, the
-              dedication, the families' line, the names in Arabic, then the
-              time and the venue. */}
+          {/* The order Eslam specified: the opening line, the date, the names
+              in Latin, the two families, the names in Arabic, save the date,
+              the time, then the venue. */}
           <Reveal className="inv-sec pad">
             <div className="ornament-divider" aria-hidden="true">
               <StarOrnamentIcon size={14} />
             </div>
-            {event.eventDate && (
-              /* dir=ltr, or the RTL paragraph reorders the groups and
-                 23.10.2026 is rendered as 2026.10.23. */
-              <p className="inv-date" dir="ltr" style={{ marginTop: "1.4rem" }}>
-                {event.eventDate.split("-").reverse().join(" . ")}
-              </p>
-            )}
+            <p className="body" style={{ lineHeight: 2.2, marginTop: "1.5rem" }}>
+              بسم الله نبدأ فرحتنا
+              <br />
+              وبالحب نكتب أجمل بدايات العمر
+            </p>
           </Reveal>
 
-          {latinNames && (
+          {event.eventDate && (
+            /* dir=ltr, or the RTL paragraph reorders the groups and
+               22.10.2026 is rendered as 2026.10.22. */
             <Reveal className="inv-sec" delay={60}>
-              <p className="inv-latin" dir="ltr">{latinNames}</p>
+              <p className="inv-date" dir="ltr">
+                {event.eventDate.split("-").reverse().join(" . ")}
+              </p>
+            </Reveal>
+          )}
+
+          {latinNames && (
+            /* Most of a screen to itself. This is the engraved centre of a
+               printed invitation, and it is the only thing on the card that
+               earns that much room. */
+            <Reveal className="inv-sec" delay={60}>
+              <div className="inv-names-latin inv-script" dir="ltr">
+                {latinPair ? (
+                  <>
+                    <span className="n">{latinPair[0]}</span>
+                    <span className="inv-amp">&amp;</span>
+                    <span className="n">{latinPair[1]}</span>
+                  </>
+                ) : (
+                  <span className="n">{latinNames}</span>
+                )}
+              </div>
             </Reveal>
           )}
 
@@ -271,9 +326,29 @@ function InviteContent() {
             <p className="body" style={{ lineHeight: 2.1 }}>
               إلى كل من نال في قلبنا مكانًا
             </p>
-            <p className="body" style={{ lineHeight: 2.1, marginTop: "1.1rem" }}>
-              تتشرّف {event.familyNames || "عائلة بدوي وعائلة عطّاري"} بدعوتكم
-              لحضور حفل زفاف نجليهما
+
+            {families ? (
+              /* One family either side of the waw, each leaning into the join.
+                 Both centred would read as a list of two customers. */
+              <p className="inv-families" style={{ marginTop: "1.7rem" }}>
+                <span className="fam r">{families[0]}</span>
+                <span className="waw">و</span>
+                <span className="fam l">{families[1]}</span>
+              </p>
+            ) : (
+              <p
+                className="font-display"
+                style={{ fontSize: "var(--text-xl)", lineHeight: 1.9, color: "var(--ink)", marginTop: "1.7rem" }}
+              >
+                {event.familyNames}
+              </p>
+            )}
+
+            {/* Plain Arabic, not the calligraphic face: this is the sentence
+                the card makes, and calligraphy on every line leaves nothing
+                for the names to be. */}
+            <p className="body" style={{ lineHeight: 2.1, marginTop: "1.5rem" }}>
+              {families ? "يتشرّفان" : "تتشرّف"} بدعوتكم لحضور حفل زفاف نجليهما
             </p>
 
             <h1
@@ -287,6 +362,14 @@ function InviteContent() {
             >
               {event.coupleNames}
             </h1>
+          </Reveal>
+
+          <div className="inv-rule" aria-hidden="true" />
+          <Reveal className="inv-sec pad" delay={60}>
+            {/* Title case, not SAVE THE DATE. A connecting script has no
+                capitals to connect — set in caps it stops being handwriting
+                and becomes four unreadable shapes. */}
+            <p className="inv-script inv-save" dir="ltr">Save the Date</p>
           </Reveal>
 
           {latinTime && (
@@ -339,7 +422,7 @@ function InviteContent() {
 
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={60}>
-            <p className="inv-eyebrow">برنامج الليلة</p>
+            <p className="inv-eyebrow">تفاصيل الليلة</p>
             <Timeline date={event.eventDate} steps={event.timeline} />
           </Reveal>
 

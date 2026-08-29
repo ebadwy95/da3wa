@@ -1,4 +1,4 @@
-import { Rubik, Aref_Ruqaa, Amiri } from "next/font/google";
+import { Rubik, Aref_Ruqaa, Amiri, Great_Vibes } from "next/font/google";
 import "./globals.css";
 import { siteOrigin } from "@/lib/seo";
 
@@ -34,6 +34,18 @@ const amiri = Amiri({
   subsets: ["arabic", "latin"],
   weight: ["400", "700"],
   variable: "--font-card",
+  display: "swap",
+});
+
+// Great Vibes: the couple's names in Latin, and "Save the Date" with them.
+// Aref Ruqaa was carrying those before, but it has no Latin of its own, so the
+// browser fell through to a plain serif — the names sat on the card in the
+// same face as a paragraph. This is a wedding hand: it only ever sets those
+// two things, at a size where a script is meant to be read.
+const greatVibes = Great_Vibes({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-script",
   display: "swap",
 });
 
@@ -103,7 +115,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl" className={`${rubik.variable} ${arefRuqaa.variable} ${amiri.variable}`}>
+    <html lang="ar" dir="rtl" className={`${rubik.variable} ${arefRuqaa.variable} ${amiri.variable} ${greatVibes.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );

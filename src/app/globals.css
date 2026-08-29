@@ -1475,8 +1475,16 @@ body {
 .opener-env {
   display: block;
   margin-bottom: 0.6rem;
-  animation: opener-breathe 4.5s ease-in-out infinite;
+  /* Its own keyframe, not opener-breathe. That one pulses a 14px box-shadow
+     spread, which is a halo on the rounded pill it was written for and a hard
+     gold rectangle around this square span — it drew a frame around the
+     envelope on every cycle. */
+  animation: opener-env-breathe 4.5s ease-in-out infinite;
   filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.55));
+}
+@keyframes opener-env-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
 }
 @media (prefers-reduced-motion: reduce) { .opener-env { animation: none; } }
 
@@ -1490,4 +1498,169 @@ body {
   padding-inline-start: 0.18em;
   line-height: 1.7;
   color: var(--gold-600);
+}
+
+/* ============================================================================
+   The mark being drawn
+   ----------------------------------------------------------------------------
+   Two places show the house star or the envelope being written rather than
+   simply appearing: the wait before an invitation loads, and the sealed
+   envelope the guest taps. Both are the same idea — the first thing a guest
+   sees should be something being prepared for them, not a status message.
+   ========================================================================= */
+
+.brand-loader {
+  display: grid;
+  place-items: center;
+  color: var(--gold-500);
+}
+.bl-star {
+  fill: var(--gold-400);
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  animation: bl-draw 2.6s ease-in-out infinite;
+}
+@keyframes bl-draw {
+  /* Drawn, then filled, then faded out — the fade is what makes the loop
+     invisible. Snapping the dash offset back at full opacity would read as a
+     stutter every two and a half seconds. */
+  0%   { stroke-dashoffset: 100; fill-opacity: 0; opacity: 1; }
+  46%  { stroke-dashoffset: 0;   fill-opacity: 0; }
+  64%  { fill-opacity: 0.22; }
+  86%  { fill-opacity: 0.22; opacity: 1; }
+  100% { stroke-dashoffset: 0; fill-opacity: 0.22; opacity: 0; }
+}
+
+/* The envelope's strokes, drawn in the order a hand would draw them. Each
+   carries its own --d so the stagger lives with the shape it belongs to. */
+.env-ink {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  fill: none;
+  animation: env-draw 0.95s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes env-draw { to { stroke-dashoffset: 0; } }
+
+/* Paper and seal arrive behind the line that describes them, never before. */
+.env-fill,
+.env-pop {
+  opacity: 0;
+  animation: env-in 0.6s ease forwards;
+  animation-delay: var(--d, 0s);
+}
+.env-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-name: env-pop-in;
+}
+@keyframes env-in { to { opacity: 1; } }
+@keyframes env-pop-in {
+  0%   { opacity: 0; transform: scale(0.55); }
+  70%  { opacity: 1; transform: scale(1.09); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bl-star { animation: none; fill-opacity: 0.22; stroke-dashoffset: 0; }
+  .env-ink { animation: none; stroke-dashoffset: 0; }
+  .env-fill, .env-pop { animation: none; opacity: 1; transform: none; }
+}
+
+/* ============================================================================
+   The couple's names in Latin
+   ----------------------------------------------------------------------------
+   Given a section of their own and most of a screen, because that is what the
+   engraved centre of a printed invitation is. Great Vibes rather than the
+   Arabic display face, which has no Latin and was falling through to a plain
+   serif.
+   ========================================================================= */
+
+.inv-script {
+  font-family: var(--font-script), "Great Vibes", cursive;
+  /* No letter-spacing: a connecting script is as cursive as Arabic is, and
+     tracking it apart breaks the joins between the letters. */
+  line-height: 1.25;
+  color: var(--gold-600);
+}
+
+.inv-names-latin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 46vh;
+}
+.inv-names-latin .n {
+  font-size: clamp(3.2rem, 17vw, 5rem);
+  padding-block: 0.08em; /* Great Vibes' swashes overshoot the line box */
+}
+
+/* The ampersand carries the motion: it is the one glyph on the card that
+   stands for the two of them together, and it is the only thing here small
+   enough to move without the whole page appearing to wobble. */
+.inv-amp {
+  position: relative;
+  font-size: clamp(2.6rem, 13vw, 3.8rem);
+  color: var(--gold-500);
+  animation: amp-float 5.5s ease-in-out infinite;
+}
+.inv-amp::after {
+  /* A slow bloom behind it, on its own rhythm so the two never sync up into
+     a single pulse. */
+  content: "";
+  position: absolute;
+  inset: -60%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(224, 196, 141, 0.4), transparent 65%);
+  animation: amp-glow 5.5s ease-in-out infinite;
+  z-index: -1;
+}
+@keyframes amp-float {
+  0%, 100% { transform: translateY(0) rotate(-2.5deg); }
+  50%      { transform: translateY(-7px) rotate(2.5deg); }
+}
+@keyframes amp-glow {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50%      { opacity: 0.65; transform: scale(1.12); }
+}
+
+.inv-save {
+  font-size: clamp(2.6rem, 13vw, 3.6rem);
+  padding-block: 0.08em;
+}
+
+/* ---- the two families, one either side of the waw ---- */
+.inv-families {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  flex-wrap: nowrap;
+}
+.inv-families .fam {
+  flex: 1 1 0;
+  min-width: 0;
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.05rem, 5.2vw, 1.5rem);
+  line-height: 1.9;
+  color: var(--ink);
+}
+/* Right family reads toward the waw, left family away from it — the two lean
+   into the join instead of both sitting centred and reading as a list. */
+.inv-families .fam.r { text-align: end; }
+.inv-families .fam.l { text-align: start; }
+.inv-families .waw {
+  flex: 0 0 auto;
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.6rem, 8vw, 2.4rem);
+  line-height: 1;
+  color: var(--gold-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inv-amp, .inv-amp::after { animation: none; }
 }

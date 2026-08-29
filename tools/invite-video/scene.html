@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Rubik:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:wght@300;400&family=Amiri:wght@400&family=Rubik:wght@300;400;500&display=swap">
 <style>
   /* Deliberately no CSS animations anywhere in this scene.
      Every frame is drawn by calling render(t) with an explicit time, so the
@@ -65,22 +65,89 @@
     color: #d9b877;
   }
 
-  #names {
+  /* The names are written rather than faded in, so they need a wrapper: the
+     wrapper is what the pen travels across, and the text inside carries the
+     mask that uncovers it.
+
+     The reveal is a mask, not one span per letter. Arabic is cursive — giving
+     every letter its own box breaks the joins and "إسلام" comes apart into
+     إ س ل ا م. A soft-edged mask sweeping across the finished line keeps the
+     shaping intact and still reads as writing. */
+  #namesWrap {
+    position: absolute;
+    inset-inline: 0;
     top: 780px;
+    height: 210px;
+  }
+
+  #names {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    text-align: center;
     font-family: "Aref Ruqaa", serif;
     font-weight: 700;
     font-size: 132px;
     line-height: 1.5;
     color: #fdf6e6;
     text-shadow: 0 0 60px rgba(224, 196, 141, 0.35);
+    will-change: transform;
+  }
+  /* The mask rides the ink, not the full-width line box, so the pen travels
+     the width of the name instead of the width of the frame. */
+  #nameInk { display: inline-block; will-change: mask-image; }
+
+  /* The star that does the writing, with its own halo. It sits at the leading
+     edge of the mask, so the letters appear out from under it. */
+  #pen {
+    position: absolute;
+    top: 96px;
+    left: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  #penGlow {
+    position: absolute;
+    left: -110px;
+    top: -110px;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,244,214,0.85), rgba(224,196,141,0.28) 38%, transparent 70%);
+    mix-blend-mode: screen;
+  }
+  #penStar {
+    position: absolute;
+    left: -26px;
+    top: -26px;
+  }
+  /* Sparks thrown off the nib, which is what sells it as a point of light
+     doing work rather than a spotlight sliding past. */
+  .spark {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff3d4;
+    mix-blend-mode: screen;
   }
 
   #date {
     top: 1108px;
-    font-size: 44px;
+    /* Cormorant Garamond, not Rubik: Rubik is the app's interface face and it
+       made the date read like a field value under a calligraphic name. A light
+       old-style serif at this tracking reads as engraving. Amiri backs it up
+       for an Arabic date, which Cormorant cannot set. */
+    font-family: "Cormorant Garamond", "Amiri", serif;
+    font-size: 52px;
     font-weight: 300;
-    letter-spacing: 0.16em;
-    color: #cdbfa4;
+    letter-spacing: 0.3em;
+    padding-inline-start: 0.3em;
+    /* Cormorant ships old-style figures by default, which drew 10 as IO — the
+       one and the zero are drawn at x-height and read as letters. lnum asks
+       for lining figures; tnum keeps them on an even rhythm at this tracking. */
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+    color: #d2c3a6;
   }
 
   #venue {
@@ -123,7 +190,17 @@
   </svg>
 
   <div class="layer" id="bismillah">بسم الله نبدأ فرحتنا</div>
-  <div class="layer" id="names"></div>
+
+  <div id="namesWrap">
+    <div id="names"></div>
+    <div id="pen">
+      <div id="penGlow"></div>
+      <svg id="penStar" width="52" height="52" viewBox="0 0 100 100">
+        <path d="M50 4 L60 40 L96 50 L60 60 L50 96 L40 60 L4 50 L40 40 Z"
+              fill="#fff6de"/>
+      </svg>
+    </div>
+  </div>
 
   <div id="ruleWrap">
     <svg width="620" height="24" viewBox="0 0 620 24">
@@ -133,7 +210,10 @@
     </svg>
   </div>
 
-  <div class="layer" id="date"></div>
+  <!-- dir=ltr, or the RTL stage reorders the groups and 22 . 10 . 2026 comes
+       out as 2026 . 10 . 22. The dots are bidi-neutral, so the paragraph
+       direction is the only thing deciding the order. -->
+  <div class="layer" id="date" dir="ltr"></div>
   <div class="layer" id="venue"></div>
 
   <div id="shimmer"></div>
@@ -145,7 +225,13 @@
 // Timeline. Everything is a pure function of t (seconds), so render(t) can be
 // called in any order and always produces the same frame.
 // ---------------------------------------------------------------------------
-const DURATION = 11;
+const DURATION = 11.5;
+
+// The window the name is written in. Named because four other cues hang off
+// it — the pen, the sparks, the glow and the first sweep all have to agree
+// about when the writing starts and stops.
+const NAME_A = 2.2;
+const NAME_B = 5.0;
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 // Ease used for anything entering — fast start, long settle. Motion that
@@ -181,17 +267,63 @@ MOTES.forEach((m) => {
   m.el = el;
 });
 
+// --- Sparks thrown off the nib as it writes --------------------------------
+// Seeded like the motes, and each one is a pure function of t: born at a fixed
+// point along the write, from wherever the pen was at that moment.
+const SPARKS = Array.from({ length: 18 }, () => ({
+  born: 0.05 + rand() * 0.88,   // fraction of the write when it leaves the nib
+  life: 0.45 + rand() * 0.85,   // seconds
+  vx: (rand() - 0.5) * 90,
+  vy: -30 - rand() * 90,
+  r: 1.8 + rand() * 3.6,
+}));
+
+const sparkEls = SPARKS.map((s) => {
+  const el = document.createElement("div");
+  el.className = "spark";
+  el.style.width = el.style.height = s.r * 2 + "px";
+  $("namesWrap").appendChild(el);
+  return el;
+});
+
 const starLength = $("starPath").getTotalLength();
 $("starPath").style.strokeDasharray = starLength;
 
 let CONTENT = { names: "", date: "", venue: "" };
+// Where the name actually sits, measured after it is set. The pen and the
+// sparks are positioned off this, so it has to be re-measured whenever the
+// text changes — a longer name is a longer stroke.
+let INK = { left: 0, width: 0, top: 0, height: 0 };
 
 function setContent(c) {
   CONTENT = { ...CONTENT, ...c };
-  $("names").textContent = CONTENT.names || "";
+  // Wrapped in a span so the ink can be measured. textContent on the span,
+  // never innerHTML with the name in it — the name is input.
+  const ink = document.createElement("span");
+  ink.id = "nameInk";
+  ink.textContent = CONTENT.names || "";
+  $("names").replaceChildren(ink);
   $("date").textContent = CONTENT.date || "";
   $("venue").textContent = CONTENT.venue || "";
+
+  const wrap = $("namesWrap").getBoundingClientRect();
+  const r = ink.getBoundingClientRect();
+  INK = {
+    left: r.left - wrap.left,
+    width: r.width,
+    top: r.top - wrap.top,
+    height: r.height,
+  };
 }
+
+// How far the mask has opened, as a percentage used by the gradient. It runs
+// from -8 to 100 rather than 0 to 100 so that at rest the soft edge is fully
+// off the glyphs — starting at 0 leaves a sliver of the last letter showing
+// before the pen has reached it.
+const maskPct = (w) => -8 + w * 108;
+// The nib is wherever that edge currently is, measured from the right of the
+// ink: Arabic is written right to left, and so is this.
+const penXFor = (w) => INK.left + INK.width - (maskPct(w) / 100) * INK.width;
 
 function render(t) {
   // --- 0.0–1.6s  the star writes itself ----------------------------------
@@ -204,25 +336,58 @@ function render(t) {
   $("bismillah").style.opacity = bis;
   $("bismillah").style.transform = `translateY(${(1 - bis) * 26}px)`;
 
-  // --- 2.2–4.4s  the names, the moment the whole clip is built around ----
-  // Settles from slightly large rather than growing into place: the name
-  // arrives already present and comes to rest, instead of zooming at you.
-  // Then it keeps breathing — a name that freezes the instant it lands reads
-  // as a slide, and this is the shot the whole film exists for.
-  const nm = easeOut(span(t, 2.2, 4.4));
-  const breathe = Math.sin((t - 2.2) * 0.85) * 0.006;
-  const drift = Math.sin((t - 2.2) * 0.6) * 3;
-  $("names").style.opacity = nm;
-  $("names").style.transform =
-    `scale(${1.07 - nm * 0.07 + (nm > 0.98 ? breathe : 0)}) ` +
-    `translateY(${(1 - nm) * 22 + (nm > 0.98 ? drift : 0)}px)`;
+  // --- 2.2–5.0s  the names, written by a point of light ------------------
+  // The shot the whole film exists for, so it is not allowed to just appear.
+  // A star travels right to left along the line and the letters come out from
+  // under it — the name is written in front of you rather than cut to.
+  //
+  // easeInOut, not easeOut: a hand starts slowly, runs through the middle of a
+  // word and slows at the end. A stroke that begins at full speed reads as a
+  // wipe.
+  const write = easeInOut(span(t, NAME_A, NAME_B));
+  const ink = $("nameInk");
+  if (ink) {
+    const p = maskPct(write);
+    // to left: 0% is the right-hand edge, which is where Arabic begins.
+    const mask = `linear-gradient(to left, #000 ${p}%, transparent ${p + 8}%)`;
+    ink.style.maskImage = mask;
+    ink.style.webkitMaskImage = mask;
+  }
 
-  // The glow swells as it settles and then eases back, so the light looks
-  // like it is coming off the letters rather than sitting behind them.
-  const glowIn = easeOut(span(t, 2.6, 4.6));
-  const glowOut = 1 - 0.45 * easeOut(span(t, 6.4, 8.4));
+  // The pen: in before the first letter, out once the last one is down.
+  const penOn = clamp01(span(t, NAME_A - 0.35, NAME_A + 0.15)) * (1 - clamp01(span(t, NAME_B - 0.15, NAME_B + 0.45)));
+  const pen = $("pen");
+  pen.style.opacity = penOn;
+  // A little bob across the stroke, so the nib rides the letters instead of
+  // running down a rail.
+  const bob = Math.sin(write * Math.PI * 5) * 7;
+  pen.style.transform = `translate(${penXFor(write)}px, ${bob}px)`;
+  $("penStar").style.transform = `rotate(${write * 190}deg) scale(${0.85 + Math.sin(write * Math.PI) * 0.35})`;
+
+  SPARKS.forEach((s, i) => {
+    const age = t - (NAME_A + s.born * (NAME_B - NAME_A));
+    const el = sparkEls[i];
+    if (age <= 0 || age >= s.life) { el.style.opacity = 0; return; }
+    const x = penXFor(easeInOut(s.born)) + s.vx * age;
+    const y = 96 + s.vy * age + 70 * age * age; // thrown up, then falling back
+    el.style.transform = `translate(${x}px, ${y}px)`;
+    el.style.opacity = Math.pow(1 - age / s.life, 2) * 0.9;
+  });
+
+  // The glow swells as the name completes and then eases back, so the light
+  // looks like it is coming off the letters rather than sitting behind them.
+  // Low while writing: the name should not be lit before it exists.
+  const glowIn = easeOut(span(t, NAME_B - 1.2, NAME_B + 0.6));
+  const glowOut = 1 - 0.45 * easeOut(span(t, 8.0, 10.0));
   $("names").style.textShadow =
-    `0 0 ${28 + glowIn * 62 * glowOut}px rgba(224,196,141,${0.18 + glowIn * 0.4 * glowOut})`;
+    `0 0 ${20 + glowIn * 70 * glowOut}px rgba(224,196,141,${0.12 + glowIn * 0.46 * glowOut})`;
+
+  // Once the pen is gone the name keeps breathing — a name that freezes the
+  // instant it lands reads as a slide.
+  const settled = write > 0.995;
+  const breathe = settled ? Math.sin((t - NAME_B) * 0.85) * 0.006 : 0;
+  const drift = settled ? Math.sin((t - NAME_B) * 0.6) * 3 : 0;
+  $("names").style.transform = `scale(${1 + breathe}) translateY(${drift}px)`;
 
   // --- two passes of light, not one --------------------------------------
   // One sweep reads as an effect; a second, slower and dimmer, reads as a
@@ -232,26 +397,26 @@ function render(t) {
     if (k <= 0 || k >= 1) return null;
     return { o: peak * Math.sin(k * Math.PI), x: -520 + easeInOut(k) * 1180 };
   };
-  const s1 = sweep(3.2, 5.0, 0.95);
-  const s2 = sweep(6.2, 8.6, 0.45);
+  const s1 = sweep(5.4, 7.0, 0.95);
+  const s2 = sweep(8.2, 10.4, 0.45);
   const sh = s1 || s2;
   $("shimmer").style.opacity = sh ? sh.o : 0;
   if (sh) $("shimmer").style.transform = `translateX(${sh.x}px) skewX(-12deg)`;
 
-  // --- 4.6–5.9s  the rule opens outward from its centre ornament ---------
-  const rule = easeOut(span(t, 4.6, 5.9));
+  // --- 5.6–6.9s  the rule opens outward from its centre ornament ---------
+  const rule = easeOut(span(t, 5.6, 6.9));
   $("ruleL").setAttribute("x2", String(310 - rule * 265));
   $("ruleR").setAttribute("x2", String(310 + rule * 265));
-  $("ruleDot").style.opacity = clamp01(span(t, 4.5, 5.1));
+  $("ruleDot").style.opacity = clamp01(span(t, 5.5, 6.1));
   $("ruleL").style.opacity = rule;
   $("ruleR").style.opacity = rule;
 
-  // --- 5.6–7.1s  date, then venue ----------------------------------------
-  const dt = easeOut(span(t, 5.6, 7.1));
+  // --- 6.6–8.1s  date, then venue ----------------------------------------
+  const dt = easeOut(span(t, 6.6, 8.1));
   $("date").style.opacity = dt;
   $("date").style.transform = `translateY(${(1 - dt) * 16}px)`;
 
-  const vn = easeOut(span(t, 6.4, 7.9));
+  const vn = easeOut(span(t, 7.4, 8.9));
   $("venue").style.opacity = vn;
   $("venue").style.transform = `translateY(${(1 - vn) * 16}px)`;
 

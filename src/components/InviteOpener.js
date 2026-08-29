@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PlayIcon, SoundOnIcon, SoundOffIcon, ChevronDownIcon } from "@/components/icons";
+import { EnvelopeMark } from "@/components/EnvelopeMark";
 
 // The cover that opens a wedding invitation: the couple's own film, full
 // screen, with their music, dismissed when the film ends.
@@ -16,7 +17,7 @@ import { PlayIcon, SoundOnIcon, SoundOffIcon, ChevronDownIcon } from "@/componen
 // video stays muted and `playsInline` (iOS otherwise takes it fullscreen and
 // hands control to the system player), while the audio element carries sound.
 
-export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, onOpened }) {
+export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guestName, onOpened }) {
   const [state, setState] = useState("idle"); // idle | playing | closing | done
   const videoRef = useRef(null);
   const audioRef = useRef(null);
@@ -98,28 +99,41 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, onOpe
              sealed envelope is the moment the invitation is handed over, and
              the film is what is inside it, not a replacement for it. */
           <button type="button" onClick={open} className="opener-tap">
-            <span className="opener-env" aria-hidden="true">
-              <svg width="240" height="168" viewBox="0 0 300 210" fill="none" style={{ overflow: "visible" }}>
-                <rect x="6" y="34" width="288" height="170" rx="12" fill="rgba(20,16,10,.55)" stroke="#e0c48d" strokeWidth="1.6" />
-                <path d="M6 46 L150 132 L294 46" stroke="#e0c48d" strokeWidth="1.2" opacity=".5" fill="none" />
-                <path d="M6 196 L112 122 M294 196 L188 122" stroke="#e0c48d" strokeWidth="1" opacity=".3" />
-                <path d="M6 46 L150 6 L294 46 L150 128 Z" fill="rgba(28,23,16,.75)" stroke="#e0c48d" strokeWidth="1.6" strokeLinejoin="round" />
-                {/* The seal is a heart here rather than the star: this is the
-                    one surface that belongs to the couple, not the product. */}
-                <path
-                  d="M150 132c-14-11-26-19.6-26-30.4a13 13 0 0 1 26-5.2 13 13 0 0 1 26 5.2c0 10.8-12 19.4-26 30.4Z"
-                  fill="#e0c48d"
-                  fillOpacity=".92"
-                />
-              </svg>
+            <span className="opener-env">
+              {/* Drawn in front of the guest, then opened — the ink has to dry
+                  before the tap means anything. The seal is a heart here
+                  rather than the house star: this surface belongs to the
+                  couple, not to the product. */}
+              <EnvelopeMark
+                width={250}
+                seal="heart"
+                ink="#e0c48d"
+                sealFill="#e0c48d"
+                bodyFill="rgba(20,16,10,.55)"
+                flapFill="rgba(28,23,16,.75)"
+              />
             </span>
 
-            <span style={{ fontSize: "var(--text-sm)", color: "rgba(240,220,174,.75)" }}>
-              لديك دعوة من
+            {/* The guest's own name on the outside of the envelope, which is
+                where a name goes. Every guest has their own link, so every
+                guest sees theirs and only theirs. */}
+            <span style={{ fontSize: "var(--text-sm)", color: "rgba(240,220,174,.7)" }}>
+              دعوة خاصة لـ
+            </span>
+            {guestName && (
+              <span
+                className="font-display opener-title"
+                style={{ fontSize: "var(--text-3xl)", color: "#fdf3dc", textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}
+              >
+                {guestName}
+              </span>
+            )}
+            <span style={{ fontSize: "var(--text-sm)", color: "rgba(240,220,174,.7)", marginTop: "-.6rem" }}>
+              من
             </span>
             <span
               className="font-display opener-title"
-              style={{ fontSize: "var(--text-3xl)", color: "#f0dcae", textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}
+              style={{ fontSize: "var(--text-2xl)", color: "#e6cd97", textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}
             >
               {coupleNames}
             </span>
