@@ -1264,8 +1264,25 @@ body {
   border-radius: var(--radius);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-lg);
+  /* A painted silk field behind everything, with the star pattern over it.
+     The image is rendered once by tools/brand/render-backdrop.mjs — fifty
+     blurred layers is a lot for a phone to recompose on every scroll. */
   background-color: var(--surface);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath fill='none' stroke='%23b08d57' stroke-width='0.7' stroke-opacity='0.075' d='M17 3.5 L20.4 13.6 L30.5 17 L20.4 20.4 L17 30.5 L13.6 20.4 L3.5 17 L13.6 13.6 Z'/%3E%3C/svg%3E");
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath fill='none' stroke='%23b08d57' stroke-width='0.7' stroke-opacity='0.075' d='M17 3.5 L20.4 13.6 L30.5 17 L20.4 20.4 L17 30.5 L13.6 20.4 L3.5 17 L13.6 13.6 Z'/%3E%3C/svg%3E"),
+    url("/backdrops/silk.jpg");
+  background-repeat: repeat, no-repeat;
+  background-size: auto, cover;
+  background-position: center, center top;
+  /* Fixed so the invitation slides over the silk instead of dragging it
+     along — the parallax is what stops five screens of scroll feeling flat. */
+  background-attachment: scroll, fixed;
+}
+@media (hover: none) {
+  /* iOS does not composite background-attachment:fixed inside a scrolling
+     box; it stretches the image instead. Cover without the parallax is the
+     honest fallback. */
+  .inv { background-attachment: scroll, scroll; }
 }
 
 /* A pool of warm light behind the top of the page, so the ground is not flat
@@ -1387,7 +1404,7 @@ body {
   padding: 1px;
   display: flex;
   /* It slides between rows over a minute; a jump would read as a glitch. */
-  transition: top 0.9s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+  transition: top 0.18s linear, opacity 0.5s ease;
   filter: drop-shadow(0 0 10px rgba(224, 196, 141, 0.55));
 }
 
@@ -1452,3 +1469,25 @@ body {
   transform: scale(1.06);
 }
 .seat-pick button:active { transform: scale(0.97); }
+
+/* The envelope on the film opener. It breathes so the screen is never still
+   while it waits for a tap. */
+.opener-env {
+  display: block;
+  margin-bottom: 0.6rem;
+  animation: opener-breathe 4.5s ease-in-out infinite;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.55));
+}
+@media (prefers-reduced-motion: reduce) { .opener-env { animation: none; } }
+
+/* The couple's names in Latin — set wide and light, the way they are
+   engraved on a printed card. Safe to track because the glyphs are not
+   cursive; the Arabic forms above are never treated this way. */
+.inv-latin {
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.6rem, 7vw, 2.2rem);
+  letter-spacing: 0.18em;
+  padding-inline-start: 0.18em;
+  line-height: 1.7;
+  color: var(--gold-600);
+}

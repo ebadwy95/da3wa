@@ -169,6 +169,33 @@ function InviteContent() {
   // invitation gets, because arriving straight at the card skips the one
   // moment the whole thing is about.
   const hasFilm = Boolean(event.inviteVideoUrl);
+  // The couple can set their own; otherwise nothing is shown rather than a
+  // transliteration guessed from Arabic, which gets names wrong more often
+  // than it gets them right.
+  const latinNames = event.latinNames || "";
+
+  // The "AT" block is set in Latin, so the time is too — 8:00 PM rather than
+  // ٨:٠٠ مساءً, which is what prettyTime gives and what the Arabic sections
+  // above use.
+  // The weekday and date in Latin, to sit with the time under "AT".
+  const latinDate = (() => {
+    if (!event.eventDate) return "";
+    const d = new Date(`${event.eventDate}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  })();
+
+  const latinTime = (() => {
+    if (!/^\d{2}:\d{2}$/.test(event.eventTime || "")) return "";
+    const [h, m] = event.eventTime.split(":").map(Number);
+    const suffix = h >= 12 ? "PM" : "AM";
+    return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${suffix}`;
+  })();
   const hasOpener = true;
 
   return (
@@ -216,71 +243,72 @@ function InviteContent() {
             "inv invite-card w-full " + (opened ? "da3wa-fade-in" : "invisible")
           }
         >
+          {/* The order Eslam specified: date, the names in Latin, the
+              dedication, the families' line, the names in Arabic, then the
+              time and the venue. */}
           <Reveal className="inv-sec pad">
             <div className="ornament-divider" aria-hidden="true">
               <StarOrnamentIcon size={14} />
             </div>
-
-            {/* Aref Ruqaa is a calligraphic face — its letterforms need more
-                size and leading than a UI font at the same optical weight, or
-                the strokes collide and the line stops being readable. */}
-            <p
-              className="font-display"
-              style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", lineHeight: 1.9 }}
-            >
-              بسم الله نبدأ فرحتنا، وبالحب نكتب أجمل بدايات العمر
-            </p>
-          </Reveal>
-
-          {/* The names get a screen of their own. It is the one thing the
-              guest came to read, and crowding it was the old card's mistake. */}
-          <Reveal className="inv-sec" delay={80}>
-            <p className="inv-eyebrow">بمشيئة الله، وبحضوركم</p>
-            <h1
-              className="font-display"
-              style={{ fontSize: "clamp(2.6rem, 12vw, 3.6rem)", lineHeight: 1.55, color: "var(--ink)" }}
-            >
-              {event.coupleNames}
-            </h1>
-            {/* dir=ltr, or the RTL paragraph reorders the groups and 20.11.2026
-                is rendered as 2026.11.20. */}
             {event.eventDate && (
-              <p className="inv-date" dir="ltr" style={{ marginTop: "1.1rem" }}>
+              /* dir=ltr, or the RTL paragraph reorders the groups and
+                 23.10.2026 is rendered as 2026.10.23. */
+              <p className="inv-date" dir="ltr" style={{ marginTop: "1.4rem" }}>
                 {event.eventDate.split("-").reverse().join(" . ")}
               </p>
             )}
           </Reveal>
 
+          {latinNames && (
+            <Reveal className="inv-sec" delay={60}>
+              <p className="inv-latin" dir="ltr">{latinNames}</p>
+            </Reveal>
+          )}
+
           <div className="inv-rule" aria-hidden="true" />
 
           <Reveal className="inv-sec pad" delay={60}>
-            {/* The couple do the inviting and the guest is named as the one
-                invited — "أهلًا عماد" over a stock line read like a
-                notification addressed at him rather than an invitation from
-                them. */}
-            <p className="body" style={{ lineHeight: 2 }}>
-              يتشرّف
-              <span className="font-display" style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", margin: "0 .35rem" }}>
-                {event.coupleNames}
-              </span>
-              بدعوتكم لحضور حفل زفافهما
+            <p className="body" style={{ lineHeight: 2.1 }}>
+              إلى كل من نال في قلبنا مكانًا
+            </p>
+            <p className="body" style={{ lineHeight: 2.1, marginTop: "1.1rem" }}>
+              تتشرّف {event.familyNames || "عائلة بدوي وعائلة عطّاري"} بدعوتكم
+              لحضور حفل زفاف نجليهما
             </p>
 
-            <h2
-              className="title font-display"
-              style={{ color: "var(--gold-600)", fontSize: "var(--text-2xl)", marginTop: "1.4rem" }}
+            <h1
+              className="font-display"
+              style={{
+                fontSize: "clamp(2.4rem, 11vw, 3.4rem)",
+                lineHeight: 1.6,
+                color: "var(--ink)",
+                marginTop: "1.4rem",
+              }}
             >
-              {guest.name}
-            </h2>
-            <p className="meta">وجودكم يزيد ليلتنا فرحًا</p>
-
-            {(prettyDate || prettyTime) && (
-              <p className="meta" style={{ marginTop: "1.2rem", letterSpacing: "0.04em" }}>
-                {prettyDate}
-                {prettyTime && ` — ${prettyTime}`}
-              </p>
-            )}
+              {event.coupleNames}
+            </h1>
           </Reveal>
+
+          {latinTime && (
+            <>
+              <div className="inv-rule" aria-hidden="true" />
+              <Reveal className="inv-sec pad" delay={60}>
+                <p className="inv-eyebrow" dir="ltr" style={{ letterSpacing: "0.3em" }}>AT</p>
+                <p className="inv-latin" dir="ltr" style={{ fontSize: "var(--text-2xl)" }}>
+                  {latinTime}
+                </p>
+                {latinDate && (
+                  <p
+                    className="meta"
+                    dir="ltr"
+                    style={{ letterSpacing: "0.14em", marginTop: ".7rem" }}
+                  >
+                    {latinDate}
+                  </p>
+                )}
+              </Reveal>
+            </>
+          )}
 
           {event.venueName && (
             <>
@@ -441,12 +469,18 @@ function InviteContent() {
               تم تسجيل اعتذارك، نتمنى أن نراك في مناسبة أخرى
             </p>
           )}
+          </Reveal>
 
-          {guest.status !== "pending" && (
-            <div
-              className="text-right flex flex-col gap-2 pt-5"
-              style={{ borderTop: "1px solid var(--line-soft)" }}
+          <div className="inv-rule" aria-hidden="true" />
+          <Reveal className="inv-sec pad" delay={60}>
+            <p
+              className="font-display"
+              style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", lineHeight: 1.9, marginBottom: "1.4rem" }}
             >
+              كلماتكم هدية تدوم مدى العمر
+            </p>
+
+            <div className="text-right flex flex-col gap-2">
               <label htmlFor="wish" className="label flex items-center gap-2">
                 <span style={{ color: "var(--gold-500)" }}><MessageIcon size={16} /></span>
                 {guest.wishMessage ? "تعديل رسالتك للعروسين" : "اترك رسالة تهنئة للعروسين"}
@@ -489,20 +523,22 @@ function InviteContent() {
                 </p>
               )}
             </div>
-          )}
           </Reveal>
 
-          {/* A last line, so the invitation closes rather than stopping. */}
-          <Reveal className="inv-sec" delay={80}>
-            <div className="ornament-divider" aria-hidden="true">
-              <StarOrnamentIcon size={14} />
-            </div>
+          {/* The invitation ends on the name of the person it was written
+              for. */}
+          <div className="inv-rule" aria-hidden="true" />
+          <Reveal className="inv-sec pad" delay={80}>
+            <p className="inv-eyebrow">دعوة خاصة بـ</p>
             <p
               className="font-display"
-              style={{ color: "var(--gold-600)", fontSize: "var(--text-lg)", lineHeight: 1.9 }}
+              style={{ color: "var(--ink)", fontSize: "var(--text-2xl)", lineHeight: 1.7 }}
             >
-              وجودكم معنا هو أجمل ما في الليلة
+              {guest.name}
             </p>
+            <div className="ornament-divider" style={{ marginTop: "1.4rem" }} aria-hidden="true">
+              <StarOrnamentIcon size={14} />
+            </div>
           </Reveal>
         </article>
       ) : (

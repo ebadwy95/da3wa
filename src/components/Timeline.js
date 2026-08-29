@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   GroomIcon,
   BrideIcon,
@@ -48,13 +48,15 @@ function label12(at) {
 }
 
 export function Timeline({ date }) {
-  // null until mounted: the position depends on the reader's clock, and any
-  // value picked on the server is a hydration mismatch the moment the browser
-  // disagrees.
+  // null until mounted: the position depends on the reader's clock and on
+  // scroll, and any value picked on the server is a hydration mismatch the
+  // moment the browser disagrees.
   const [progress, setProgress] = useState(null);
+  const ref = useRef(null);
 
   useEffect(() => {
-    if (!date) return;
+    const el = ref.current;
+    if (!el) return;
 
     const firstAt = (() => {
       const [h, m] = STEPS[0].at.split(":").map(Number);
@@ -64,22 +66,52 @@ export function Timeline({ date }) {
     const start = marks[0];
     const end = marks[marks.length - 1];
 
-    const tick = () => {
-      const now = new Date();
+    // During the wedding the mark tracks the clock — that is the version that
+    // is actually useful, since a guest glancing at their phone wants to know
+    // what is next.
+    const byClock = () => {
+      if (!date) return null;
       const evening = new Date(`${date}T00:00:00`);
-      const dayMs = 24 * 60 * 60 * 1000;
-      const sinceMidnight = (now - evening) / 60000;
-
-      if (sinceMidnight < start) return setProgress(0);
-      if (now - evening > dayMs + 60 * 60 * 1000) return setProgress(1);
-
+      const sinceMidnight = (Date.now() - evening) / 60000;
+      if (sinceMidnight < start - 60) return null;      // not tonight yet
+      if (sinceMidnight > end + 120) return null;        // the night is over
       const clamped = Math.max(start, Math.min(end, sinceMidnight));
-      setProgress((clamped - start) / (end - start));
+      return (clamped - start) / (end - start);
     };
 
-    tick();
-    const id = setInterval(tick, 60000);
-    return () => clearInterval(id);
+    // Every other day of the year the clock would pin it to the top and the
+    // rail would look broken. So outside the evening it follows the reader:
+    // the mark travels the list as the list travels the screen, which is what
+    // Eslam saw moving on the reference and what makes it feel alive.
+    const byScroll = () => {
+      const r = el.getBoundingClientRect();
+      const travel = r.height + window.innerHeight;
+      const seen = window.innerHeight - r.top;
+      return Math.max(0, Math.min(1, seen / travel));
+    };
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      setProgress(byClock() ?? byScroll());
+    };
+    const onScroll = () => {
+      // Coalesced to one update per frame; a listener that calls setState on
+      // every scroll event repaints far more than the eye can use.
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    const id = setInterval(update, 60000);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+      clearInterval(id);
+    };
   }, [date]);
 
   // Positioned by row rather than by pixels: the rows are equal height, so the
@@ -89,7 +121,7 @@ export function Timeline({ date }) {
   const top = `calc(${((progress ?? 0) * (rows - 1) + 0.5) * (100 / rows)}% - 9px)`;
 
   return (
-    <div className="tl" role="list">
+    <div className="tl" role="list" ref={ref}>
       <div className="tl-line" aria-hidden="true" />
       <div
         className="tl-mark"

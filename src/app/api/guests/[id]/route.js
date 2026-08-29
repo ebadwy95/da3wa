@@ -43,6 +43,11 @@ export async function GET(request, { params }) {
     invitePosterUrl: fullEvent.invitePosterUrl || "",
     inviteAudioUrl: fullEvent.inviteAudioUrl || "",
     inviteTheme: fullEvent.inviteTheme === "dark" ? "dark" : "light",
+    // Both appear on the face of the invitation, so both have to cross the
+    // whitelist — the guest endpoint returns only what the card renders, and
+    // a new field that is not listed here silently never arrives.
+    latinNames: fullEvent.latinNames || "",
+    familyNames: fullEvent.familyNames || "",
   };
 
   return NextResponse.json({ guest, event });
