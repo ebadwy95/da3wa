@@ -1488,6 +1488,61 @@ body {
 }
 @media (prefers-reduced-motion: reduce) { .opener-env { animation: none; } }
 
+/* The tap opens the envelope and the envelope becomes the film: the flap
+   lifts, the seal goes with it, and the whole thing grows past the screen so
+   what is behind reads as having come out of it. Cutting straight to the film
+   made the envelope decoration. */
+.opener-tap[data-opening="true"] .opener-env {
+  animation: opener-env-out 0.9s cubic-bezier(0.32, 0, 0.2, 1) forwards;
+  transform-origin: 50% 64%;
+}
+@keyframes opener-env-out {
+  0%   { transform: scale(1); opacity: 1; }
+  30%  { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(3.1); opacity: 0; }
+}
+.opener-tap[data-opening="true"] .env-flap { transform: scaleY(-1); }
+.opener-tap[data-opening="true"] .env-seal { opacity: 0; }
+.opener-tap[data-opening="true"] .opener-label,
+.opener-tap[data-opening="true"] .opener-title,
+.opener-tap[data-opening="true"] .opener-pill {
+  animation: opener-text-out 0.42s ease forwards;
+}
+@keyframes opener-text-out { to { opacity: 0; transform: translateY(10px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .opener-tap[data-opening="true"] .opener-env,
+  .opener-tap[data-opening="true"] .opener-label,
+  .opener-tap[data-opening="true"] .opener-title,
+  .opener-tap[data-opening="true"] .opener-pill { animation: none; opacity: 0; }
+}
+
+/* "دعوة خاصة لـ" and "من" on the outside of the envelope. Rubik is the app's
+   interface face and made them read as form labels on what is meant to be a
+   handwritten envelope; Amiri sits with the calligraphy above and below it.
+   The rules either side are the only thing that makes a two-word line look
+   placed rather than left over. */
+.opener-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  font-family: var(--font-card), "Amiri", serif;
+  font-size: var(--text-base);
+  color: rgba(240, 220, 174, 0.82);
+}
+.opener-label i {
+  display: block;
+  width: 2.4rem;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(224, 196, 141, 0.65));
+}
+.opener-label i:last-child { transform: scaleX(-1); }
+.opener-label.quiet {
+  font-size: var(--text-sm);
+  color: rgba(240, 220, 174, 0.6);
+  margin-top: -0.55rem;
+}
+
 /* The couple's names in Latin — set wide and light, the way they are
    engraved on a printed card. Safe to track because the glyphs are not
    cursive; the Arabic forms above are never treated this way. */
@@ -1591,46 +1646,65 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  min-height: 46vh;
+  gap: 0;
+  min-height: 58vh;
 }
 .inv-names-latin .n {
-  font-size: clamp(3.2rem, 17vw, 5rem);
-  padding-block: 0.08em; /* Great Vibes' swashes overshoot the line box */
+  font-size: clamp(3.9rem, 21vw, 6rem);
+  padding-block: 0.06em; /* Great Vibes' swashes overshoot the line box */
+  white-space: nowrap;
 }
+/* Stepped off the centre line rather than stacked on it. Two names centred
+   under each other read as a list; offset, with the ampersand between them,
+   they read as a monogram. */
+.inv-names-latin .n.one { transform: translateX(-8%); }
+.inv-names-latin .n.two { transform: translateX(8%); }
+.inv-names-latin .inv-amp { margin-block: -0.12em; }
 
 /* The ampersand carries the motion: it is the one glyph on the card that
    stands for the two of them together, and it is the only thing here small
    enough to move without the whole page appearing to wobble. */
 .inv-amp {
-  position: relative;
-  font-size: clamp(2.6rem, 13vw, 3.8rem);
+  font-size: clamp(3rem, 15vw, 4.4rem);
   color: var(--gold-500);
+  /* The bloom is a text-shadow, not a radial gradient on a pseudo-element.
+     That version sat at z-index:-1 inside a stacking context and painted a
+     visible rectangle of light over the card's texture — the ampersand looked
+     cut out of a box. A shadow follows the glyph and has no box to show. */
   animation: amp-float 5.5s ease-in-out infinite;
 }
-.inv-amp::after {
-  /* A slow bloom behind it, on its own rhythm so the two never sync up into
-     a single pulse. */
-  content: "";
-  position: absolute;
-  inset: -60%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(224, 196, 141, 0.4), transparent 65%);
-  animation: amp-glow 5.5s ease-in-out infinite;
-  z-index: -1;
-}
 @keyframes amp-float {
-  0%, 100% { transform: translateY(0) rotate(-2.5deg); }
-  50%      { transform: translateY(-7px) rotate(2.5deg); }
-}
-@keyframes amp-glow {
-  0%, 100% { opacity: 0.25; transform: scale(0.85); }
-  50%      { opacity: 0.65; transform: scale(1.12); }
+  0%, 100% {
+    transform: translateY(0) rotate(-2.5deg);
+    text-shadow: 0 0 16px rgba(224, 196, 141, 0.3);
+  }
+  50% {
+    transform: translateY(-7px) rotate(2.5deg);
+    text-shadow: 0 0 34px rgba(224, 196, 141, 0.62);
+  }
 }
 
+/* Two lines that overlap, which is what a script this size is for. Set on one
+   line it is a caption; set large and interlocked it is the ornament of the
+   card. The second line is pulled up into the first and offset, so the D
+   tucks under the swash above it. */
 .inv-save {
-  font-size: clamp(2.6rem, 13vw, 3.6rem);
-  padding-block: 0.08em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0.92;
+}
+.inv-save .l1 {
+  font-size: clamp(3.2rem, 17vw, 4.7rem);
+  transform: translateX(-13%);
+}
+.inv-save .l2 {
+  font-size: clamp(4rem, 22vw, 6rem);
+  transform: translateX(12%);
+  /* Enough overlap that the swashes interlock, not so much that the second
+     line sits on top of the first — at -0.34em the D of Date landed in the
+     middle of Save and neither word could be read. */
+  margin-top: -0.19em;
 }
 
 /* ---- the two families, one either side of the waw ---- */
@@ -1645,8 +1719,8 @@ body {
   flex: 1 1 0;
   min-width: 0;
   font-family: var(--font-display), serif;
-  font-size: clamp(1.05rem, 5.2vw, 1.5rem);
-  line-height: 1.9;
+  font-size: clamp(1.15rem, 5.8vw, 1.65rem);
+  line-height: 2.1;
   color: var(--ink);
 }
 /* Right family reads toward the waw, left family away from it — the two lean
@@ -1663,4 +1737,25 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .inv-amp, .inv-amp::after { animation: none; }
+}
+
+/* The couple's names in Arabic, set with the same ampersand as the Latin pair
+   so the two settings rhyme. Aref Ruqaa, and never tracked apart — the script
+   joins, and letter-spacing would break the joins the way it would in any
+   handwriting. */
+.inv-names-ar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  font-family: var(--font-display), serif;
+  color: var(--ink);
+}
+.inv-names-ar .n {
+  font-size: clamp(2.4rem, 12vw, 3.4rem);
+  line-height: 1.5;
+}
+.inv-names-ar .inv-amp {
+  font-size: clamp(2rem, 10vw, 2.8rem);
+  margin-block: -0.18em;
 }

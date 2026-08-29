@@ -446,7 +446,7 @@ function EditEventForm({ event, onUpdated, onClose }) {
         <input
           value={form.familyNames}
           onChange={(e) => setForm({ ...form, familyNames: e.target.value })}
-          placeholder="عائلة بدوي وعائلة عطّاري"
+          placeholder="عائلة بدوي وعائلة عطاري"
           className="field"
         />
         <p className="hint">تُقرأ: «تتشرّف … بدعوتكم لحضور حفل زفاف نجليهما».</p>

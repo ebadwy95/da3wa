@@ -18,7 +18,7 @@ import { EnvelopeMark } from "@/components/EnvelopeMark";
 // hands control to the system player), while the audio element carries sound.
 
 export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guestName, onOpened }) {
-  const [state, setState] = useState("idle"); // idle | playing | closing | done
+  const [state, setState] = useState("idle"); // idle | opening | playing | closing | done
   const videoRef = useRef(null);
   const audioRef = useRef(null);
 
@@ -38,26 +38,39 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
     return () => clearTimeout(t);
   }, [state, onOpened]);
 
-  async function open() {
-    setState("playing");
-    const video = videoRef.current;
+  // The envelope opens and grows into the film rather than cutting to it: the
+  // invitation should look like it comes out of the envelope the guest just
+  // opened, which is the only reason the envelope is there at all.
+  //
+  // The music still starts inside the click handler — that gesture is what
+  // makes the browser allow audio, and it cannot be deferred to a timer. The
+  // film can be: a muted video is allowed to start on its own.
+  function open() {
+    if (state !== "idle") return;
+    setState("opening");
     const audio = audioRef.current;
-
-    // Both are started from inside the click handler, which is what makes the
-    // browser allow the audio at all.
-    const tries = [];
-    if (video) tries.push(video.play());
     if (audio) {
       audio.volume = 0.85;
-      tries.push(audio.play());
+      audio.play().catch(() => {});
     }
-    const results = await Promise.allSettled(tries);
-
-    // If there's no film — music only, or a device that refused the video —
-    // there's nothing to watch, so don't hold the guest on a black screen.
-    const videoPlaying = video && results[0]?.status === "fulfilled";
-    if (!videoPlaying) finish();
   }
+
+  useEffect(() => {
+    if (state !== "opening") return;
+    const t = setTimeout(async () => {
+      setState("playing");
+      const video = videoRef.current;
+      if (!video) return finish();
+      // If the device refuses the film there is nothing to watch, so don't
+      // hold the guest on a black screen.
+      try {
+        await video.play();
+      } catch {
+        finish();
+      }
+    }, 900); // matches the envelope opening
+    return () => clearTimeout(t);
+  }, [state, finish]);
 
   return (
     <>
@@ -94,11 +107,16 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
           />
         )}
 
-        {state === "idle" ? (
+        {state === "idle" || state === "opening" ? (
           /* The envelope, then the film. Removing it was a mistake — the
              sealed envelope is the moment the invitation is handed over, and
              the film is what is inside it, not a replacement for it. */
-          <button type="button" onClick={open} className="opener-tap">
+          <button
+            type="button"
+            onClick={open}
+            className="opener-tap"
+            data-opening={state === "opening"}
+          >
             <span className="opener-env">
               {/* Drawn in front of the guest, then opened — the ink has to dry
                   before the tap means anything. The seal is a heart here
@@ -117,8 +135,8 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
             {/* The guest's own name on the outside of the envelope, which is
                 where a name goes. Every guest has their own link, so every
                 guest sees theirs and only theirs. */}
-            <span style={{ fontSize: "var(--text-sm)", color: "rgba(240,220,174,.7)" }}>
-              دعوة خاصة لـ
+            <span className="opener-label">
+              <i aria-hidden="true" /> دعوة خاصة لـ <i aria-hidden="true" />
             </span>
             {guestName && (
               <span
@@ -128,9 +146,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
                 {guestName}
               </span>
             )}
-            <span style={{ fontSize: "var(--text-sm)", color: "rgba(240,220,174,.7)", marginTop: "-.6rem" }}>
-              من
-            </span>
+            <span className="opener-label quiet">من</span>
             <span
               className="font-display opener-title"
               style={{ fontSize: "var(--text-2xl)", color: "#e6cd97", textShadow: "0 2px 14px rgba(0,0,0,0.6)" }}

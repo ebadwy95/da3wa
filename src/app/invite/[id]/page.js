@@ -33,7 +33,7 @@ function companionLimitLabel(n) {
 
 // The two families, one either side of the waw.
 //
-// Stored as one line ("عائلة بدوي وعائلة عطّاري") because that is how a couple
+// Stored as one line ("عائلة بدوي وعائلة عطاري") because that is how a couple
 // writes it and how it reads in a sentence — but on the card Eslam wants them
 // set apart, one leaning in from each side. So the line is parsed rather than
 // the model being split in two: a couple should not have to fill in two fields
@@ -47,7 +47,7 @@ function splitFamilies(raw) {
   // An explicit bar wins, for a name that genuinely contains a waw.
   const bar = t.split("|").map((x) => x.trim()).filter(Boolean);
   if (bar.length === 2) return bar;
-  // "عائلة بدوي وعائلة عطّاري" — the waw is prefixed to the second family, so
+  // "عائلة بدوي وعائلة عطاري" — the waw is prefixed to the second family, so
   // it is the space before it that marks the join, not a space after.
   const m = t.match(/^(.+?)\s+و\s*(عائلة|عائله|آل|ال|بيت|أسرة|اسرة)\s+(.+)$/);
   if (m) return [m[1].trim(), `${m[2]} ${m[3]}`.trim()];
@@ -205,7 +205,14 @@ function InviteContent() {
     const parts = latinNames.split("&").map((x) => x.trim()).filter(Boolean);
     return parts.length === 2 ? parts : null;
   })();
-  const families = splitFamilies(event.familyNames || "عائلة بدوي وعائلة عطّاري");
+  const families = splitFamilies(event.familyNames || "عائلة بدوي وعائلة عطاري");
+  // The Arabic names get the same ampersand treatment as the Latin ones, so
+  // the two settings of the couple's name rhyme rather than each doing its own
+  // thing. Split on a free-standing waw; a name that has none is set whole.
+  const arabicPair = (() => {
+    const m = (event.coupleNames || "").match(/^(.+?)\s+و\s+(.+)$/);
+    return m ? [m[1].trim(), m[2].trim()] : null;
+  })();
 
   // The "AT" block is set in Latin, so the time is too — 8:00 PM rather than
   // ٨:٠٠ مساءً, which is what prettyTime gives and what the Arabic sections
@@ -309,9 +316,9 @@ function InviteContent() {
               <div className="inv-names-latin inv-script" dir="ltr">
                 {latinPair ? (
                   <>
-                    <span className="n">{latinPair[0]}</span>
+                    <span className="n one">{latinPair[0]}</span>
                     <span className="inv-amp">&amp;</span>
-                    <span className="n">{latinPair[1]}</span>
+                    <span className="n two">{latinPair[1]}</span>
                   </>
                 ) : (
                   <span className="n">{latinNames}</span>
@@ -324,7 +331,9 @@ function InviteContent() {
 
           <Reveal className="inv-sec pad" delay={60}>
             <p className="body" style={{ lineHeight: 2.1 }}>
-              إلى كل من نال في قلبنا مكانًا
+              إلى كل من نال في قلبنا مكان عزيز
+              <br />
+              بكل حب وود تتشرف
             </p>
 
             {families ? (
@@ -348,19 +357,19 @@ function InviteContent() {
                 the card makes, and calligraphy on every line leaves nothing
                 for the names to be. */}
             <p className="body" style={{ lineHeight: 2.1, marginTop: "1.5rem" }}>
-              {families ? "يتشرّفان" : "تتشرّف"} بدعوتكم لحضور حفل زفاف نجليهما
+              بدعوتكم لحضور حفل زفاف نجليهما
             </p>
 
-            <h1
-              className="font-display"
-              style={{
-                fontSize: "clamp(2.4rem, 11vw, 3.4rem)",
-                lineHeight: 1.6,
-                color: "var(--ink)",
-                marginTop: "1.4rem",
-              }}
-            >
-              {event.coupleNames}
+            <h1 className="inv-names-ar" style={{ marginTop: "1.5rem" }}>
+              {arabicPair ? (
+                <>
+                  <span className="n">{arabicPair[0]}</span>
+                  <span className="inv-amp inv-script">&amp;</span>
+                  <span className="n">{arabicPair[1]}</span>
+                </>
+              ) : (
+                <span className="n">{event.coupleNames}</span>
+              )}
             </h1>
           </Reveal>
 
@@ -369,7 +378,10 @@ function InviteContent() {
             {/* Title case, not SAVE THE DATE. A connecting script has no
                 capitals to connect — set in caps it stops being handwriting
                 and becomes four unreadable shapes. */}
-            <p className="inv-script inv-save" dir="ltr">Save the Date</p>
+            <p className="inv-script inv-save" dir="ltr">
+              <span className="l1">Save the</span>
+              <span className="l2">Date</span>
+            </p>
           </Reveal>
 
           {latinTime && (
