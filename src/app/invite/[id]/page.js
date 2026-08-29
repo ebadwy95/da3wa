@@ -241,9 +241,9 @@ function InviteContent() {
             >
               {event.coupleNames}
             </h1>
+            {/* dir=ltr, or the RTL paragraph reorders the groups and 20.11.2026
+                is rendered as 2026.11.20. */}
             {event.eventDate && (
-              {/* dir=ltr, or the RTL paragraph reorders the groups and 20.11.2026
-                  is rendered as 2026.11.20. */}
               <p className="inv-date" dir="ltr" style={{ marginTop: "1.1rem" }}>
                 {event.eventDate.split("-").reverse().join(" . ")}
               </p>
