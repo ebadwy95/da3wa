@@ -1358,3 +1358,97 @@ body {
 @media (prefers-reduced-motion: reduce) {
   [data-reveal] { opacity: 1 !important; transform: none !important; }
 }
+
+/* ---- the order of the night ------------------------------------------- */
+.tl {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding-inline: 0.5rem;
+}
+
+/* The rail sits between the icons and the times. Inset from both ends so it
+   starts at the first row and stops at the last, rather than running past
+   them like a table border. */
+.tl-line {
+  position: absolute;
+  inset-block: calc(100% / 12);
+  inset-inline-end: 4.4rem;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--gold-300), var(--gold-300), transparent);
+}
+
+.tl-mark {
+  position: absolute;
+  inset-inline-end: calc(4.4rem - 8px);
+  color: var(--gold-600);
+  background: var(--surface);
+  border-radius: 50%;
+  padding: 1px;
+  display: flex;
+  /* It slides between rows over a minute; a jump would read as a glitch. */
+  transition: top 0.9s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease;
+  filter: drop-shadow(0 0 10px rgba(224, 196, 141, 0.55));
+}
+
+.tl-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 0.85rem 0;
+}
+
+.tl-txt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-inline-start: 1.4rem;
+  text-align: start;
+}
+.tl-at {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.16em;
+  font-size: var(--text-base);
+  color: var(--ink-2);
+}
+.tl-label {
+  font-family: var(--font-display), serif;
+  font-size: var(--text-lg);
+  color: var(--gold-600);
+  line-height: 1.6;
+}
+
+.tl-icon {
+  width: 2.6rem;
+  display: flex;
+  justify-content: center;
+  color: var(--gold-500);
+  opacity: 0.85;
+}
+
+/* ---- how many are coming --------------------------------------------- */
+.seat-pick {
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+.seat-pick button {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.seat-pick button[data-on="true"] {
+  background: linear-gradient(180deg, var(--gold-400), var(--gold-500));
+  border-color: var(--gold-500);
+  color: #fff;
+  transform: scale(1.06);
+}
+.seat-pick button:active { transform: scale(0.97); }

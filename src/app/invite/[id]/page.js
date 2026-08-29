@@ -7,6 +7,7 @@ import { InviteOpener } from "@/components/InviteOpener";
 import { EnvelopeOpener } from "@/components/EnvelopeOpener";
 import { Countdown } from "@/components/Countdown";
 import { Reveal } from "@/components/Reveal";
+import { Timeline } from "@/components/Timeline";
 import {
   MapPinIcon,
   CheckCircleIcon,
@@ -253,12 +254,28 @@ function InviteContent() {
           <div className="inv-rule" aria-hidden="true" />
 
           <Reveal className="inv-sec pad" delay={60}>
-            <h2 className="title font-display" style={{ color: "var(--gold-600)", fontSize: "var(--text-2xl)" }}>
-              أهلًا {guest.name}
+            {/* The couple do the inviting and the guest is named as the one
+                invited — "أهلًا عماد" over a stock line read like a
+                notification addressed at him rather than an invitation from
+                them. */}
+            <p className="body" style={{ lineHeight: 2 }}>
+              يتشرّف
+              <span className="font-display" style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", margin: "0 .35rem" }}>
+                {event.coupleNames}
+              </span>
+              بدعوتكم لحضور حفل زفافهما
+            </p>
+
+            <h2
+              className="title font-display"
+              style={{ color: "var(--gold-600)", fontSize: "var(--text-2xl)", marginTop: "1.4rem" }}
+            >
+              {guest.name}
             </h2>
-            <p className="body" style={{ marginTop: ".6rem" }}>{event.welcomeMessage}</p>
+            <p className="meta">وجودكم يزيد ليلتنا فرحًا</p>
+
             {(prettyDate || prettyTime) && (
-              <p className="meta" style={{ marginTop: "1rem", letterSpacing: "0.04em" }}>
+              <p className="meta" style={{ marginTop: "1.2rem", letterSpacing: "0.04em" }}>
                 {prettyDate}
                 {prettyTime && ` — ${prettyTime}`}
               </p>
@@ -292,6 +309,12 @@ function InviteContent() {
             </>
           )}
 
+          <div className="inv-rule" aria-hidden="true" />
+          <Reveal className="inv-sec pad" delay={60}>
+            <p className="inv-eyebrow">برنامج الليلة</p>
+            <Timeline date={event.eventDate} />
+          </Reveal>
+
           {/* Only while there is something to count down to — after the night
               it would sit at zero, which is a worse thing to show than
               nothing at all. */}
@@ -310,23 +333,45 @@ function InviteContent() {
           {guest.status === "pending" && (
             <div className="flex flex-col gap-4">
               {guest.maxCompanions > 0 && (
-                <div className="text-right">
-                  <label htmlFor="companions" className="label">
-                    عدد المرافقين معك
-                  </label>
-                  <select
-                    id="companions"
-                    value={companions}
-                    onChange={(e) => setCompanions(Number(e.target.value))}
-                    className="field tnum"
-                  >
-                    {Array.from({ length: guest.maxCompanions + 1 }, (_, i) => (
-                      <option key={i} value={i}>
-                        {i}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="hint">بحد أقصى {companionLimitLabel(guest.maxCompanions)}</p>
+                <div>
+                  {/* The allowance stated before the question. A bare "عدد
+                      المرافقين" makes the guest guess how many they are
+                      allowed to bring, and guessing high is the awkward
+                      outcome at the door. */}
+                  <p className="body" style={{ marginBottom: "1.1rem" }}>
+                    دعوتك تشمل{" "}
+                    <strong style={{ color: "var(--gold-600)" }}>
+                      {guest.maxCompanions + 1} أفراد
+                    </strong>{" "}
+                    — أنت و{companionLimitLabel(guest.maxCompanions)}.
+                    <br />
+                    <span className="meta">كم فردًا سيحضر؟</span>
+                  </p>
+
+                  {/* Chips rather than a dropdown: at most a handful of
+                      options, and a select hides them behind a tap. */}
+                  <div className="seat-pick" role="radiogroup" aria-label="عدد الحاضرين">
+                    {Array.from({ length: guest.maxCompanions + 1 }, (_, i) => {
+                      const total = i + 1;
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          role="radio"
+                          aria-checked={companions === i}
+                          data-on={companions === i}
+                          onClick={() => setCompanions(i)}
+                        >
+                          <span className="tnum">{total}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="hint" style={{ textAlign: "center" }}>
+                    {companions === 0
+                      ? "أنت فقط"
+                      : `أنت و${companionLimitLabel(companions)}`}
+                  </p>
                 </div>
               )}
               {/* Stacked rather than side by side: at 375px two pill buttons

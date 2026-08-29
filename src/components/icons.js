@@ -414,3 +414,84 @@ export function InboxIcon(props) {
     </Icon>
   );
 }
+
+/* ---------------------------------------------------------------------------
+   Timeline marks.
+
+   Drawn rather than borrowed so they carry the same 24-grid, stroke weight and
+   round joins as everything above — an icon set that mixes provenance reads as
+   mixed no matter how good the individual glyphs are. Each is a silhouette at
+   16px, which is the size that actually matters on the invitation.
+--------------------------------------------------------------------------- */
+
+/** Groom — a head over shoulders, with the line of a bisht. */
+export function GroomIcon(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="6" r="3.2" />
+      <path d="M5.5 21v-2.2A5.3 5.3 0 0 1 10.8 13.5h2.4a5.3 5.3 0 0 1 5.3 5.3V21" />
+      <path d="M12 13.8V21" />
+    </Icon>
+  );
+}
+
+/** Bride — a veil that falls wide of the shoulders and a bouquet.
+ *  The first version reused the groom's silhouette and the two were
+ *  indistinguishable at 26px, which is the only size that matters here. */
+export function BrideIcon(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="6" r="2.6" />
+      {/* the veil, falling past the body on both sides */}
+      <path d="M7.6 5.2C5.6 8 4.6 13.6 5 20.4M16.4 5.2c2 2.8 3 8.4 2.6 15.2" />
+      <path d="M5 20.4h14" />
+      {/* shoulders, narrower than the veil so the two read apart */}
+      <path d="M9.2 11.4c-.9.9-1.4 2.6-1.4 5.2M14.8 11.4c.9.9 1.4 2.6 1.4 5.2" />
+      {/* bouquet */}
+      <circle cx="12" cy="15.4" r="1.7" />
+    </Icon>
+  );
+}
+
+/** Dinner — a plate between a fork and a knife. */
+export function DinnerIcon(props) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="5.2" />
+      <path d="M5 3v6.5M3.2 3v3.4a1.8 1.8 0 0 0 3.6 0V3M5 9.5V21" />
+      <path d="M19 3c-1.2 1.4-1.8 3-1.8 4.8 0 1.2.6 1.9 1.8 2.1V21" />
+    </Icon>
+  );
+}
+
+/** Zaffa — a drum, which is what actually leads one. */
+export function ZaffaIcon(props) {
+  return (
+    <Icon {...props}>
+      <ellipse cx="12" cy="8.5" rx="7.5" ry="3.4" />
+      <path d="M4.5 8.5v7a7.5 3.4 0 0 0 15 0v-7" />
+      <path d="M6.6 11.2 17.4 17M17.4 11.2 6.6 17" />
+    </Icon>
+  );
+}
+
+/** Photography — a camera. */
+export function CameraIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M3 8.6a2 2 0 0 1 2-2h2.3l1.4-2.1h6.6l1.4 2.1H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+      <circle cx="12" cy="13" r="3.6" />
+    </Icon>
+  );
+}
+
+/** The close of the night — a burst. */
+export function FireworksIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3v3.4M12 17.6V21M3 12h3.4M17.6 12H21" />
+      <path d="M5.6 5.6 8 8M16 16l2.4 2.4M18.4 5.6 16 8M8 16l-2.4 2.4" />
+      <circle cx="12" cy="12" r="2.6" />
+    </Icon>
+  );
+}
