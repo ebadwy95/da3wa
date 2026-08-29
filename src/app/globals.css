@@ -1242,3 +1242,119 @@ body {
   font-weight: 700;
   letter-spacing: 0;
 }
+
+/* ===========================================================================
+   The long-form invitation.
+
+   It used to be a single card: everything visible at once, one screen, done.
+   An invitation should unfold — so the card becomes a run of full-width
+   sections over one continuous ground, each arriving as it is scrolled to.
+
+   The ground is ours rather than borrowed: a dark field with the eight-point
+   star repeating through it, the same mark as the logo and the films. A cream
+   photographic look would need photography we cannot generate; this is a
+   different answer, not a worse one.
+=========================================================================== */
+.inv {
+  position: relative;
+  width: 100%;
+  max-width: 30rem;
+  margin-inline: auto;
+  overflow: clip;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Cpath fill='none' stroke='%23b08d57' stroke-width='0.7' stroke-opacity='0.075' d='M17 3.5 L20.4 13.6 L30.5 17 L20.4 20.4 L17 30.5 L13.6 20.4 L3.5 17 L13.6 13.6 Z'/%3E%3C/svg%3E");
+}
+
+/* A pool of warm light behind the top of the page, so the ground is not flat
+   for five screens. Fixed to the invitation, not the viewport — it should
+   scroll away with the opening rather than follow the reader down. */
+.inv::before {
+  content: "";
+  position: absolute;
+  inset-inline: -20%;
+  top: -12%;
+  height: 70%;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(224, 196, 141, 0.16), transparent 70%);
+}
+
+.inv-sec {
+  position: relative;
+  padding: 3.4rem 1.75rem;
+  text-align: center;
+}
+.inv-sec + .inv-sec { padding-top: 0; }
+.inv-sec.pad { padding-top: 3.4rem; }
+
+/* A hairline between movements, fading out at both ends so it reads as a
+   pause rather than a table border. */
+.inv-rule {
+  height: 1px;
+  margin: 0 auto;
+  width: 68%;
+  background: linear-gradient(90deg, transparent, var(--gold-300), transparent);
+  opacity: 0.5;
+}
+
+.inv-eyebrow {
+  font-size: var(--text-sm);
+  letter-spacing: 0.12em;
+  color: var(--gold-600);
+  margin-bottom: 0.9rem;
+}
+
+/* The date in Latin figures, widely spaced — it reads as engraving rather
+   than as data, and the spacing is safe here because the glyphs are not
+   cursive. */
+.inv-date {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.42em;
+  padding-inline-start: 0.42em;
+  font-size: var(--text-lg);
+  color: var(--ink-2);
+}
+
+/* ---- countdown ---- */
+.inv-count {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.inv-count > div {
+  flex: 1;
+  max-width: 6.5rem;
+  padding: 1rem 0.35rem;
+  border: 1px solid var(--line-soft);
+  border-radius: calc(var(--radius) * 0.7);
+  background: rgba(224, 196, 141, 0.05);
+}
+.inv-count b {
+  display: block;
+  font-family: var(--font-display), serif;
+  font-size: 2.1rem;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-600);
+}
+.inv-count span {
+  font-size: var(--text-xs);
+  color: var(--ink-3);
+}
+
+/* ---- scroll reveal ---- */
+[data-reveal="pending"] {
+  opacity: 0;
+  transform: translateY(14px);
+}
+[data-reveal="shown"] {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.75s ease var(--reveal-delay, 0ms),
+              transform 0.75s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1 !important; transform: none !important; }
+}

@@ -5,6 +5,8 @@ import { useParams, useSearchParams } from "next/navigation";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { InviteOpener } from "@/components/InviteOpener";
 import { EnvelopeOpener } from "@/components/EnvelopeOpener";
+import { Countdown } from "@/components/Countdown";
+import { Reveal } from "@/components/Reveal";
 import {
   MapPinIcon,
   CheckCircleIcon,
@@ -210,71 +212,100 @@ function InviteContent() {
       {tab === "invite" ? (
         <article
           className={
-            "card-ornate invite-card max-w-md w-full p-8 text-center flex flex-col gap-5 " +
-            (hasOpener ? (opened ? "rise" : "invisible") : "da3wa-fade-in")
+            "inv invite-card w-full " + (opened ? "da3wa-fade-in" : "invisible")
           }
         >
-          <div className="ornament-divider" aria-hidden="true">
-            <StarOrnamentIcon size={14} />
-          </div>
+          <Reveal className="inv-sec pad">
+            <div className="ornament-divider" aria-hidden="true">
+              <StarOrnamentIcon size={14} />
+            </div>
 
-          {/* Aref Ruqaa is a calligraphic face — its letterforms need more
-              size and leading than a UI font at the same optical weight, or
-              the strokes collide and the line stops being readable. */}
-          <p
-            className="font-display"
-            style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", lineHeight: 1.85 }}
-          >
-            بسم الله نبدأ فرحتنا، وبالحب نكتب أجمل بدايات العمر
-          </p>
-
-          <h1 className="font-display" style={{ fontSize: "var(--text-4xl)", color: "var(--ink)" }}>
-            {event.coupleNames}
-          </h1>
-
-          {prettyDate && (
-            <p className="meta" style={{ letterSpacing: "0.04em" }}>
-              {prettyDate}
-              {prettyTime && ` — ${prettyTime}`}
-            </p>
-          )}
-
-          <div className="ornament-divider" aria-hidden="true">
-            <StarOrnamentIcon size={14} />
-          </div>
-
-          <h2 className="title" style={{ color: "var(--gold-600)" }}>
-            أهلًا {guest.name}
-          </h2>
-          <p className="body">{event.welcomeMessage}</p>
-
-          {/* The date already sits under the couple's names above, where it
-              belongs ceremonially — repeating it here just made the card look
-              like a form. This block is the practical "where" detail only. */}
-          {event.venueName && (
-            <div
-              className="flex flex-col gap-2.5 py-4 text-right"
-              style={{ borderTop: "1px solid var(--line-soft)", borderBottom: "1px solid var(--line-soft)" }}
+            {/* Aref Ruqaa is a calligraphic face — its letterforms need more
+                size and leading than a UI font at the same optical weight, or
+                the strokes collide and the line stops being readable. */}
+            <p
+              className="font-display"
+              style={{ color: "var(--gold-600)", fontSize: "var(--text-xl)", lineHeight: 1.9 }}
             >
-              {event.venueName && (
-                <p className="flex items-center gap-2.5" style={{ fontSize: "var(--text-sm)", color: "var(--ink-2)" }}>
-                  <span style={{ color: "var(--gold-500)" }}><MapPinIcon size={18} /></span>
+              بسم الله نبدأ فرحتنا، وبالحب نكتب أجمل بدايات العمر
+            </p>
+          </Reveal>
+
+          {/* The names get a screen of their own. It is the one thing the
+              guest came to read, and crowding it was the old card's mistake. */}
+          <Reveal className="inv-sec" delay={80}>
+            <p className="inv-eyebrow">بمشيئة الله، وبحضوركم</p>
+            <h1
+              className="font-display"
+              style={{ fontSize: "clamp(2.6rem, 12vw, 3.6rem)", lineHeight: 1.55, color: "var(--ink)" }}
+            >
+              {event.coupleNames}
+            </h1>
+            {event.eventDate && (
+              {/* dir=ltr, or the RTL paragraph reorders the groups and 20.11.2026
+                  is rendered as 2026.11.20. */}
+              <p className="inv-date" dir="ltr" style={{ marginTop: "1.1rem" }}>
+                {event.eventDate.split("-").reverse().join(" . ")}
+              </p>
+            )}
+          </Reveal>
+
+          <div className="inv-rule" aria-hidden="true" />
+
+          <Reveal className="inv-sec pad" delay={60}>
+            <h2 className="title font-display" style={{ color: "var(--gold-600)", fontSize: "var(--text-2xl)" }}>
+              أهلًا {guest.name}
+            </h2>
+            <p className="body" style={{ marginTop: ".6rem" }}>{event.welcomeMessage}</p>
+            {(prettyDate || prettyTime) && (
+              <p className="meta" style={{ marginTop: "1rem", letterSpacing: "0.04em" }}>
+                {prettyDate}
+                {prettyTime && ` — ${prettyTime}`}
+              </p>
+            )}
+          </Reveal>
+
+          {event.venueName && (
+            <>
+              <div className="inv-rule" aria-hidden="true" />
+              <Reveal className="inv-sec pad" delay={60}>
+                <p className="inv-eyebrow">المكان</p>
+                <p
+                  className="font-display"
+                  style={{ fontSize: "var(--text-xl)", lineHeight: 1.75, color: "var(--ink)" }}
+                >
                   {event.venueName}
                 </p>
-              )}
-              {event.venueMapUrl && (
-                <a
-                  href={event.venueMapUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="pill-btn-outline pill-btn-sm self-start mt-1"
-                >
-                  <MapPinIcon size={15} />
-                  اعرض الموقع على الخريطة
-                </a>
-              )}
-            </div>
+                {event.venueMapUrl && (
+                  <a
+                    href={event.venueMapUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pill-btn-outline pill-btn-sm"
+                    style={{ marginTop: "1.1rem" }}
+                  >
+                    <MapPinIcon size={15} />
+                    اعرض الموقع على الخريطة
+                  </a>
+                )}
+              </Reveal>
+            </>
           )}
+
+          {/* Only while there is something to count down to — after the night
+              it would sit at zero, which is a worse thing to show than
+              nothing at all. */}
+          <div className="inv-rule" aria-hidden="true" />
+          <Reveal className="inv-sec pad" delay={60}>
+            <p className="inv-eyebrow">باقي على الليلة</p>
+            <Countdown date={event.eventDate} time={event.eventTime} />
+          </Reveal>
+
+          <div className="inv-rule" aria-hidden="true" />
+          <Reveal className="inv-sec pad" delay={60}>
+            {guest.status === "pending" && (
+              <p className="inv-eyebrow">حضورك يسعدنا</p>
+            )}
 
           {guest.status === "pending" && (
             <div className="flex flex-col gap-4">
@@ -414,6 +445,20 @@ function InviteContent() {
               )}
             </div>
           )}
+          </Reveal>
+
+          {/* A last line, so the invitation closes rather than stopping. */}
+          <Reveal className="inv-sec" delay={80}>
+            <div className="ornament-divider" aria-hidden="true">
+              <StarOrnamentIcon size={14} />
+            </div>
+            <p
+              className="font-display"
+              style={{ color: "var(--gold-600)", fontSize: "var(--text-lg)", lineHeight: 1.9 }}
+            >
+              وجودكم معنا هو أجمل ما في الليلة
+            </p>
+          </Reveal>
         </article>
       ) : (
         <section className="wall-section max-w-md w-full p-5 da3wa-fade-in">
