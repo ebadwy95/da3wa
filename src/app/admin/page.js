@@ -1,5 +1,7 @@
 "use client";
 
+import { TimelineEditor } from "@/components/TimelineEditor";
+
 import { useCallback, useEffect, useState } from "react";
 import {
   StatCard,
@@ -317,6 +319,9 @@ function EditEventForm({ event, onUpdated, onClose }) {
     invitePosterUrl: event.invitePosterUrl || "",
     inviteAudioUrl: event.inviteAudioUrl || "",
     inviteTheme: event.inviteTheme === "dark" ? "dark" : "light",
+    latinNames: event.latinNames || "",
+    familyNames: event.familyNames || "",
+    timeline: Array.isArray(event.timeline) ? event.timeline : [],
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -425,6 +430,33 @@ function EditEventForm({ event, onUpdated, onClose }) {
           className="field"
         />
       </div>
+      <div>
+        <label className="label">أسماء العروسين بالإنجليزية (اختياري)</label>
+        <input
+          value={form.latinNames}
+          onChange={(e) => setForm({ ...form, latinNames: e.target.value })}
+          dir="ltr"
+          placeholder="Eslam & Dima"
+          className="field"
+        />
+        <p className="hint">تظهر على الدعوة تحت التاريخ. اتركه فارغًا ولن يظهر القسم.</p>
+      </div>
+      <div>
+        <label className="label">العائلتان (اختياري)</label>
+        <input
+          value={form.familyNames}
+          onChange={(e) => setForm({ ...form, familyNames: e.target.value })}
+          placeholder="عائلة بدوي وعائلة عطّاري"
+          className="field"
+        />
+        <p className="hint">تُقرأ: «تتشرّف … بدعوتكم لحضور حفل زفاف نجليهما».</p>
+      </div>
+
+      <TimelineEditor
+        value={form.timeline}
+        onChange={(timeline) => setForm({ ...form, timeline })}
+      />
+
       <InviteMediaFields form={form} setForm={setForm} />
       {error && <p className="text-danger text-sm">{error}</p>}
       <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الحفظ..." : "حفظ التعديلات"}</button>

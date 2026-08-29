@@ -340,7 +340,7 @@ function InviteContent() {
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={60}>
             <p className="inv-eyebrow">برنامج الليلة</p>
-            <Timeline date={event.eventDate} />
+            <Timeline date={event.eventDate} steps={event.timeline} />
           </Reveal>
 
           {/* Only while there is something to count down to — after the night

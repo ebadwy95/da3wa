@@ -22,13 +22,27 @@ import {
 // plan. During the evening it tracks real time, so a guest glancing at their
 // phone can see the zaffa is next. After midnight it sits at the end.
 
-const STEPS = [
-  { at: "20:30", label: "دخلة العريس", Icon: GroomIcon },
-  { at: "20:40", label: "دخلة العروس", Icon: BrideIcon },
-  { at: "22:00", label: "العشاء", Icon: DinnerIcon },
-  { at: "22:30", label: "الزفة", Icon: ZaffaIcon },
-  { at: "23:40", label: "التصوير", Icon: CameraIcon },
-  { at: "00:00", label: "ختام الحفل", Icon: FireworksIcon },
+// Named so the admin can pick one without knowing anything about components.
+export const TIMELINE_ICONS = {
+  groom: GroomIcon,
+  bride: BrideIcon,
+  dinner: DinnerIcon,
+  zaffa: ZaffaIcon,
+  camera: CameraIcon,
+  fireworks: FireworksIcon,
+  star: StarOrnamentIcon,
+};
+
+// What a wedding runs like when nobody has said otherwise. Every couple can
+// replace it from the dashboard; most will not, and a sensible default beats
+// an empty section.
+export const DEFAULT_TIMELINE = [
+  { at: "20:30", label: "دخلة العريس", icon: "groom" },
+  { at: "20:40", label: "دخلة العروس", icon: "bride" },
+  { at: "22:00", label: "العشاء", icon: "dinner" },
+  { at: "22:30", label: "الزفة", icon: "zaffa" },
+  { at: "23:40", label: "التصوير", icon: "camera" },
+  { at: "00:00", label: "ختام الحفل", icon: "fireworks" },
 ];
 
 // "20:30" → minutes past the start of the evening. Midnight belongs to the
@@ -47,7 +61,12 @@ function label12(at) {
   return `${hour}:${String(m).padStart(2, "0")} ${suffix}`;
 }
 
-export function Timeline({ date }) {
+export function Timeline({ date, steps }) {
+  const STEPS = (Array.isArray(steps) && steps.length ? steps : DEFAULT_TIMELINE).map((s) => ({
+    ...s,
+    Icon: TIMELINE_ICONS[s.icon] || StarOrnamentIcon,
+  }));
+
   // null until mounted: the position depends on the reader's clock and on
   // scroll, and any value picked on the server is a hydration mismatch the
   // moment the browser disagrees.
@@ -112,7 +131,7 @@ export function Timeline({ date }) {
       cancelAnimationFrame(frame);
       clearInterval(id);
     };
-  }, [date]);
+  }, [date, steps]);
 
   // Positioned by row rather than by pixels: the rows are equal height, so the
   // fraction maps cleanly onto them and the mark lines up with a row's centre

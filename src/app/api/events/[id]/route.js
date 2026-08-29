@@ -59,6 +59,9 @@ export async function PATCH(request, { params }) {
       "invitePosterUrl",
       "inviteAudioUrl",
       "inviteTheme",
+      "latinNames",
+      "familyNames",
+      "timeline",
     ];
     for (const key of editable) {
       if (body[key] !== undefined) {

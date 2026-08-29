@@ -145,7 +145,7 @@
 // Timeline. Everything is a pure function of t (seconds), so render(t) can be
 // called in any order and always produces the same frame.
 // ---------------------------------------------------------------------------
-const DURATION = 8;
+const DURATION = 11;
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 // Ease used for anything entering — fast start, long settle. Motion that
@@ -204,32 +204,54 @@ function render(t) {
   $("bismillah").style.opacity = bis;
   $("bismillah").style.transform = `translateY(${(1 - bis) * 26}px)`;
 
-  // --- 2.2–4.0s  the names, the moment the whole clip is built around ----
-  const nm = easeOut(span(t, 2.2, 4.0));
-  $("names").style.opacity = nm;
+  // --- 2.2–4.4s  the names, the moment the whole clip is built around ----
   // Settles from slightly large rather than growing into place: the name
   // arrives already present and comes to rest, instead of zooming at you.
-  $("names").style.transform = `scale(${1.06 - nm * 0.06}) translateY(${(1 - nm) * 18}px)`;
+  // Then it keeps breathing — a name that freezes the instant it lands reads
+  // as a slide, and this is the shot the whole film exists for.
+  const nm = easeOut(span(t, 2.2, 4.4));
+  const breathe = Math.sin((t - 2.2) * 0.85) * 0.006;
+  const drift = Math.sin((t - 2.2) * 0.6) * 3;
+  $("names").style.opacity = nm;
+  $("names").style.transform =
+    `scale(${1.07 - nm * 0.07 + (nm > 0.98 ? breathe : 0)}) ` +
+    `translateY(${(1 - nm) * 22 + (nm > 0.98 ? drift : 0)}px)`;
 
-  // --- 3.4–5.0s  one pass of light across the names ----------------------
-  const sh = span(t, 3.4, 5.0);
-  $("shimmer").style.opacity = sh > 0 && sh < 1 ? 0.9 * Math.sin(sh * Math.PI) : 0;
-  $("shimmer").style.transform = `translateX(${-520 + easeInOut(sh) * 1180}px) skewX(-12deg)`;
+  // The glow swells as it settles and then eases back, so the light looks
+  // like it is coming off the letters rather than sitting behind them.
+  const glowIn = easeOut(span(t, 2.6, 4.6));
+  const glowOut = 1 - 0.45 * easeOut(span(t, 6.4, 8.4));
+  $("names").style.textShadow =
+    `0 0 ${28 + glowIn * 62 * glowOut}px rgba(224,196,141,${0.18 + glowIn * 0.4 * glowOut})`;
 
-  // --- 4.0–5.2s  the rule opens outward from its centre ornament ---------
-  const rule = easeOut(span(t, 4.0, 5.2));
+  // --- two passes of light, not one --------------------------------------
+  // One sweep reads as an effect; a second, slower and dimmer, reads as a
+  // surface catching the light twice as it turns.
+  const sweep = (a, b, peak) => {
+    const k = span(t, a, b);
+    if (k <= 0 || k >= 1) return null;
+    return { o: peak * Math.sin(k * Math.PI), x: -520 + easeInOut(k) * 1180 };
+  };
+  const s1 = sweep(3.2, 5.0, 0.95);
+  const s2 = sweep(6.2, 8.6, 0.45);
+  const sh = s1 || s2;
+  $("shimmer").style.opacity = sh ? sh.o : 0;
+  if (sh) $("shimmer").style.transform = `translateX(${sh.x}px) skewX(-12deg)`;
+
+  // --- 4.6–5.9s  the rule opens outward from its centre ornament ---------
+  const rule = easeOut(span(t, 4.6, 5.9));
   $("ruleL").setAttribute("x2", String(310 - rule * 265));
   $("ruleR").setAttribute("x2", String(310 + rule * 265));
-  $("ruleDot").style.opacity = clamp01(span(t, 3.9, 4.5));
+  $("ruleDot").style.opacity = clamp01(span(t, 4.5, 5.1));
   $("ruleL").style.opacity = rule;
   $("ruleR").style.opacity = rule;
 
-  // --- 4.7–6.0s  date, then venue ----------------------------------------
-  const dt = easeOut(span(t, 4.7, 6.0));
+  // --- 5.6–7.1s  date, then venue ----------------------------------------
+  const dt = easeOut(span(t, 5.6, 7.1));
   $("date").style.opacity = dt;
   $("date").style.transform = `translateY(${(1 - dt) * 16}px)`;
 
-  const vn = easeOut(span(t, 5.3, 6.6));
+  const vn = easeOut(span(t, 6.4, 7.9));
   $("venue").style.opacity = vn;
   $("venue").style.transform = `translateY(${(1 - vn) * 16}px)`;
 

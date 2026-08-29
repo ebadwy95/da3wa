@@ -48,6 +48,15 @@ export async function GET(request, { params }) {
     // a new field that is not listed here silently never arrives.
     latinNames: fullEvent.latinNames || "",
     familyNames: fullEvent.familyNames || "",
+    // Each entry is { at: "20:30", label: "دخلة العريس", icon: "groom" }.
+    // Validated on the way out rather than trusted: this reaches every guest,
+    // and an admin typo should not be able to break the invitation for all of
+    // them.
+    timeline: Array.isArray(fullEvent.timeline)
+      ? fullEvent.timeline
+          .filter((s) => s && /^\d{2}:\d{2}$/.test(s.at) && String(s.label || "").trim())
+          .map((s) => ({ at: s.at, label: String(s.label).trim(), icon: s.icon || "" }))
+      : null,
   };
 
   return NextResponse.json({ guest, event });
