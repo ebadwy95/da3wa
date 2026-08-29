@@ -451,77 +451,112 @@ function Solid({ children, size = 20, className = "", ...rest }) {
   );
 }
 
-/** Groom — shoulders in a jacket, the shirt showing through the lapels, and a
- *  bow tie in the opening. The V is cut from the outline rather than drawn on
- *  it, so it stays open at any size. */
-export function GroomIcon(props) {
-  return (
-    <Solid {...props}>
-      <path d="M12 2.1a2.9 2.9 0 1 1 0 5.8 2.9 2.9 0 0 1 0-5.8Z" />
-      <path d="M9.9 9.3 12 13.1l2.1-3.8 2.5 1.2a4.7 4.7 0 0 1 2.6 4.2v6.7H4.8v-6.7a4.7 4.7 0 0 1 2.6-4.2Z" />
-      {/* the bow tie, sitting in the opening the lapels leave */}
-      <path d="M12 10.2 9.7 8.9v3.6L12 11.2l2.3 1.3V8.9Z" />
-    </Solid>
-  );
-}
+/* Redrawn against four Icons8 icons Eslam picked out — bride 10134, groom
+   10139, meal 68521, snare drum 7396. Drawn here rather than downloaded: the
+   set has to share this file's 24-grid, stroke weight and round joins, and an
+   icon set that mixes provenance reads as mixed however good the individual
+   glyphs are. It also keeps the licence question from arising at all.
 
-/** Bride — a dress with the veil falling either side of it. The first solid
- *  version wrapped the veil right around the dress and cut the dress out of
- *  it, which at 30px read as an archway with someone standing in it. Open at
- *  the sides, the same drawing reads as a bride immediately. */
+   His references were better than what was here. A groom is a portrait with a
+   bow tie, not a torso; a bride is a face inside a veil, not a dress; dinner
+   is a plate with the cutlery laid on it; and a drum with sticks over it is a
+   drum, where the goblet drum was a trophy no amount of tuning lugs could
+   argue out of it.
+
+   Faces and plates are outlined rather than filled. A filled face is a
+   shadow, and it is the outline that lets the veil around it read as a veil.
+   The one place the references are not followed is weight: these sit at 30px
+   on the invitation, where their hairlines disappear. */
+
+/** Bride — a face inside a veil, the veil falling well past it on both
+ *  sides, with the hair gathered up on top.
+ *
+ *  The first pass drew the veil as two thick bands close in against the face
+ *  and it read as a hood; the hair was a thin crescent sitting inside the top
+ *  of the face and it read as a pair of eyebrows. Thinner veil, further out,
+ *  and the hair moved up above the face where hair goes. */
 export function BrideIcon(props) {
   return (
     <Solid {...props}>
-      <path d="M12 2a2.4 2.4 0 1 1 0 4.8A2.4 2.4 0 0 1 12 2Z" />
-      {/* the veil, outside the dress on both sides and past its hem */}
-      {/* Pushed well clear of the dress. The first pass left about one grid
-          unit between the veil and the skirt, which at 30px is a pixel — the
-          two filled in and the whole thing read as one dome. */}
-      <path d="M10.8 6.6Q5.8 10.4 4.6 21.2h1.9Q7.6 11 11.6 7.6ZM13.2 6.6Q18.2 10.4 19.4 21.2h-1.9Q16.4 11 12.4 7.6Z" />
-      {/* the dress, with the bouquet cut out of it — the same trick as the
-          groom's bow tie, and the only way to show detail on a silhouette
-          over a textured card */}
       <path
-        fillRule="evenodd"
-        d="M12 7.2c-1.8 0-2.8 2.4-3.2 5.2-.3 2.2-.4 5.8-.4 8.8h7.2c0-3-.1-6.6-.4-8.8-.4-2.8-1.4-5.2-3.2-5.2Zm0 5.2a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm-2.1 1.9a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Zm4.2 0a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z"
+        d="M7.6 9.3c0-2.7 1.9-4.7 4.4-4.7s4.4 2 4.4 4.7c0 3.3-2 6.2-4.4 6.2S7.6 12.6 7.6 9.3Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
       />
+      {/* the hair, gathered up — narrower than the veil, and sitting on the
+          head rather than running into it, or the two join into one arch and
+          the whole icon reads as a hood */}
+      <path d="M12 2.9c-2.4 0-4 1.5-4.3 4.1.9-1.3 2.4-2.1 4.3-2.1s3.4.8 4.3 2.1c-.3-2.6-1.9-4.1-4.3-4.1Z" />
+      <path d="M12 1.4a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2Z" />
+      {/* the veil: from behind the head, clear of the hair, and thrown much
+          wider than the face at the hem */}
+      <path d="M6.6 9C4.4 11.5 3.4 15.4 3 18.8c-.2 1.4-.3 2.2-.3 2.8h2.5c0-.5.1-1.2.2-2.4.4-3 1.2-6.3 2.7-8.3ZM17.4 9c2.2 2.5 3.2 6.4 3.6 9.8.2 1.4.3 2.2.3 2.8h-2.5c0-.5-.1-1.2-.2-2.4-.4-3-1.2-6.3-2.7-8.3Z" />
     </Solid>
   );
 }
 
-/** Dinner — a cloche over a plate, being lifted. A plate between cutlery is
- *  the icon for a restaurant; this is the icon for dinner being served. */
+/** Groom — the same portrait with hair and a bow tie. The bow tie is the whole
+ *  icon: without it this is an avatar. */
+export function GroomIcon(props) {
+  return (
+    <Solid {...props}>
+      <path
+        d="M7.4 8.7c0-2.7 2-4.6 4.6-4.6s4.6 1.9 4.6 4.6c0 3.4-2 6.4-4.6 6.4S7.4 12.1 7.4 8.7Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path d="M12 1.9C8.4 1.9 5.9 4.2 5.9 7.8c0 .6 0 1.2.1 1.7l1.2-.5c0-.4.1-.8.1-1.2.1-1 .5-1.7 1.2-2.1 1.2.8 2.7 1.2 4.4 1.2 1.2 0 2.1.3 2.7.9.4.4.7 1.1.8 1.8l1.2.5c.1-.5.1-1.1.1-1.7 0-3.6-2.5-5.9-5.7-5.9Z" />
+      <path d="M9.4 15.6 12 18.2l2.6-2.6" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M10.9 21 7.1 19v4l3.8-2Zm2.2 0 3.8-2v4l-3.8-2Z" />
+      <path d="M12 19.7a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z" />
+    </Solid>
+  );
+}
+
+/** Dinner — a place setting: fork, plate, knife.
+ *
+ *  Eslam's reference lays the cutlery across the plate, and at 30px that is a
+ *  circle with a cross through it — the international sign for "not allowed".
+ *  Laid out as a setting instead, it is the same three objects and it survives
+ *  the size. The rim is a cut ring rather than a drawn one, so the card's
+ *  texture shows through it the way it does everywhere else here. */
 export function DinnerIcon(props) {
   return (
     <Solid {...props}>
-      <path d="M12 5a1.1 1.1 0 1 1 0 2.2A1.1 1.1 0 0 1 12 5Z" />
-      <path d="M11.3 7.8h1.4v1.1h-1.4Z" />
-      <path d="M4.5 15.1a7.5 7.5 0 0 1 15 0Z" />
-      <path d="M2.9 15.9h18.2v1.9H2.9Z" />
-      <path d="M7.4 19.3h9.2v1.7H7.4Z" />
-      {/* steam */}
-      <path d="M9.1 2.6c-.8.9-.8 2 0 2.9l.9-.6c-.5-.6-.5-1.1 0-1.7Zm5.8 0c.8.9.8 2 0 2.9l-.9-.6c.5-.6.5-1.1 0-1.7Z" />
+      {/* fork: tines, head, handle */}
+      <path d="M3.3 2.8h1.3v4.6h1.1V2.8h1.3v4.6h1.1V2.8h1.3v5.3c0 1.3-.7 2.3-1.8 2.6v11.1H5.1V10.7C4 10.4 3.3 9.4 3.3 8.1Z" />
+      {/* plate: rim, a cut ring for the well, then the centre */}
+      <path
+        fillRule="evenodd"
+        d="M12 6.4a5.9 5.9 0 1 1 0 11.8 5.9 5.9 0 0 1 0-11.8Zm0 1.5a4.4 4.4 0 1 0 0 8.8 4.4 4.4 0 0 0 0-8.8Zm0 .9a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7Z"
+      />
+      {/* knife */}
+      <path d="M18.5 2.8c1.4 0 2.2 2.3 2.2 5.1 0 2.3-.6 3.9-1.6 4.4v9.5h-1.3V2.8Z" />
     </Solid>
   );
 }
 
-/** Zaffa — a darbuka. A goblet drum and a trophy are the same silhouette, so
- *  the drum has to say instrument somewhere: the head is a solid stretched
- *  skin overhanging the shell, and the shell carries a tuning band and lugs
- *  cut into it. Without those it read as a cup with brackets around it. */
+/** Zaffa — a drum with the sticks over it. Sticks settle in one shape what
+ *  tuning lugs could not: a wide bowl on a stem is a trophy. */
 export function ZaffaIcon(props) {
   return (
     <Solid {...props}>
-      {/* the skin, overhanging the shell on both sides */}
-      <path d="M12 3.4c3.6 0 6.5 1.3 6.5 3S15.6 9.4 12 9.4 5.5 8.1 5.5 6.4s2.9-3 6.5-3Z" />
-      {/* the shell, with the tuning band and its lugs cut out */}
       <path
-        fillRule="evenodd"
-        d="M6.1 7.6c1.1 1 3.4 1.6 5.9 1.6s4.8-.6 5.9-1.6c-.3 3-2 4.3-2.7 6.2-.5 1.6-.6 3.4-.5 5.7H9.3c.1-2.3 0-4.1-.5-5.7-.7-1.9-2.4-3.2-2.7-6.2Zm2.2 3.5h7.4v1.1H8.3Zm1.5 2.3a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Zm4.4 0a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Z"
+        d="M10.2 7.9c3.9 0 7 1.5 7 3.3s-3.1 3.3-7 3.3-7-1.5-7-3.3 3.1-3.3 7-3.3Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
       />
-      <path d="M8.4 19.9h7.2v1.6H8.4Z" />
-      {/* sound, both sides */}
-      <path d="M3.4 3.9c-1.3 2-1.3 4.6 0 6.6l1.1-.7c-1.1-1.7-1.1-3.5 0-5.2Zm17.2 0c1.3 2 1.3 4.6 0 6.6l-1.1-.7c1.1-1.7 1.1-3.5 0-5.2Z" />
+      <path
+        d="M3.2 11.2v4.5c0 1.8 3.1 3.3 7 3.3s7-1.5 7-3.3v-4.5"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path d="M4.7 13.6v3.9M7.6 14.6v4M12.8 14.6v4M15.7 13.6v3.9" fill="none" stroke="currentColor" strokeWidth="1.1" opacity=".6" />
+      <path d="M21.4 3.4 13 8.7M19.4 2.2 13.6 9.9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </Solid>
   );
 }
@@ -549,6 +584,20 @@ export function FireworksIcon(props) {
       <path d="M6.6 12.4c.3 2.4.5 2.6 2.9 2.9-2.4.3-2.6.5-2.9 2.9-.3-2.4-.5-2.6-2.9-2.9 2.4-.3 2.6-.5 2.9-2.9Z" />
       <path d="M17.6 14.6c.2 1.9.4 2.1 2.3 2.3-1.9.2-2.1.4-2.3 2.3-.2-1.9-.4-2.1-2.3-2.3 1.9-.2 2.1-.4 2.3-2.3Z" />
       <path d="M11.4 18.6a.9.9 0 1 1 0 1.8.9.9 0 0 1 0-1.8Zm2.8 2a.7.7 0 1 1 0 1.4.7.7 0 0 1 0-1.4Z" />
+    </Solid>
+  );
+}
+
+/** Guests arriving — the reception, which is the first line on the programme
+ *  now. Three, not two: two heads side by side read as a couple, which is the
+ *  one thing this must not be here. */
+export function GuestsIcon(props) {
+  return (
+    <Solid {...props}>
+      <path d="M12 3.4a3.2 3.2 0 1 1 0 6.4 3.2 3.2 0 0 1 0-6.4Z" />
+      <path d="M12 11.1c3.4 0 5.8 2 5.8 4.9v4.6H6.2v-4.6c0-2.9 2.4-4.9 5.8-4.9Z" />
+      <path d="M5.4 5.6a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Zm-.6 6.6c.5 0 1 0 1.4.1a7 7 0 0 0-2 4.9v3.4H1.2v-3.9c0-2.6 1.5-4.5 3.6-4.5Z" />
+      <path d="M18.6 5.6a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Zm.6 6.6c2.1 0 3.6 1.9 3.6 4.5v3.9h-3.6v-3.4a7 7 0 0 0-2-4.9c.4-.1.9-.1 1.4-.1Z" />
     </Solid>
   );
 }

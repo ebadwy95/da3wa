@@ -1650,16 +1650,17 @@ body {
   min-height: 58vh;
 }
 .inv-names-latin .n {
-  font-size: clamp(3.9rem, 21vw, 6rem);
-  padding-block: 0.06em; /* Great Vibes' swashes overshoot the line box */
+  font-size: clamp(4.6rem, 25vw, 7.2rem);
+  padding-block: 0.05em; /* Great Vibes' swashes overshoot the line box */
   white-space: nowrap;
 }
-/* Stepped off the centre line rather than stacked on it. Two names centred
-   under each other read as a list; offset, with the ampersand between them,
-   they read as a monogram. */
-.inv-names-latin .n.one { transform: translateX(-8%); }
-.inv-names-latin .n.two { transform: translateX(8%); }
-.inv-names-latin .inv-amp { margin-block: -0.12em; }
+/* Stepped off the centre line and pulled into each other, so the descender of
+   the first name and the ascender of the second interlock around the
+   ampersand. Two names centred under each other read as a list; this reads as
+   a monogram, which is what the middle of an engraved card is. */
+.inv-names-latin .n.one { transform: translateX(-11%); }
+.inv-names-latin .n.two { transform: translateX(11%); margin-top: -0.2em; }
+.inv-names-latin .inv-amp { margin-block: -0.3em; }
 
 /* The ampersand carries the motion: it is the one glyph on the card that
    stands for the two of them together, and it is the only thing here small
@@ -1695,11 +1696,11 @@ body {
   line-height: 0.92;
 }
 .inv-save .l1 {
-  font-size: clamp(3.2rem, 17vw, 4.7rem);
+  font-size: clamp(3.8rem, 20vw, 5.6rem);
   transform: translateX(-13%);
 }
 .inv-save .l2 {
-  font-size: clamp(4rem, 22vw, 6rem);
+  font-size: clamp(4.8rem, 26vw, 7.2rem);
   transform: translateX(12%);
   /* Enough overlap that the swashes interlock, not so much that the second
      line sits on top of the first — at -0.34em the D of Date landed in the
@@ -1743,19 +1744,25 @@ body {
    so the two settings rhyme. Aref Ruqaa, and never tracked apart — the script
    joins, and letter-spacing would break the joins the way it would in any
    handwriting. */
+/* Side by side on one line, not stacked. Stacked they read as two separate
+   headings; on one line with the ampersand between them they read as one
+   name, which is the point of putting an ampersand there at all. */
 .inv-names-ar {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
   font-family: var(--font-display), serif;
   color: var(--ink);
 }
 .inv-names-ar .n {
-  font-size: clamp(2.4rem, 12vw, 3.4rem);
-  line-height: 1.5;
+  font-size: clamp(2rem, 11vw, 3.2rem);
+  line-height: 1.7;
+  white-space: nowrap;
 }
 .inv-names-ar .inv-amp {
-  font-size: clamp(2rem, 10vw, 2.8rem);
-  margin-block: -0.18em;
+  font-size: clamp(1.7rem, 8.5vw, 2.4rem);
+  flex: 0 0 auto;
 }

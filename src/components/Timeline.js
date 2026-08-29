@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  GuestsIcon,
   GroomIcon,
   BrideIcon,
   DinnerIcon,
@@ -24,6 +25,7 @@ import {
 
 // Named so the admin can pick one without knowing anything about components.
 export const TIMELINE_ICONS = {
+  guests: GuestsIcon,
   groom: GroomIcon,
   bride: BrideIcon,
   dinner: DinnerIcon,
@@ -37,6 +39,10 @@ export const TIMELINE_ICONS = {
 // replace it from the dashboard; most will not, and a sensible default beats
 // an empty section.
 export const DEFAULT_TIMELINE = [
+  // Doors 45 minutes before anything happens. A guest who reads the programme
+  // and turns up for the first line on it arrives as the groom does — the
+  // reception is the line that actually tells them when to be there.
+  { at: "19:45", label: "استقبال المعازيم", icon: "guests" },
   { at: "20:30", label: "دخلة العريس", icon: "groom" },
   { at: "20:40", label: "دخلة العروس", icon: "bride" },
   { at: "22:00", label: "العشاء", icon: "dinner" },

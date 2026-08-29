@@ -15,6 +15,7 @@ import { PlusIcon, XIcon } from "@/components/icons";
 // than a way to end up with an empty section on the invitation.
 
 const ICON_LABELS = {
+  guests: "استقبال المعازيم",
   groom: "العريس",
   bride: "العروس",
   dinner: "العشاء",
