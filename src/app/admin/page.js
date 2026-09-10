@@ -2,6 +2,7 @@
 
 import { TimelineEditor } from "@/components/TimelineEditor";
 import { InviteCopyEditor } from "@/components/InviteCopyEditor";
+import { HandSendPanel } from "@/components/HandSendPanel";
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -1082,6 +1083,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       <AddGuestForm eventId={event.id} onAdded={() => refresh()} />
       <BulkUpload eventId={event.id} onDone={() => refresh()} />
       <SendInvitesButton eventId={event.id} guests={guests} onDone={() => refresh()} />
+      <HandSendPanel event={event} guests={guests} onChanged={() => refresh()} />
 
       {/* The guest table and the feeds used to share one row, three columns
           wide, which left the feeds about a third of the page — too narrow for

@@ -12,6 +12,7 @@ import {
   WishWall,
 } from "@/components/dashboardWidgets";
 import { formatEventDateArabic } from "@/lib/date";
+import { HandSendPanel } from "@/components/HandSendPanel";
 import { LoginScreen, DashboardHeader } from "@/components/dashboardChrome";
 
 function LoginForm({ onLoggedIn }) {
@@ -220,6 +221,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
       <AddGuestForm eventId={eventId} onAdded={() => refresh()} />
       <BulkUpload eventId={eventId} onDone={() => refresh()} />
       <SendInvitesButton eventId={eventId} guests={guests} onDone={() => refresh()} />
+      <HandSendPanel event={event} guests={guests} onChanged={() => refresh()} />
 
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 card p-4 overflow-x-auto">
