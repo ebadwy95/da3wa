@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
-import { watiIsConfigured } from "@/lib/wati";
+import { messagingIsConfigured } from "@/lib/messaging";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -16,5 +16,7 @@ export async function GET(request) {
   const db = await getDb();
   const filtered = eventId ? db.messages.filter((m) => m.eventId === eventId) : db.messages;
   const messages = [...filtered].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  return NextResponse.json({ messages, watiConfigured: watiIsConfigured() });
+  // Key kept as watiConfigured because both dashboards read it; it now means
+  // "a WhatsApp provider is configured", whichever one that is.
+  return NextResponse.json({ messages, watiConfigured: messagingIsConfigured() });
 }

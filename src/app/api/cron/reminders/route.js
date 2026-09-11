@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { getDb, withDb } from "@/lib/db";
-import { sendTemplateMessage, watiIsConfigured, isUsableTemplateName } from "@/lib/wati";
+import {
+  sendTemplateMessage,
+  messagingIsConfigured,
+  isUsableTemplateName,
+  templateNameFor,
+} from "@/lib/messaging";
 import {
   computeDisplayStatus,
   daysUntil,
@@ -50,12 +55,12 @@ export async function GET(request) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
 
-  const templateName = process.env.WATI_REMINDER_TEMPLATE_NAME;
-  if (watiIsConfigured() && !isUsableTemplateName(templateName)) {
+  const templateName = templateNameFor("REMINDER");
+  if (messagingIsConfigured() && !isUsableTemplateName(templateName)) {
     return NextResponse.json(
       {
         error:
-          "قالب التذكير غير مضبوط — اضبط WATI_REMINDER_TEMPLATE_NAME على da3wa_event_reminder بعد اعتماده من Meta",
+          "قالب التذكير غير مضبوط — اضبط WHATSAPP_REMINDER_TEMPLATE_NAME على da3wa_event_reminder بعد اعتماده من Meta",
       },
       { status: 503 }
     );
@@ -92,7 +97,7 @@ export async function GET(request) {
     let sent = 0;
     let failed = 0;
 
-    // Sequential, same as the invite send — Wati rate-limits per account, and
+    // Sequential, same as the invite send — sends are rate-limited per account, and
     // an ordered feed is easier to read when something goes wrong.
     for (const guest of recipients) {
       const waResult = await sendTemplateMessage({

@@ -4,10 +4,11 @@ import { getDb, withDb } from "@/lib/db";
 import { makeInviteToken } from "@/lib/token";
 import {
   sendTemplateMessage,
-  watiIsConfigured,
+  messagingIsConfigured,
   isUsableTemplateName,
   describeTemplateProblem,
-} from "@/lib/wati";
+  templateNameFor,
+} from "@/lib/messaging";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { resolveCoupleParts } from "@/lib/couple";
 
@@ -21,7 +22,7 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
-  const templateName = process.env.WATI_INVITE_TEMPLATE_NAME;
+  const templateName = templateNameFor("INVITE");
 
   // Refuse to send rather than fall back to some default template name. This
   // used to default to Meta's "hello_world" sample, which meant a missing env
@@ -29,11 +30,11 @@ export async function POST(request, { params }) {
   // WhatsApp's own docs. Bad sends can't be recalled, so a blocked send with
   // a clear reason is always the better outcome. isUsableTemplateName also
   // rejects "hello_world" when it's the value actually set, not just missing.
-  if (watiIsConfigured() && !isUsableTemplateName(templateName)) {
+  if (messagingIsConfigured() && !isUsableTemplateName(templateName)) {
     return NextResponse.json(
       {
         error:
-          "قالب الدعوة على واتساب غير مضبوط — اضبط WATI_INVITE_TEMPLATE_NAME باسم قالب معتمد من Meta (مثل da3wa_invite_link بعد اعتماده، أو main_msg للاختبار الآن) قبل الإرسال",
+          "قالب الدعوة على واتساب غير مضبوط — اضبط WHATSAPP_INVITE_TEMPLATE_NAME باسم قالب معتمد من Meta (مثل da3wa_invite_link بعد اعتماده) قبل الإرسال",
       },
       { status: 503 }
     );
@@ -44,7 +45,7 @@ export async function POST(request, { params }) {
   // machine, every link in the batch is dead on arrival, and a sent WhatsApp
   // message can't be recalled. Cheaper to fail here than to explain later.
   const baseLooksUnusable = !base || /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i.test(base);
-  if (watiIsConfigured() && baseLooksUnusable) {
+  if (messagingIsConfigured() && baseLooksUnusable) {
     return NextResponse.json(
       {
         error: `رابط الموقع غير مضبوط بشكل صحيح (${base || "فارغ"}) — اضبط NEXT_PUBLIC_BASE_URL على https://www.da3wa.digital قبل الإرسال، وإلا وصلت الضيوف روابط لا تعمل`,
@@ -53,7 +54,7 @@ export async function POST(request, { params }) {
     );
   }
 
-  // Ask Wati whether this template is actually usable before messaging
+  // Ask the WhatsApp account whether this template is usable before messaging
   // anyone. Without this, a name that is missing or still awaiting Meta
   // review fails once per guest with an opaque 400, and the batch marks every
   // one of them as "invited" on the way past.
@@ -73,7 +74,7 @@ export async function POST(request, { params }) {
   // joined name couldn't be split automatically land here until the admin
   // fills the two fields in.
   const needsSplitNames = templateName !== "main_msg";
-  if (watiIsConfigured() && needsSplitNames && (!coupleParts.groomName || !coupleParts.brideName)) {
+  if (messagingIsConfigured() && needsSplitNames && (!coupleParts.groomName || !coupleParts.brideName)) {
     return NextResponse.json(
       {
         error:
@@ -92,15 +93,15 @@ export async function POST(request, { params }) {
   let sent = 0;
   let failed = 0;
 
-  // Sequential on purpose — respects Wati's per-account send-rate limits
+  // Sequential on purpose — respects the account's send-rate limits
   // and keeps a clean, ordered log in the feed.
   for (const guest of pendingGuests) {
     const link = `${base}/invite/${guest.id}?t=${makeInviteToken(guest.id)}`;
     const waResult = await sendTemplateMessage({
       phone: guest.phoneDisplay || guest.phone,
-      // Only ever undefined when Wati isn't configured at all (the guard
-      // above), in which case the send is simulated and the name is just a
-      // label in the admin feed.
+      // Only ever undefined when no WhatsApp provider is configured (the
+      // guard above), in which case the send is simulated and the name is
+      // just a label in the admin feed.
       templateName: templateName || "da3wa_invite",
       broadcastName: "da3wa_invite_link",
       // A superset of what any configured template might ask for, since which

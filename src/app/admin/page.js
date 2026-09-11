@@ -585,8 +585,8 @@ function TestWhatsappSend() {
             {result.error
               ? `فشل الإرسال: ${result.error}`
               : result.simulated
-              ? `محاكاة فقط (Wati غير متصل): ${result.reason}`
-              : "تم قبول الطلب من Wati — إن لم تصل الرسالة فعليًا للرقم رغم ذلك، راجع الرد الخام أدناه، أو جرّب الإرسال مباشرة من لوحة Wati نفسها لعزل المشكلة."}
+              ? `محاكاة فقط (واتساب غير متصل): ${result.reason}`
+              : "قبلت واتساب الطلب — القبول لا يعني الوصول. إن لم تصل الرسالة، راجع الرد الخام أدناه، وتذكّر أن الرسالة الحرة لا تصل إلا لرقم راسلك خلال آخر ٢٤ ساعة."}
           </p>
           {result.result && (
             <pre
@@ -627,7 +627,7 @@ function TechnicalToolsPanel() {
 }
 
 // Shows what THIS deployment is configured with, checked against the live
-// Wati account. Added because a failed send used to give only a raw API error
+// WhatsApp account. Added because a failed send used to give only a raw API error
 // per guest, while the answer — which template name the deployment holds —
 // was only visible in the hosting dashboard.
 function WhatsappDiagnostics() {
@@ -661,8 +661,12 @@ function WhatsappDiagnostics() {
 
   const rows = [
     {
-      label: "الاتصال بـ Wati",
-      value: data.watiConfigured ? "متصل" : "غير مضبوط",
+      label: "الاتصال بواتساب",
+      value: data.watiConfigured
+        ? data.provider === "cloud"
+          ? "Meta Cloud API — مباشر"
+          : "Wati"
+        : "غير مضبوط",
       ok: data.watiConfigured,
       problem: data.accountError,
     },

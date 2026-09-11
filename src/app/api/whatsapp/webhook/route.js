@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withDb } from "@/lib/db";
+import { recordDeliveryUpdate } from "@/lib/delivery";
 
 // Wati's delivery callbacks.
 //
@@ -9,6 +9,9 @@ import { withDb } from "@/lib/db";
 // Meta — and none of that comes back on the original request. Without this
 // endpoint the dashboard says "تم الإرسال فعليًا" for a message that never
 // arrived, and the only way to find out is to open Wati and read the chat.
+//
+// Meta's own webhook, for the Cloud API, is /api/whatsapp/cloud-webhook. Both
+// hand their reports to src/lib/delivery.js, which owns the status rules.
 //
 // Point Wati's webhook at:  <site>/api/whatsapp/webhook?secret=<WATI_WEBHOOK_SECRET>
 export const dynamic = "force-dynamic";
@@ -34,26 +37,6 @@ function classify(eventType, failureReason) {
   return null;
 }
 
-// Delivery progresses sent -> delivered -> read, and those events can land out
-// of order, so a late DELIVERED must not walk back a READ.
-//
-// Failure is not a step on that ladder — it's a verdict, and it is the whole
-// reason this endpoint exists. It always wins, and nothing overwrites it
-// afterwards. (Ranking it below "sent" quietly discarded every rejection,
-// which is exactly the case this was built to surface.)
-const PROGRESS = { sent: 1, delivered: 2, read: 3 };
-
-function nextStatus(current, incoming) {
-  if (incoming === "failed") return "failed";
-  if (current === "failed") return "failed";
-  if (!incoming) return current;
-  return PROGRESS[incoming] > (PROGRESS[current] ?? 0) ? incoming : current;
-}
-
-function digitsOnly(value) {
-  return String(value || "").replace(/[^\d]/g, "");
-}
-
 export async function POST(request) {
   const secret = process.env.WATI_WEBHOOK_SECRET;
   const provided = new URL(request.url).searchParams.get("secret");
@@ -67,8 +50,6 @@ export async function POST(request) {
   if (!body) return NextResponse.json({ error: "payload غير صالح" }, { status: 400 });
 
   const eventType = body.eventType || body.type || body.event;
-  const messageId = body.localMessageId || body.local_message_id || body.id || null;
-  const phone = digitsOnly(body.waId || body.whatsappNumber || body.phone);
   // Wati has no failure event, so the refusal arrives inside a send event's
   // payload. The field name varies, and Meta's own errors nest one level down.
   const failureReason =
@@ -78,44 +59,13 @@ export async function POST(request) {
     (typeof body.error === "string" ? body.error : null) ||
     body.errors?.[0]?.message ||
     null;
-  const status = classify(eventType, failureReason);
 
-  const outcome = await withDb((db) => {
-    db.messages = db.messages || [];
-
-    // Prefer Wati's own id. Fall back to the most recent message we sent to
-    // that number, which is accurate at this app's volume — a wedding sends
-    // one invite per guest, not a stream.
-    let target = messageId ? db.messages.find((m) => m.waMessageId === messageId) : null;
-    if (!target && phone) {
-      target = db.messages
-        .filter((m) => digitsOnly(m.phone) === phone)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
-    }
-
-    if (!target) return { matched: false, eventType };
-
-    // Record the raw event even when it isn't one we classify, so an
-    // unfamiliar Wati event is visible rather than silently discarded.
-    target.deliveryEvent = eventType || null;
-    target.deliveryAt = new Date().toISOString();
-
-    const resolved = nextStatus(target.status, status);
-    if (resolved !== target.status || resolved === "failed") {
-      target.status = resolved;
-      if (resolved === "failed") {
-        // Keep whatever reason we already had if this event carries none —
-        // the first report of a failure usually has the detail.
-        target.error =
-          failureReason ||
-          target.error ||
-          `رفضت واتساب الرسالة (${eventType || "بدون تفاصيل"})`;
-      } else {
-        target.error = null;
-      }
-    }
-
-    return { matched: true, guestName: target.guestName, status: target.status };
+  const outcome = await recordDeliveryUpdate({
+    messageId: body.localMessageId || body.local_message_id || body.id || null,
+    phone: body.waId || body.whatsappNumber || body.phone || null,
+    status: classify(eventType, failureReason),
+    eventLabel: eventType || null,
+    failureReason,
   });
 
   // Always 200: a webhook that errors gets retried, and a payload we simply

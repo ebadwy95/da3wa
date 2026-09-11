@@ -3,7 +3,12 @@ import { randomUUID } from "crypto";
 import { withDb } from "@/lib/db";
 import { verifyInviteToken } from "@/lib/token";
 import { generateGuestQr } from "@/lib/qr";
-import { sendTemplateMessage, watiIsConfigured, isUsableTemplateName } from "@/lib/wati";
+import {
+  sendTemplateMessage,
+  messagingIsConfigured,
+  isUsableTemplateName,
+  templateNameFor,
+} from "@/lib/messaging";
 import { resolveCoupleParts } from "@/lib/couple";
 
 // Public endpoint: the guest confirms or declines from their invite page.
@@ -63,12 +68,12 @@ export async function POST(request, { params }) {
   //    to real guests). The guest's confirmation still stands and their QR is
   //    already on their invite page — only the WhatsApp copy is missing, and
   //    the admin feed says exactly why.
-  const qrTemplateName = process.env.WATI_QR_TEMPLATE_NAME;
+  const qrTemplateName = templateNameFor("QR");
   let waResult = null;
-  if (attending && watiIsConfigured() && !isUsableTemplateName(qrTemplateName)) {
+  if (attending && messagingIsConfigured() && !isUsableTemplateName(qrTemplateName)) {
     waResult = {
       error:
-        "لم يُرسَل رمز QR على واتساب: WATI_QR_TEMPLATE_NAME غير مضبوط على قالب معتمد (اضبطه على da3wa_qr_delivery بعد اعتماده من Meta)",
+        "لم يُرسَل رمز QR على واتساب: WHATSAPP_QR_TEMPLATE_NAME غير مضبوط على قالب معتمد (اضبطه على da3wa_qr_delivery بعد اعتماده من Meta)",
     };
   } else if (attending) {
     waResult = await sendTemplateMessage({

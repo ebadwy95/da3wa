@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { isAdminAuthed } from "@/lib/auth";
-import { watiIsConfigured, listAccountTemplates } from "@/lib/wati";
+import {
+  messagingIsConfigured,
+  messagingProvider,
+  listAccountTemplates,
+  templateEnvFor,
+} from "@/lib/messaging";
 
 // Admin-only: reports what this deployment is actually configured with, and
-// checks each configured template against the live Wati account.
+// checks each configured template against the live WhatsApp account.
 //
 // Written after a failed first send took several rounds to diagnose. The
 // deployment held a template name that Meta had not approved, and the only
@@ -16,9 +21,9 @@ import { watiIsConfigured, listAccountTemplates } from "@/lib/wati";
 export const dynamic = "force-dynamic";
 
 const TEMPLATE_SETTINGS = [
-  { env: "WATI_INVITE_TEMPLATE_NAME", label: "قالب الدعوة", required: true },
-  { env: "WATI_QR_TEMPLATE_NAME", label: "قالب رمز الدخول", required: true },
-  { env: "WATI_REMINDER_TEMPLATE_NAME", label: "قالب التذكير", required: false },
+  { kind: "INVITE", label: "قالب الدعوة", required: true },
+  { kind: "QR", label: "قالب رمز الدخول", required: true },
+  { kind: "REMINDER", label: "قالب التذكير", required: false },
 ];
 
 export async function GET() {
@@ -26,7 +31,8 @@ export async function GET() {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
 
-  const configured = watiIsConfigured();
+  const configured = messagingIsConfigured();
+  const provider = messagingProvider();
   const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
 
   let account = null;
@@ -39,7 +45,8 @@ export async function GET() {
     }
   }
 
-  const templates = TEMPLATE_SETTINGS.map(({ env, label, required }) => {
+  const templates = TEMPLATE_SETTINGS.map(({ kind, label, required }) => {
+    const env = templateEnvFor(kind);
     const name = process.env[env] || "";
     const entry = {
       env,
@@ -62,13 +69,13 @@ export async function GET() {
       return entry;
     }
     if (!account) {
-      entry.problem = accountError ? "تعذّر الاتصال بـ Wati للتحقق" : null;
+      entry.problem = accountError ? "تعذّر الاتصال بحساب واتساب للتحقق" : null;
       return entry;
     }
 
     const found = account.get(name);
     if (!found) {
-      entry.problem = "غير موجود في حساب Wati";
+      entry.problem = "غير موجود في حساب واتساب";
       return entry;
     }
     entry.status = found.status;
@@ -89,11 +96,14 @@ export async function GET() {
 
   return NextResponse.json({
     watiConfigured: configured,
+    // "cloud" or "wati" — which one is actually being used, since both sets
+    // of variables can be present at once.
+    provider,
     accountError,
     baseUrl: { value: baseUrl, problem: baseProblem, ok: Boolean(baseUrl) && !baseProblem },
     // A wrong value here breaks every send on multi-number accounts, and it's
     // easy to forget it's even set.
-    channelNumber: process.env.WATI_CHANNEL_NUMBER || "",
+    channelNumber: provider === "wati" ? process.env.WATI_CHANNEL_NUMBER || "" : "",
     templates,
     approvedTemplates: account
       ? [...account.entries()]
