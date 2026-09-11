@@ -108,6 +108,44 @@ function readTemplate(t) {
   };
 }
 
+// Numbered templates, and the names their numbers stand for.
+//
+// The approved da3wa templates are positional on Meta ({{1}}, {{2}} …) even
+// though they were written with names: Wati keeps the readable names in its own
+// layer and submits numbers. Resubmitting them with named variables would mean
+// another Meta review before a single invitation can go out, so instead the
+// order is written down here — explicitly, per template, never inferred.
+//
+// Each list was checked against the approved body text and Meta's own example
+// values (11 Sep 2026): da3wa_invite_link reads "مرحباً {{1}} … يتشرف {{2}}
+// و{{3}} … {{4}}" with example [guest, groom, bride, link].
+//
+// If Meta's count ever differs from the list, the send is refused. A template
+// edited in WhatsApp Manager with a variable added or reordered should stop
+// sends, not quietly put a guest's link where their name belongs.
+//
+// WHATSAPP_POSITIONAL_PARAM_ORDER can add or override entries as JSON, e.g.
+// {"new_template":["name","link"]}, without a deploy of this file.
+const POSITIONAL_PARAM_ORDER = {
+  da3wa_invite_link: ["name", "groom", "bride", "link"],
+  da3wa_qr_delivery: ["name", "groom", "bride"],
+  da3wa_event_reminder: ["name", "groom", "bride", "date", "time", "venue", "maplink"],
+  main_msg: ["name", "link"],
+};
+
+function positionalOrderFor(templateName) {
+  const raw = process.env.WHATSAPP_POSITIONAL_PARAM_ORDER;
+  if (raw) {
+    try {
+      const override = JSON.parse(raw);
+      if (Array.isArray(override?.[templateName])) return override[templateName];
+    } catch {
+      console.warn("[whatsapp-cloud] WHATSAPP_POSITIONAL_PARAM_ORDER is not valid JSON; ignoring it");
+    }
+  }
+  return POSITIONAL_PARAM_ORDER[templateName] || null;
+}
+
 async function loadTemplates() {
   const now = Date.now();
   if (templateCache.byName && now - templateCache.at < TEMPLATE_CACHE_MS) {
@@ -169,7 +207,13 @@ export async function describeTemplateProblem(templateName) {
     return `القالب "${templateName}" حالته ${found.status} — واتساب لا يرسل إلا القوالب المعتمدة. المعتمدة حاليًا: ${approvedList}`;
   }
   if (found.positional && found.paramNames.length > 0) {
-    return `القالب "${templateName}" متغيراته بالأرقام ({{1}}). أنشئه بمتغيرات بالأسماء ({{name}}، {{link}}…) حتى يعرف النظام أي قيمة تذهب لأي مكان`;
+    const order = positionalOrderFor(templateName);
+    if (!order) {
+      return `القالب "${templateName}" متغيراته بالأرقام ({{1}}) ومفيش ترتيب معرّف له في النظام — أضفه لـ POSITIONAL_PARAM_ORDER أو أنشئ القالب بمتغيرات بالأسماء`;
+    }
+    if (order.length !== found.paramNames.length) {
+      return `القالب "${templateName}" فيه ${found.paramNames.length} متغيرات عند Meta والترتيب المعرّف ${order.length} — غالبًا القالب اتعدل، راجع الترتيب قبل الإرسال`;
+    }
   }
   return null;
 }
@@ -204,29 +248,40 @@ export async function sendTemplateMessage({ phone, templateName, params = [] }) 
     const template = { name: templateName, language: { code: found?.language || config().language } };
 
     if (found?.paramNames.length) {
-      if (found.positional) {
-        // Guessing which value belongs in {{1}} would put a guest's link where
-        // their name should be, and a sent message cannot be recalled.
-        return {
-          simulated: false,
-          error: `القالب "${templateName}" متغيراته بالأرقام — لازم يكون بمتغيرات بالأسماء`,
-        };
-      }
       const supplied = new Map(params.map((p) => [p.name, p.value]));
-      const missing = found.paramNames.filter((n) => !String(supplied.get(n) ?? "").trim());
+
+      // Named templates say which value goes where themselves. Numbered ones
+      // only get sent when this file declares their order, and only when
+      // that order has exactly as many entries as Meta's copy has variables.
+      let names = found.paramNames;
+      if (found.positional) {
+        const order = positionalOrderFor(templateName);
+        if (!order || order.length !== found.paramNames.length) {
+          return {
+            simulated: false,
+            error:
+              (await describeTemplateProblem(templateName)) ||
+              `القالب "${templateName}" متغيراته بالأرقام ومفيش ترتيب مطابق له`,
+          };
+        }
+        names = order;
+      }
+
+      const missing = names.filter((n) => !String(supplied.get(n) ?? "").trim());
       if (missing.length) {
         // Meta rejects an empty parameter anyway; saying which one is empty is
         // the useful part.
         return { simulated: false, error: `قيم ناقصة للقالب "${templateName}": ${missing.join("، ")}` };
       }
+
       template.components = [
         {
           type: "body",
-          parameters: found.paramNames.map((n) => ({
-            type: "text",
-            parameter_name: n,
-            text: String(supplied.get(n)),
-          })),
+          parameters: names.map((n) =>
+            found.positional
+              ? { type: "text", text: String(supplied.get(n)) }
+              : { type: "text", parameter_name: n, text: String(supplied.get(n)) }
+          ),
         },
       ];
     }
