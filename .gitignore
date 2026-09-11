@@ -15,3 +15,6 @@ social-out/
 
 # rendered brand assets — regenerate with tools/brand/render-brand.mjs
 brand-out/
+
+# Local-only WhatsApp Cloud API test credentials — never commit
+.env.cloud-test.local
