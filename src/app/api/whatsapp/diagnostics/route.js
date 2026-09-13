@@ -96,8 +96,8 @@ export async function GET() {
 
   return NextResponse.json({
     watiConfigured: configured,
-    // "cloud" or "wati" — which one is actually being used, since both sets
-    // of variables can be present at once.
+    // "cloud", "360dialog", "zoko" or "wati" — which one is actually being
+    // used, since several sets of variables can be present at once.
     provider,
     accountError,
     baseUrl: { value: baseUrl, problem: baseProblem, ok: Boolean(baseUrl) && !baseProblem },

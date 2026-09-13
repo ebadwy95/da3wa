@@ -1,28 +1,48 @@
 import * as cloud from "@/lib/whatsappCloud";
+import * as d360 from "@/lib/whatsapp360";
+import * as zoko from "@/lib/zoko";
 import * as wati from "@/lib/wati";
 
 // The one place the rest of the app sends WhatsApp messages through.
 //
-// Two providers sit behind it: Meta's Cloud API directly, and Wati. Routes
-// import from here and never from either client, so moving between them is a
-// matter of environment variables rather than a code change — which is exactly
-// what happened when Wati's trial lapsed mid-season.
+// Four providers sit behind it: Meta's Cloud API directly; 360dialog and Zoko,
+// which pay Meta themselves and bill a prepaid balance; and Wati. Routes import
+// from here and never from a client, so moving between them is a matter of
+// environment variables rather than a code change — which is exactly what
+// happened when Wati's trial lapsed mid-season, and again when Meta wouldn't
+// take the card on the direct account.
 //
-// Cloud wins whenever it is configured, even if Wati's variables are still
-// set. Production still holds Wati's old token; without this ordering, the
-// dead provider would keep being chosen for as long as nobody deleted it.
+// WHATSAPP_PROVIDER names the one to use. Trying a provider meant switching to
+// it without first deleting another's credentials. When it names a provider
+// whose variables are missing, nothing is used: a deployment told to send
+// through Zoko should say "not configured", not quietly send through something
+// else.
+//
+// Without it, the first configured provider in PROVIDER_ORDER wins. Cloud comes
+// before Wati even if Wati's variables are still set. Production still holds
+// Wati's old token; without this ordering, the dead provider would keep being
+// chosen for as long as nobody deleted it.
 
 export { isUsableTemplateName } from "@/lib/wati";
 
-/** "cloud" | "wati" | "none" */
+const PROVIDERS = {
+  cloud: { client: cloud, configured: cloud.cloudIsConfigured },
+  "360dialog": { client: d360, configured: d360.d360IsConfigured },
+  zoko: { client: zoko, configured: zoko.zokoIsConfigured },
+  wati: { client: wati, configured: wati.watiIsConfigured },
+};
+
+const PROVIDER_ORDER = ["cloud", "360dialog", "zoko", "wati"];
+
+/** "cloud" | "360dialog" | "zoko" | "wati" | "none" */
 export function messagingProvider() {
-  if (cloud.cloudIsConfigured()) return "cloud";
-  if (wati.watiIsConfigured()) return "wati";
-  return "none";
+  const chosen = String(process.env.WHATSAPP_PROVIDER || "").trim().toLowerCase();
+  if (chosen) return PROVIDERS[chosen]?.configured() ? chosen : "none";
+  return PROVIDER_ORDER.find((name) => PROVIDERS[name].configured()) || "none";
 }
 
 function active() {
-  return messagingProvider() === "wati" ? wati : cloud;
+  return PROVIDERS[messagingProvider()]?.client || cloud;
 }
 
 export function messagingIsConfigured() {
