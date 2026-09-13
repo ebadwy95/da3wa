@@ -72,6 +72,11 @@ const args = parseArgs(process.argv);
 const names = args.names ?? "ليلة العمر";
 const date = args.date ?? "";
 const venue = args.venue ?? "";
+// --lang en renders the English film for the English invitation: Latin names
+// written left to right, and the opening line in English unless --opening
+// gives one.
+const lang = args.lang === "en" ? "en" : "ar";
+const opening = args.opening ?? "";
 const outPath = path.resolve(args.out || "public/samples/invite.mp4");
 const audioPath = args.audio ? path.resolve(args.audio) : null;
 
@@ -88,7 +93,7 @@ const browser = await chromium.launch({ executablePath: chrome, headless: true }
 const ctx = await browser.newContext({
   viewport: { width: 1080, height: 1920 },
   deviceScaleFactor: 1,
-  locale: "ar",
+  locale: lang,
 });
 const page = await ctx.newPage();
 await page.goto(pathToFileURL(path.join(HERE, "scene.html")).href, { waitUntil: "networkidle" });
@@ -96,7 +101,7 @@ await page.goto(pathToFileURL(path.join(HERE, "scene.html")).href, { waitUntil: 
 // Webfonts are the one thing that can still be pending after networkidle, and
 // a frame rendered in the fallback face would be visibly wrong.
 await page.evaluate(() => document.fonts.ready);
-await page.evaluate((c) => window.__scene.setContent(c), { names, date, venue });
+await page.evaluate((c) => window.__scene.setContent(c), { names, date, venue, lang, opening });
 
 const duration = await page.evaluate(() => window.__scene.DURATION);
 const total = Math.round(duration * FPS);

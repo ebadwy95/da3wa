@@ -123,6 +123,21 @@ function InviteMediaFields({ form, setForm }) {
 
       <div>
         <label className="label flex items-center gap-2">
+          <VideoIcon size={15} />
+          رابط الفيديو الإنجليزي (للضيوف اللي دعوتهم English)
+        </label>
+        <input
+          value={form.inviteVideoUrlEn || ""}
+          onChange={(e) => setForm({ ...form, inviteVideoUrlEn: e.target.value })}
+          dir="ltr"
+          placeholder="https://.../invite-en.mp4"
+          className="field"
+        />
+        <p className="hint">لو فاضي، الضيف الإنجليزي بيشوف نفس الفيديو العربي.</p>
+      </div>
+
+      <div>
+        <label className="label flex items-center gap-2">
           <ImageIcon size={15} />
           صورة الغلاف (تظهر قبل تشغيل الفيديو)
         </label>
@@ -318,16 +333,22 @@ function EditEventForm({ event, onUpdated, onClose }) {
     welcomeMessage: event.welcomeMessage || "",
     packageLimit: event.packageLimit || 100,
     inviteVideoUrl: event.inviteVideoUrl || "",
+    inviteVideoUrlEn: event.inviteVideoUrlEn || "",
     invitePosterUrl: event.invitePosterUrl || "",
     inviteAudioUrl: event.inviteAudioUrl || "",
     inviteTheme: event.inviteTheme === "dark" ? "dark" : "light",
     latinNames: event.latinNames || "",
     familyNames: event.familyNames || "",
+    familyNamesEn: event.familyNamesEn || "",
+    venueNameEn: event.venueNameEn || "",
     timeline: Array.isArray(event.timeline) ? event.timeline : [],
     inviteCopy: event.inviteCopy && typeof event.inviteCopy === "object" ? event.inviteCopy : {},
+    inviteCopyEn: event.inviteCopyEn && typeof event.inviteCopyEn === "object" ? event.inviteCopyEn : {},
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Which card's wording the copy editor is showing. Both are saved together.
+  const [copyLang, setCopyLang] = useState("ar");
   // Two tabs rather than one long form. The wedding's facts and the
   // invitation's wording are edited at different times by different people —
   // the date is set once when the event is booked, the wording is fiddled with
@@ -487,6 +508,30 @@ function EditEventForm({ event, onUpdated, onClose }) {
         />
         <p className="hint">تُقرأ: «تتشرّف … بدعوتكم لحضور حفل زفاف نجليهما».</p>
       </div>
+      <div>
+        <label className="label">العائلتان بالإنجليزية — للدعوة English (اختياري)</label>
+        <input
+          value={form.familyNamesEn}
+          onChange={(e) => setForm({ ...form, familyNamesEn: e.target.value })}
+          dir="ltr"
+          placeholder="The Badwy Family & The Attari Family"
+          className="field"
+        />
+        <p className="hint">
+          افصل بين العائلتين بـ &amp;. لو فاضية، الدعوة الإنجليزية بتكتب «The families of the bride and groom».
+        </p>
+      </div>
+      <div>
+        <label className="label">اسم القاعة بالإنجليزية (اختياري)</label>
+        <input
+          value={form.venueNameEn}
+          onChange={(e) => setForm({ ...form, venueNameEn: e.target.value })}
+          dir="ltr"
+          placeholder="Al Zumurrud Halls — Al Jawhara Hall"
+          className="field"
+        />
+        <p className="hint">لو فاضية، الدعوة الإنجليزية بتعرض اسم القاعة بالعربي.</p>
+      </div>
 
       </div>
 
@@ -498,10 +543,43 @@ function EditEventForm({ event, onUpdated, onClose }) {
 
         <div className="inv-rule" aria-hidden="true" style={{ margin: "1.4rem auto" }} />
 
-        <InviteCopyEditor
-          value={form.inviteCopy}
-          onChange={(inviteCopy) => setForm({ ...form, inviteCopy })}
-        />
+        {/* Every wedding has both cards. Which one a guest gets is chosen on
+            the guest's row; here is only the wording of each. */}
+        <div className="tab-switch" role="tablist" aria-label="لغة نصوص الدعوة">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={copyLang === "ar"}
+            data-active={copyLang === "ar"}
+            onClick={() => setCopyLang("ar")}
+          >
+            نصوص الدعوة العربية
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={copyLang === "en"}
+            data-active={copyLang === "en"}
+            onClick={() => setCopyLang("en")}
+          >
+            English
+          </button>
+        </div>
+
+        <div hidden={copyLang !== "ar"}>
+          <InviteCopyEditor
+            lang="ar"
+            value={form.inviteCopy}
+            onChange={(inviteCopy) => setForm({ ...form, inviteCopy })}
+          />
+        </div>
+        <div hidden={copyLang !== "en"}>
+          <InviteCopyEditor
+            lang="en"
+            value={form.inviteCopyEn}
+            onChange={(inviteCopyEn) => setForm({ ...form, inviteCopyEn })}
+          />
+        </div>
 
         <div className="inv-rule" aria-hidden="true" style={{ margin: "1.4rem auto" }} />
 
@@ -663,9 +741,12 @@ function WhatsappDiagnostics() {
     {
       label: "الاتصال بواتساب",
       value: data.watiConfigured
-        ? data.provider === "cloud"
-          ? "Meta Cloud API — مباشر"
-          : "Wati"
+        ? {
+            cloud: "Meta Cloud API — مباشر",
+            "360dialog": "360dialog",
+            zoko: "Zoko",
+            wati: "Wati",
+          }[data.provider] || data.provider
         : "غير مضبوط",
       ok: data.watiConfigured,
       problem: data.accountError,
@@ -1100,6 +1181,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
             <thead>
               <tr className="text-xs text-ink-2 border-b" style={{ borderColor: "var(--line-soft)" }}>
                 <th className="py-2 px-2">الاسم</th>
+                <th className="py-2 px-2 text-center">لغة الدعوة</th>
                 <th className="py-2 px-2">الرقم</th>
                 <th className="py-2 px-2 text-center">إجمالي الحضور المسموح</th>
                 <th className="py-2 px-2 text-center">الحالة</th>
@@ -1111,11 +1193,11 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
             </thead>
             <tbody>
               {guests.map((g) => (
-                <GuestRow key={g.id} guest={g} onDelete={deleteGuest} />
+                <GuestRow key={g.id} guest={g} onDelete={deleteGuest} onChanged={() => refresh()} />
               ))}
               {guests.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center text-ink-3 py-8">لا يوجد ضيوف مضافون بعد</td>
+                  <td colSpan={9} className="text-center text-ink-3 py-8">لا يوجد ضيوف مضافون بعد</td>
                 </tr>
               )}
             </tbody>

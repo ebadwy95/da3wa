@@ -57,20 +57,29 @@ export async function PATCH(request, { params }) {
       "welcomeMessage",
       "packageLimit",
       "inviteVideoUrl",
+      "inviteVideoUrlEn",
       "invitePosterUrl",
       "inviteAudioUrl",
       "inviteTheme",
       "latinNames",
       "familyNames",
+      // The English card's own spellings. Empty is fine: the invitation falls
+      // back to "the families of the bride and groom" and to the Arabic venue
+      // name.
+      "familyNamesEn",
+      "venueNameEn",
       "timeline",
     ];
     // Sanitised rather than assigned: this is free text an admin types and
     // every guest of the wedding reads. Only known keys survive, only strings,
     // length-capped, and anything equal to the designed wording is dropped so
     // a later change to that wording still reaches couples who never overrode
-    // it.
+    // it. Each language is checked against its own defaults.
     if (body.inviteCopy !== undefined) {
-      event.inviteCopy = sanitiseInviteCopy(body.inviteCopy);
+      event.inviteCopy = sanitiseInviteCopy(body.inviteCopy, "ar");
+    }
+    if (body.inviteCopyEn !== undefined) {
+      event.inviteCopyEn = sanitiseInviteCopy(body.inviteCopyEn, "en");
     }
 
     for (const key of editable) {

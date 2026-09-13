@@ -35,15 +35,26 @@ export function HandSendPanel({ event, guests, onChanged }) {
   const done = guests.length - pending.length;
   const current = pending[0];
 
+  // The message in the guest's language, same as the card it links to. An
+  // English guest who receives an Arabic message may never open the link.
   const message = (guest) =>
-    [
-      `أهلًا ${guest.name} 🤍`,
-      "",
-      `يشرّفنا دعوتكم لحضور حفل زفاف ${event?.coupleNames || ""}.`,
-      "",
-      "دعوتكم الخاصة من هنا — وتقدروا تأكدوا حضوركم من نفس الرابط:",
-      guest.inviteLink,
-    ].join("\n");
+    guest.language === "en"
+      ? [
+          `Hello ${guest.name} 🤍`,
+          "",
+          `We would be honoured to have you at the wedding of ${event?.latinNames || event?.coupleNames || ""}.`,
+          "",
+          "Your personal invitation is here — you can confirm your attendance from the same link:",
+          guest.inviteLink,
+        ].join("\n")
+      : [
+          `أهلًا ${guest.name} 🤍`,
+          "",
+          `يشرّفنا دعوتكم لحضور حفل زفاف ${event?.coupleNames || ""}.`,
+          "",
+          "دعوتكم الخاصة من هنا — وتقدروا تأكدوا حضوركم من نفس الرابط:",
+          guest.inviteLink,
+        ].join("\n");
 
   async function mark(guest, sent) {
     setBusy(true);
@@ -121,8 +132,13 @@ export function HandSendPanel({ event, guests, onChanged }) {
                 <p className="hint" style={{ margin: 0 }}>
                   التالي — باقي {pending.length}
                 </p>
-                <p className="font-bold" style={{ fontSize: "var(--text-xl)" }}>
+                <p className="font-bold flex items-center gap-2 flex-wrap" style={{ fontSize: "var(--text-xl)" }}>
                   {current.name}
+                  {current.language === "en" && (
+                    <span className="chip chip-info" lang="en" style={{ fontSize: "var(--text-xs)" }}>
+                      English
+                    </span>
+                  )}
                 </p>
                 <p className="meta tnum" dir="ltr">
                   {current.phoneDisplay || current.phone}

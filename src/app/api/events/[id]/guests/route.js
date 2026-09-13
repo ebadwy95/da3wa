@@ -4,6 +4,7 @@ import { getDb, withDb } from "@/lib/db";
 import { makeInviteToken } from "@/lib/token";
 import { normalizePhone } from "@/lib/phone";
 import { canAccessEvent } from "@/lib/coupleAuth";
+import { normaliseInviteLanguage } from "@/lib/inviteCopy";
 
 function guestWithLink(guest) {
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
@@ -31,6 +32,12 @@ export async function POST(request, { params }) {
 
   if (!name || !phone) {
     return NextResponse.json({ error: "الاسم ورقم الواتساب مطلوبين" }, { status: 400 });
+  }
+  // Arabic unless the couple picked English for this guest. A value that is
+  // present but unreadable is refused rather than quietly sent in Arabic.
+  const language = body.language ? normaliseInviteLanguage(body.language) : "ar";
+  if (!language) {
+    return NextResponse.json({ error: "لغة الدعوة لازم تكون عربي أو English" }, { status: 400 });
   }
   const parsedPhone = normalizePhone(phone);
   if (!parsedPhone.valid) {
@@ -67,6 +74,7 @@ export async function POST(request, { params }) {
       phone: parsedPhone.digits,
       phoneDisplay: parsedPhone.e164,
       maxCompanions: parsedMaxGuests - 1,
+      language,
       status: "pending",
       confirmedCompanions: null,
       checkedIn: false,

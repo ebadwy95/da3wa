@@ -1766,3 +1766,57 @@ body {
   font-size: clamp(1.7rem, 8.5vw, 2.4rem);
   flex: 0 0 auto;
 }
+
+/* ============================================================================
+   The English invitation
+   ----------------------------------------------------------------------------
+   The same card, set left-to-right. Aref Ruqaa has no Latin letters, so every
+   place it sets text — the families, the names under the invitation line, the
+   venue, the guest's name, the envelope — falls through to a plain browser
+   serif on an English card. Amiri is already the card's body face and has a
+   Latin that sits with it, so it takes those places instead. Great Vibes, the
+   Latin script, is unchanged: it was always the one face on the card written
+   for Latin letters.
+   ========================================================================= */
+.inv-en .font-display,
+.inv-en .inv-families .fam,
+.inv-en .inv-families .waw,
+.inv-en .inv-names-ar,
+.inv-en .inv-latin,
+.inv-en .tl-label,
+.inv-en .env-title,
+.inv-en .opener-title {
+  font-family: var(--font-card), "Amiri", serif;
+}
+/* Latin capitals and lowercase at the Arabic calligraphy's size read as
+   shouting; a step down keeps the names the largest thing without dwarfing
+   the script above them. */
+.inv-en .inv-names-ar .n {
+  font-size: clamp(1.8rem, 9.5vw, 2.7rem);
+}
+.inv-en .inv-families .waw {
+  font-family: var(--font-script), cursive;
+}
+
+/* ---- the Arabic / English choice on a guest's row ---- */
+.lang-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px;
+  background: var(--surface);
+}
+.lang-toggle button {
+  font-size: var(--text-xs);
+  line-height: 1;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.lang-toggle button[data-on="true"] {
+  background: var(--gold-500);
+  color: #fff;
+  font-weight: 600;
+}
+.lang-toggle button:disabled { cursor: progress; }

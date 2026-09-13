@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:wght@300;400&family=Amiri:wght@400&family=Rubik:wght@300;400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Great+Vibes&family=Amiri:wght@400&family=Rubik:wght@300;400;500&display=swap">
 <style>
   /* Deliberately no CSS animations anywhere in this scene.
      Every frame is drawn by calling render(t) with an explicit time, so the
@@ -117,6 +117,30 @@
     font-size: 36px;
     font-weight: 300;
     color: #a1937e;
+  }
+
+  /* The English film. Same stage, same timing, same star and pen — only the
+     faces change, to the ones the English invitation card uses: Great Vibes
+     for the names (Aref Ruqaa has no Latin letters, so the names would fall
+     through to a default serif), and Cormorant for the opening line and the
+     venue, italic where the Arabic uses calligraphy. */
+  body.en #bismillah {
+    font-family: "Cormorant Garamond", serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 60px;
+    letter-spacing: 0.02em;
+  }
+  body.en #nameText,
+  body.en #nameShine {
+    font-family: "Great Vibes", cursive;
+    font-weight: 400;
+    font-size: 168px;
+  }
+  body.en #venue {
+    font-family: "Cormorant Garamond", serif;
+    font-size: 42px;
+    letter-spacing: 0.06em;
   }
 
   svg { overflow: visible; }
@@ -259,21 +283,31 @@ MOTES.forEach((m) => {
 // and doing it 360 times would take minutes.
 
 const NAME_W = 1080, NAME_H = 300, BASE_Y = 180;
-const NAME_FONT = '700 132px "Aref Ruqaa", serif';
+// Must match the #nameText rules above for each language, or the traced path
+// runs through ink that isn't where the letters are drawn.
+const NAME_FONTS = {
+  ar: '700 132px "Aref Ruqaa", serif',
+  en: '400 168px "Great Vibes", cursive',
+};
 const STEP = 6;          // px between samples along the word
 const SMOOTH = 5;        // samples either side, so the pen glides rather than jitters
 
 let PATH = { pts: [], acc: [], total: 0, xMin: 0, xMax: NAME_W };
+
+// The direction the hand moves across the name: right to left for Arabic, left
+// to right for English. The brush, the pen and the "already written" region
+// all follow it.
+const isLtr = () => CONTENT.lang === "en";
 
 function traceInk(text) {
   const cv = document.createElement("canvas");
   cv.width = NAME_W;
   cv.height = NAME_H;
   const ctx = cv.getContext("2d", { willReadFrequently: true });
-  ctx.font = NAME_FONT;
+  ctx.font = NAME_FONTS[isLtr() ? "en" : "ar"];
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic";
-  ctx.direction = "rtl";
+  ctx.direction = isLtr() ? "ltr" : "rtl";
   ctx.fillStyle = "#fff";
   ctx.fillText(text || "", NAME_W / 2, BASE_Y);
 
@@ -293,10 +327,12 @@ function traceInk(text) {
   }
   if (xMin < 0) { PATH = { pts: [], acc: [], total: 0, xMin: 0, xMax: NAME_W }; return; }
 
-  // Right to left: Arabic is written that way, and so is this.
+  // In the direction the script is written: right to left for Arabic, left to
+  // right for English.
   const raw = [];
-  let last = mid[xMax];
-  for (let x = xMax; x >= xMin; x -= STEP) {
+  const ltr = isLtr();
+  let last = mid[ltr ? xMin : xMax];
+  for (let x = ltr ? xMin : xMax; ltr ? x <= xMax : x >= xMin; x += ltr ? STEP : -STEP) {
     // Spaces have no ink. Carrying the last height across them keeps the path
     // continuous instead of dropping to zero between two words.
     if (mid[x] != null) last = mid[x];
@@ -365,17 +401,30 @@ const sparkEls = SPARKS.map((s) => {
 const starLength = $("starPath").getTotalLength();
 $("starPath").style.strokeDasharray = starLength;
 
-let CONTENT = { names: "", date: "", venue: "" };
+let CONTENT = { names: "", date: "", venue: "", opening: "", lang: "ar" };
+
+const OPENING = {
+  ar: "بسم الله نبدأ فرحتنا",
+  en: "In the name of Allah we begin our joy",
+};
 
 // async: the trace is worthless before the font it measures has loaded, and
 // Playwright awaits the promise this returns.
 async function setContent(c) {
   CONTENT = { ...CONTENT, ...c };
+  const lang = CONTENT.lang === "en" ? "en" : "ar";
+  document.body.classList.toggle("en", lang === "en");
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "en" ? "ltr" : "rtl";
+  $("bismillah").textContent = CONTENT.opening || OPENING[lang];
   $("nameText").textContent = CONTENT.names || "";
   $("nameShine").textContent = CONTENT.names || "";
   $("date").textContent = CONTENT.date || "";
   $("venue").textContent = CONTENT.venue || "";
   await document.fonts.ready;
+  // Named fonts are only fetched once something uses them; waiting on the
+  // exact face keeps the trace from measuring the fallback.
+  await document.fonts.load(NAME_FONTS[lang], CONTENT.names || "a");
   traceInk(CONTENT.names || "");
 }
 
@@ -405,9 +454,16 @@ function render(t) {
   // is being drawn rather than already there.
   $("maskBrush").setAttribute("stroke-dashoffset", String(100 - write * 100));
   const lag = 46 * (1 - easeOut(span(t, NAME_B - 0.35, NAME_B)));
-  const doneFrom = write <= 0 ? NAME_W : Math.max(0, head.x + lag);
-  $("maskDone").setAttribute("x", doneFrom.toFixed(1));
-  $("maskDone").setAttribute("width", Math.max(0, NAME_W - doneFrom).toFixed(1));
+  if (isLtr()) {
+    // Written from the left, so what is done is everything left of the pen.
+    const doneTo = write <= 0 ? 0 : Math.min(NAME_W, head.x - lag);
+    $("maskDone").setAttribute("x", "0");
+    $("maskDone").setAttribute("width", Math.max(0, doneTo).toFixed(1));
+  } else {
+    const doneFrom = write <= 0 ? NAME_W : Math.max(0, head.x + lag);
+    $("maskDone").setAttribute("x", doneFrom.toFixed(1));
+    $("maskDone").setAttribute("width", Math.max(0, NAME_W - doneFrom).toFixed(1));
+  }
 
   // The pen: in before the first letter, out once the last one is down.
   const penOn =

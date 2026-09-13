@@ -11,6 +11,7 @@ import {
   FireworksIcon,
   StarOrnamentIcon,
 } from "@/components/icons";
+import { DEFAULT_TIMELINE, timelineLabel } from "@/lib/timeline";
 
 // The order of the night, with the mark sliding down it as the night runs.
 //
@@ -35,21 +36,9 @@ export const TIMELINE_ICONS = {
   star: StarOrnamentIcon,
 };
 
-// What a wedding runs like when nobody has said otherwise. Every couple can
-// replace it from the dashboard; most will not, and a sensible default beats
-// an empty section.
-export const DEFAULT_TIMELINE = [
-  // Doors 45 minutes before anything happens. A guest who reads the programme
-  // and turns up for the first line on it arrives as the groom does — the
-  // reception is the line that actually tells them when to be there.
-  { at: "19:45", label: "استقبال المعازيم", icon: "guests" },
-  { at: "20:30", label: "دخلة العريس", icon: "groom" },
-  { at: "20:40", label: "دخلة العروس", icon: "bride" },
-  { at: "22:00", label: "العشاء", icon: "dinner" },
-  { at: "22:30", label: "الزفة", icon: "zaffa" },
-  { at: "23:40", label: "التصوير", icon: "camera" },
-  { at: "00:00", label: "ختام الحفل", icon: "fireworks" },
-];
+// The default programme lives in src/lib/timeline.js, with its English
+// wording, so the guest endpoint can read it too.
+export { DEFAULT_TIMELINE };
 
 // "20:30" → minutes past the start of the evening. Midnight belongs to the
 // end of the night, not the beginning of it, so anything before the first
@@ -67,9 +56,13 @@ function label12(at) {
   return `${hour}:${String(m).padStart(2, "0")} ${suffix}`;
 }
 
-export function Timeline({ date, steps }) {
-  const STEPS = (Array.isArray(steps) && steps.length ? steps : DEFAULT_TIMELINE).map((s) => ({
+// Custom steps arrive from the guest endpoint already in the card's language;
+// the default programme is chosen here, so it is put into that language here.
+export function Timeline({ date, steps, lang = "ar" }) {
+  const custom = Array.isArray(steps) && steps.length;
+  const STEPS = (custom ? steps : DEFAULT_TIMELINE).map((s) => ({
     ...s,
+    label: custom ? s.label : timelineLabel(s, lang),
     Icon: TIMELINE_ICONS[s.icon] || StarOrnamentIcon,
   }));
 

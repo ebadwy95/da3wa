@@ -1,6 +1,7 @@
 "use client";
 
 import { DEFAULT_TIMELINE, TIMELINE_ICONS } from "@/components/Timeline";
+import { suggestedEnglishLabel } from "@/lib/timeline";
 import { PlusIcon, XIcon } from "@/components/icons";
 
 // Editing the order of the night from the dashboard.
@@ -44,7 +45,7 @@ export function TimelineEditor({ value, onChange }) {
 
       <div className="flex flex-col gap-2 mt-2">
         {shown.map((row, i) => (
-          <div key={i} className="flex items-center gap-2">
+          <div key={i} className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             <input
               type="time"
               value={row.at}
@@ -59,6 +60,17 @@ export function TimelineEditor({ value, onChange }) {
               className="field"
               placeholder="مثلاً: دخلة العروس"
               aria-label="الوصف"
+            />
+            {/* The English card's wording for this row. Empty shows the
+                suggestion in grey, and the card uses that suggestion when the
+                Arabic label is still one of the defaults. */}
+            <input
+              value={row.labelEn || ""}
+              onChange={(e) => edit(i, { labelEn: e.target.value })}
+              className="field"
+              dir="ltr"
+              placeholder={suggestedEnglishLabel(row) || "English (optional)"}
+              aria-label="الوصف بالإنجليزية"
             />
             <select
               value={row.icon || "star"}

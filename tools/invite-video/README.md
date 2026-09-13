@@ -20,6 +20,21 @@ node tools/invite-video/render.mjs \
   --out   public/samples/invite.mp4
 ```
 
+For the English invitation, render a second film with `--lang en` and Latin
+names; the opening line defaults to "In the name of Allah we begin our joy"
+(`--opening` replaces it):
+
+```bash
+node tools/invite-video/render.mjs --lang en \
+  --names "Eslam & Dima" \
+  --date  "22 . 10 . 2026" \
+  --venue "Al Zumurrud Halls — Al Jawhara Hall" \
+  --out   public/samples/islam-dima-en.mp4
+```
+
+Put its link in the wedding's «رابط الفيديو الإنجليزي»; guests with an English
+invitation get that film, everyone else the Arabic one.
+
 `--audio` and `--venue` are optional. Output is 1080x1920, 30fps, 8 seconds,
 H.264 in `yuv420p` with `+faststart` — the combination every phone and WhatsApp
 preview will actually decode.

@@ -20,7 +20,53 @@ export function StatCard({ label, value, accent }) {
   );
 }
 
-export function GuestRow({ guest, onDelete }) {
+// Which card a guest gets: Arabic unless someone picks English. Changed from the
+// guest's row before sending, so it has to be one tap and visibly the current
+// choice — a dropdown hides which one is set until it is opened.
+export function GuestLanguageToggle({ guest, onChanged }) {
+  const [language, setLanguage] = useState(guest.language === "en" ? "en" : "ar");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function choose(next) {
+    if (next === language || saving) return;
+    const previous = language;
+    setLanguage(next); // optimistic — the toggle should move under the finger
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/guests/${guest.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "تعذّر تغيير اللغة");
+      onChanged?.();
+    } catch (err) {
+      setLanguage(previous);
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="inline-flex flex-col items-center gap-1">
+      <div className="lang-toggle" role="radiogroup" aria-label={`لغة دعوة ${guest.name}`}>
+        <button type="button" role="radio" aria-checked={language === "ar"} data-on={language === "ar"} onClick={() => choose("ar")} disabled={saving}>
+          عربي
+        </button>
+        <button type="button" role="radio" aria-checked={language === "en"} data-on={language === "en"} onClick={() => choose("en")} disabled={saving} lang="en">
+          English
+        </button>
+      </div>
+      {error && <span className="text-danger text-xs">{error}</span>}
+    </div>
+  );
+}
+
+export function GuestRow({ guest, onDelete, onChanged }) {
   const [copied, setCopied] = useState(false);
   const statusLabel = { pending: "لم يردّ بعد", confirmed: "أكّد الحضور", declined: "اعتذر" }[guest.status];
   const statusColor = { pending: "var(--gold-600)", confirmed: "var(--ok)", declined: "var(--danger)" }[guest.status];
@@ -42,6 +88,9 @@ export function GuestRow({ guest, onDelete }) {
   return (
     <tr className="border-b last:border-0" style={{ borderColor: "var(--line-soft)" }}>
       <td className="py-3 px-2 font-medium">{guest.name}</td>
+      <td className="py-3 px-2 text-center">
+        <GuestLanguageToggle guest={guest} onChanged={onChanged} />
+      </td>
       <td className="py-3 px-2 text-ink-2" dir="ltr">{guest.phoneDisplay || guest.phone}</td>
       <td className="py-3 px-2 text-center">{maxTotalGuests}</td>
       <td className="py-3 px-2 text-center">
@@ -117,6 +166,8 @@ export function AddGuestForm({ eventId, onAdded }) {
   // guest plus two companions, not three companions on top of them.
   // Defaults to 1 (the guest alone).
   const [maxGuests, setMaxGuests] = useState(1);
+  // Arabic by default; English for a guest who doesn't read Arabic.
+  const [language, setLanguage] = useState("ar");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [limitInfo, setLimitInfo] = useState(null);
@@ -128,7 +179,7 @@ export function AddGuestForm({ eventId, onAdded }) {
       const res = await fetch(`/api/events/${eventId}/guests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, maxGuests, force }),
+        body: JSON.stringify({ name, phone, maxGuests, language, force }),
       });
       const data = await res.json();
       if (res.status === 409 && data.limitReached) {
@@ -140,6 +191,7 @@ export function AddGuestForm({ eventId, onAdded }) {
       setName("");
       setPhone("");
       setMaxGuests(1);
+      setLanguage("ar");
       setLimitInfo(null);
     } catch (err) {
       setError(err.message);
@@ -172,6 +224,13 @@ export function AddGuestForm({ eventId, onAdded }) {
         <div className="w-40">
           <label className="label">إجمالي عدد الحضور (شامل الضيف نفسه)</label>
           <input type="number" min={1} value={maxGuests} onChange={(e) => setMaxGuests(e.target.value)} className="field" />
+        </div>
+        <div className="w-36">
+          <label className="label">لغة الدعوة</label>
+          <select value={language} onChange={(e) => setLanguage(e.target.value)} className="field">
+            <option value="ar">عربي</option>
+            <option value="en">English</option>
+          </select>
         </div>
         <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الإضافة..." : "إضافة"}</button>
         {error && <p className="text-danger text-sm w-full">{error}</p>}
@@ -221,7 +280,8 @@ export function BulkUpload({ eventId, onDone }) {
       </div>
       <p className="text-xs text-ink-2">
         يجب أن يكون الملف بنفس أعمدة النموذج وبنفس الترتيب تمامًا: الاسم، رقم الواتساب (مع رمز الدولة)، إجمالي عدد
-        الحضور (شامل الضيف نفسه — أي لو سيأتي مع مرافقَين، يُكتب 3 وليس 2). أي ملف بترتيب مختلف سيُرفض.
+        الحضور (شامل الضيف نفسه — أي لو سيأتي مع مرافقَين، يُكتب 3 وليس 2)، ولغة الدعوة: AR للعربي أو ENG
+        للإنجليزي (لو الخانة فاضية تبقى عربي). أي ملف بترتيب مختلف سيُرفض.
       </p>
       <div className="flex gap-2 items-center flex-wrap">
         <input
@@ -237,7 +297,10 @@ export function BulkUpload({ eventId, onDone }) {
       {error && <p className="text-danger text-sm">{error}</p>}
       {result && (
         <div className="text-sm space-y-1 border-t pt-2" style={{ borderColor: "var(--line-soft)" }}>
-          <p className="text-ok font-semibold">تمت إضافة {result.added} ضيف من أصل {result.totalRowsInFile}</p>
+          <p className="text-ok font-semibold">
+            تمت إضافة {result.added} ضيف من أصل {result.totalRowsInFile}
+            {result.addedEnglish > 0 && ` — منهم ${result.addedEnglish} بدعوة English`}
+          </p>
           {result.errors?.length > 0 && (
             <div className="text-warn">
               <p className="font-semibold">تم تخطي {result.errors.length} صف:</p>

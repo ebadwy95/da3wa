@@ -4,12 +4,24 @@ import * as XLSX from "xlsx";
 import { withDb } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
 import { canAccessEvent } from "@/lib/coupleAuth";
+import { normaliseInviteLanguage } from "@/lib/inviteCopy";
 
-// The ONLY accepted column header row, in this exact order. We deliberately
-// do NOT try to be clever about reordered/renamed columns — a strict
-// template avoids silently misreading someone's ad-hoc sheet (e.g. treating
-// a "phone" column as "companions" because the columns got swapped).
-export const TEMPLATE_HEADERS = ["الاسم", "رقم الواتساب (مع كود الدولة)", "إجمالي عدد الحضور (شامل الضيف نفسه)"];
+// The accepted column header row, in this exact order. We deliberately do NOT
+// try to be clever about reordered/renamed columns — a strict template avoids
+// silently misreading someone's ad-hoc sheet (e.g. treating a "phone" column as
+// "companions" because the columns got swapped).
+export const TEMPLATE_HEADERS = [
+  "الاسم",
+  "رقم الواتساب (مع كود الدولة)",
+  "إجمالي عدد الحضور (شامل الضيف نفسه)",
+  "لغة الدعوة (AR أو ENG)",
+];
+
+// The language column came later. A sheet downloaded before it existed has the
+// first three columns only, and is still read — every guest on it gets the
+// Arabic card, which is what that sheet meant when it was filled in.
+const REQUIRED_HEADERS = TEMPLATE_HEADERS.slice(0, 3);
+const LANGUAGE_HEADER = TEMPLATE_HEADERS[3];
 
 function normalizeHeaderCell(v) {
   return String(v ?? "").trim();
@@ -43,9 +55,10 @@ export async function POST(request, { params }) {
   }
 
   const headerRow = rows[0].map(normalizeHeaderCell);
+  const fourth = headerRow[3] || "";
+  const hasLanguageColumn = fourth === LANGUAGE_HEADER;
   const headerMatches =
-    headerRow.length >= TEMPLATE_HEADERS.length &&
-    TEMPLATE_HEADERS.every((h, i) => headerRow[i] === h);
+    REQUIRED_HEADERS.every((h, i) => headerRow[i] === h) && (hasLanguageColumn || fourth === "");
 
   if (!headerMatches) {
     return NextResponse.json(
@@ -66,7 +79,7 @@ export async function POST(request, { params }) {
 
   dataRows.forEach((row, idx) => {
     const rowNumber = idx + 2; // +1 for header, +1 for 1-indexing
-    const [rawName, rawPhone, rawTotalGuests] = row;
+    const [rawName, rawPhone, rawTotalGuests, rawLanguage] = row;
     const name = String(rawName || "").trim();
     if (!name) {
       errors.push({ row: rowNumber, reason: "الاسم فارغ" });
@@ -77,12 +90,28 @@ export async function POST(request, { params }) {
       errors.push({ row: rowNumber, reason: `رقم الضيف "${name}": ${phone.error}` });
       return;
     }
+    // An empty language cell means Arabic, the default. Anything written there
+    // that isn't recognisably AR or ENG skips the row: sending a guest the
+    // card in a language they can't read is the thing this column exists to
+    // prevent, so it should not be guessed.
+    let language = "ar";
+    const languageCell = hasLanguageColumn ? String(rawLanguage || "").trim() : "";
+    if (languageCell) {
+      language = normaliseInviteLanguage(languageCell);
+      if (!language) {
+        errors.push({
+          row: rowNumber,
+          reason: `لغة الدعوة للضيف "${name}" غير مفهومة ("${languageCell}") — اكتب AR أو ENG`,
+        });
+        return;
+      }
+    }
     // The sheet's number is the TOTAL party size including the guest
     // themself (e.g. 3 = هو + مرافقين اتنين) — stored internally as
     // companions beyond the guest, same as the single-add form.
     const maxTotalGuests = Math.max(1, parseInt(rawTotalGuests, 10) || 1);
     const maxCompanions = maxTotalGuests - 1;
-    candidates.push({ name, phone, maxCompanions, rowNumber });
+    candidates.push({ name, phone, maxCompanions, language, rowNumber });
   });
 
   const result = await withDb((db) => {
@@ -103,6 +132,7 @@ export async function POST(request, { params }) {
         phone: c.phone.digits,
         phoneDisplay: c.phone.e164,
         maxCompanions: c.maxCompanions,
+        language: c.language,
         status: "pending",
         confirmedCompanions: null,
         checkedIn: false,
@@ -119,6 +149,7 @@ export async function POST(request, { params }) {
 
     return {
       added: added.length,
+      addedEnglish: added.filter((g) => g.language === "en").length,
       skippedForLimit: skippedForLimit.map((c) => ({ row: c.rowNumber, reason: "تجاوز الحد الأقصى المتاح للباقة" })),
       packageLimit: event.packageLimit,
       guestCountAfter: currentCount + added.length,
@@ -131,6 +162,7 @@ export async function POST(request, { params }) {
 
   return NextResponse.json({
     added: result.added,
+    addedEnglish: result.addedEnglish,
     totalRowsInFile: dataRows.length,
     errors: [...errors, ...result.skippedForLimit],
     packageLimit: result.packageLimit,

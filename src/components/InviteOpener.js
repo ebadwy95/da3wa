@@ -17,7 +17,9 @@ import { EnvelopeMark } from "@/components/EnvelopeMark";
 // video stays muted and `playsInline` (iOS otherwise takes it fullscreen and
 // hands control to the system player), while the audio element carries sound.
 
-export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guestName, copy = {}, onOpened }) {
+// `ui` carries the few fixed words the cover needs (skip, the sound toggle's
+// labels) in the invitation's language; see src/lib/inviteUi.js.
+export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guestName, copy = {}, ui = {}, onOpened }) {
   const [state, setState] = useState("idle"); // idle | opening | playing | closing | done
   const videoRef = useRef(null);
   const audioRef = useRef(null);
@@ -79,13 +81,13 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
           finished opening. */}
       {audioUrl && <audio ref={audioRef} src={audioUrl} preload="auto" loop />}
 
-      {state === "done" && <OpenedSoundControl audioRef={audioRef} audioUrl={audioUrl} />}
+      {state === "done" && <OpenedSoundControl audioRef={audioRef} audioUrl={audioUrl} ui={ui} />}
 
       <div
         className="opener"
         data-closing={state === "closing"}
         role="dialog"
-        aria-label="افتح دعوتك"
+        aria-label={ui.openerAria || "افتح دعوتك"}
         hidden={state === "done"}
       >
         {posterUrl && (
@@ -163,7 +165,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
           <>
             <div className="opener-veil" aria-hidden="true" />
             <button type="button" onClick={() => finish()} className="opener-skip">
-              تخطّي
+              {ui.skip || "تخطّي"}
               <ChevronDownIcon size={13} />
             </button>
           </>
@@ -175,7 +177,7 @@ export function InviteOpener({ videoUrl, posterUrl, audioUrl, coupleNames, guest
 
 // Once the invitation is open the music keeps playing, so it needs a way off.
 // A guest opening this at work should be one tap from silence.
-function OpenedSoundControl({ audioRef, audioUrl }) {
+function OpenedSoundControl({ audioRef, audioUrl, ui = {} }) {
   const [muted, setMuted] = useState(false);
   if (!audioUrl) return null;
 
@@ -191,7 +193,7 @@ function OpenedSoundControl({ audioRef, audioUrl }) {
       type="button"
       onClick={toggle}
       className="sound-toggle"
-      aria-label={muted ? "تشغيل الموسيقى" : "كتم الموسيقى"}
+      aria-label={muted ? ui.soundOn || "تشغيل الموسيقى" : ui.soundOff || "كتم الموسيقى"}
     >
       {muted ? <SoundOffIcon size={20} /> : <SoundOnIcon size={20} />}
     </button>

@@ -230,6 +230,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
             <thead>
               <tr className="text-xs text-ink-2 border-b" style={{ borderColor: "var(--line-soft)" }}>
                 <th className="py-2 px-2">الاسم</th>
+                <th className="py-2 px-2 text-center">لغة الدعوة</th>
                 <th className="py-2 px-2">الرقم</th>
                 <th className="py-2 px-2 text-center">إجمالي الحضور المسموح</th>
                 <th className="py-2 px-2 text-center">الحالة</th>
@@ -241,11 +242,11 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
             </thead>
             <tbody>
               {guests.map((g) => (
-                <GuestRow key={g.id} guest={g} onDelete={deleteGuest} />
+                <GuestRow key={g.id} guest={g} onDelete={deleteGuest} onChanged={() => refresh()} />
               ))}
               {guests.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center text-ink-3 py-8">لا يوجد ضيوف مضافون بعد</td>
+                  <td colSpan={9} className="text-center text-ink-3 py-8">لا يوجد ضيوف مضافون بعد</td>
                 </tr>
               )}
             </tbody>

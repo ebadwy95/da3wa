@@ -21,7 +21,12 @@ function remaining(target) {
   return { days: Math.floor(m / 1440), hours: Math.floor((m % 1440) / 60), minutes: m % 60 };
 }
 
-export function Countdown({ date, time }) {
+export function Countdown({
+  date,
+  time,
+  units = ["يوم", "ساعة", "دقيقة"],
+  ariaLabel = "الوقت المتبقي على المناسبة",
+}) {
   const [left, setLeft] = useState(null);
 
   useEffect(() => {
@@ -51,11 +56,11 @@ export function Countdown({ date, time }) {
   if (!left) return null;
 
   return (
-    <div className="inv-count" role="timer" aria-label="الوقت المتبقي على المناسبة">
+    <div className="inv-count" role="timer" aria-label={ariaLabel}>
       {[
-        [left.days, "يوم"],
-        [left.hours, "ساعة"],
-        [left.minutes, "دقيقة"],
+        [left.days, units[0]],
+        [left.hours, units[1]],
+        [left.minutes, units[2]],
       ].map(([value, label]) => (
         <div key={label}>
           <b>{String(value).padStart(2, "0")}</b>
