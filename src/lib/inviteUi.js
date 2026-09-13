@@ -60,6 +60,8 @@ const AR = {
   countdownAria: "الوقت المتبقي على المناسبة",
   countdownUnits: ["يوم", "ساعة", "دقيقة"],
   errorHelp: "لو الرابط وصلك من العروسين، تواصل معهم للحصول على رابط جديد.",
+  previewBanner: "معاينة — كده هتظهر الدعوة للضيف",
+  previewAction: "دي معاينة — الأزرار مش بتسجّل أي حاجة",
 };
 
 const EN = {
@@ -105,6 +107,8 @@ const EN = {
   countdownAria: "Time remaining until the celebration",
   countdownUnits: ["Days", "Hours", "Minutes"],
   errorHelp: "If the couple sent you this link, ask them for a new one.",
+  previewBanner: "Preview — this is how guests will see the invitation",
+  previewAction: "This is a preview — nothing is recorded",
 };
 
 export function inviteUi(lang) {

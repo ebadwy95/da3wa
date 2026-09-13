@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   StatCard,
+  InvitePreviewButtons,
   GuestRow,
   AddGuestForm,
   BulkUpload,
@@ -217,6 +218,14 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
         كل ضيف مؤكَّد زائد عدد مرافقيه الذين أكّدهم فعليًا. &quot;دخلوا فعلًا&quot; = عدد الأفراد الذين دخلوا فعليًا عند
         الباب حتى الآن (شاملًا الدخول الجزئي).
       </p>
+
+      <div className="card p-4 flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="font-bold">شوفوا الدعوة زي ما الضيوف هيشوفوها</h2>
+          <p className="text-xs text-ink-2">معاينة بس — الأزرار فيها مش بتسجّل حاجة.</p>
+        </div>
+        <InvitePreviewButtons eventId={eventId} />
+      </div>
 
       <AddGuestForm eventId={eventId} onAdded={() => refresh()} />
       <BulkUpload eventId={eventId} onDone={() => refresh()} />

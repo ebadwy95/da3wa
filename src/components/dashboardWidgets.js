@@ -6,8 +6,28 @@
 // each one is allowed to touch (enforced server-side, not here).
 
 import { useRef, useState } from "react";
-import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon } from "@/components/icons";
+import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon } from "@/components/icons";
 import { formatDateTimeArabic } from "@/lib/date";
+
+// The invitation as a guest will see it, one tab each for the two cards. Opens
+// the preview page, which uses a made-up guest, so looking never answers an
+// RSVP for anyone.
+export function InvitePreviewButtons({ eventId, className = "" }) {
+  if (!eventId) return null;
+  const href = (lang) => `/invite/preview/${eventId}?lang=${lang}`;
+  return (
+    <div className={`flex items-center gap-2 flex-wrap ${className}`}>
+      <a href={href("ar")} target="_blank" rel="noopener" className="pill-btn-outline pill-btn-sm" title="معاينة الدعوة العربية">
+        <EyeIcon size={15} />
+        معاينة عربي
+      </a>
+      <a href={href("en")} target="_blank" rel="noopener" className="pill-btn-outline pill-btn-sm" title="معاينة الدعوة الإنجليزية">
+        <EyeIcon size={15} />
+        <span lang="en">View English</span>
+      </a>
+    </div>
+  );
+}
 
 export function StatCard({ label, value, accent }) {
   return (
