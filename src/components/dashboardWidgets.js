@@ -239,7 +239,7 @@ export function AddGuestForm({ eventId, onAdded }) {
         </div>
         <div className="flex-1 min-w-[160px]">
           <label className="label">رقم الواتساب (مع رمز الدولة)</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} required dir="ltr" placeholder="+9665XXXXXXXX" className="field" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} required dir="ltr" placeholder="96550012345" className="field" />
         </div>
         <div className="w-40">
           <label className="label">إجمالي عدد الحضور (شامل الضيف نفسه)</label>
@@ -294,14 +294,17 @@ export function BulkUpload({ eventId, onDone }) {
     <div className="card p-4 space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="font-bold">رفع كشف ضيوف دفعة واحدة</h2>
-        <a href="/da3wa-guests-template.csv" download className="pill-btn-outline pill-btn-sm">
+        {/* The Excel file, not the CSV: its phone column is already text, so
+            Excel can't drop the + or turn a long number into 9.66E+11. */}
+        <a href="/da3wa-guests-template.xlsx" download className="pill-btn-outline pill-btn-sm">
           تحميل النموذج
         </a>
       </div>
       <p className="text-xs text-ink-2">
-        يجب أن يكون الملف بنفس أعمدة النموذج وبنفس الترتيب تمامًا: الاسم، رقم الواتساب (مع رمز الدولة)، إجمالي عدد
-        الحضور (شامل الضيف نفسه — أي لو سيأتي مع مرافقَين، يُكتب 3 وليس 2)، ولغة الدعوة: AR للعربي أو ENG
-        للإنجليزي (لو الخانة فاضية تبقى عربي). أي ملف بترتيب مختلف سيُرفض.
+        يجب أن يكون الملف بنفس أعمدة النموذج وبنفس الترتيب تمامًا: الاسم، رقم الواتساب بكود الدولة من غير +
+        (مثلًا 96550012345 للكويت أو 966512345678 للسعودية)، إجمالي عدد الحضور (شامل الضيف نفسه — أي لو سيأتي مع
+        مرافقَين، يُكتب 3 وليس 2)، ولغة الدعوة: AR للعربي أو ENG للإنجليزي (لو الخانة فاضية تبقى عربي). أي ملف بترتيب
+        مختلف سيُرفض.
       </p>
       <div className="flex gap-2 items-center flex-wrap">
         <input

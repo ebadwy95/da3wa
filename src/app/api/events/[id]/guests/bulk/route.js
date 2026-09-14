@@ -48,7 +48,11 @@ export async function POST(request, { params }) {
   }
 
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+  // raw: the values Excel stored, not the text it displays. Displayed, a
+  // twelve-digit Saudi number is "9.66551E+11" and its last digits are gone;
+  // stored, it is the whole number. The phone is turned back into text by
+  // normalizePhone.
+  const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: "" });
 
   if (rows.length === 0) {
     return NextResponse.json({ error: "الملف فارغ" }, { status: 400 });
@@ -80,7 +84,7 @@ export async function POST(request, { params }) {
   dataRows.forEach((row, idx) => {
     const rowNumber = idx + 2; // +1 for header, +1 for 1-indexing
     const [rawName, rawPhone, rawTotalGuests, rawLanguage] = row;
-    const name = String(rawName || "").trim();
+    const name = String(rawName ?? "").trim();
     if (!name) {
       errors.push({ row: rowNumber, reason: "الاسم فارغ" });
       return;
@@ -95,7 +99,7 @@ export async function POST(request, { params }) {
     // card in a language they can't read is the thing this column exists to
     // prevent, so it should not be guessed.
     let language = "ar";
-    const languageCell = hasLanguageColumn ? String(rawLanguage || "").trim() : "";
+    const languageCell = hasLanguageColumn ? String(rawLanguage ?? "").trim() : "";
     if (languageCell) {
       language = normaliseInviteLanguage(languageCell);
       if (!language) {
