@@ -1820,3 +1820,48 @@ body {
   font-weight: 600;
 }
 .lang-toggle button:disabled { cursor: progress; }
+
+/* ---- the reminder to leave a message, after answering the RSVP ---- */
+.inv-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(12, 9, 5, 0.55);
+  backdrop-filter: blur(4px);
+  animation: inv-modal-in 0.25s ease both;
+}
+.inv-modal-card {
+  width: 100%;
+  max-width: 22rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.8rem 1.5rem 1.5rem;
+  border-radius: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+  font-family: var(--font-card), "Amiri", serif;
+  animation: inv-modal-card-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.inv-modal-icon {
+  color: var(--gold-500);
+  margin-bottom: 0.6rem;
+}
+.inv-modal-title {
+  font-size: var(--text-2xl);
+  line-height: 1.6;
+  color: var(--ink);
+  margin-bottom: 0.4rem;
+}
+.inv-en .inv-modal-title { font-family: var(--font-card), "Amiri", serif; }
+@keyframes inv-modal-in { from { opacity: 0; } }
+@keyframes inv-modal-card-in { from { opacity: 0; transform: translateY(14px) scale(0.97); } }
+@media (prefers-reduced-motion: reduce) {
+  .inv-modal, .inv-modal-card { animation: none; }
+}

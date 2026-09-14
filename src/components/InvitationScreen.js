@@ -100,6 +100,10 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   // guest who was sent the wrong one switches.
   const [lang, setLang] = useState(() => normaliseInviteLanguage(initialLang));
   const [previewTapped, setPreviewTapped] = useState(false);
+  // "confirmed" | "declined" | null — the reminder to leave a message, shown
+  // once the guest has answered. The answer is what brought them here; the
+  // message box sits further down and most would leave without reaching it.
+  const [wishPrompt, setWishPrompt] = useState(null);
   const [state, setState] = useState({ loading: true, error: null, guest: null, event: null, language: null });
   const [companions, setCompanions] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -152,8 +156,32 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
       .finally(() => setWishesLoading(false));
   }, [tab, state.event, id, token, preview]);
 
+  // After an answer, unless they have already written: a guest who left a
+  // message earlier does not need asking again.
+  function promptForWish(attending, guest) {
+    if (!String(guest?.wishMessage || "").trim()) setWishPrompt(attending ? "confirmed" : "declined");
+  }
+
+  // "Write your message" takes the guest straight to the box, on the card tab,
+  // with the keyboard up — two taps from answering to typing.
+  function goToWish() {
+    setWishPrompt(null);
+    setTab("invite");
+    requestAnimationFrame(() => {
+      const box = document.getElementById("wish");
+      if (!box) return;
+      box.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => box.focus({ preventScroll: true }), 450);
+    });
+  }
+
   async function respond(attending) {
-    if (preview) return setPreviewTapped(true);
+    if (preview) {
+      // The preview records nothing, but shows the reminder a guest would get.
+      setPreviewTapped(true);
+      promptForWish(attending, state.guest);
+      return;
+    }
     setSubmitting(true);
     try {
       const res = await fetch(`/api/guests/${id}/confirm`, {
@@ -164,6 +192,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "خطأ");
       setState((s) => ({ ...s, guest: data.guest }));
+      promptForWish(attending, data.guest);
     } catch (err) {
       setState((s) => ({ ...s, error: err.message }));
     } finally {
@@ -274,6 +303,34 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
 
   return (
     <PageShell theme={event.inviteTheme} lang={language}>
+      {wishPrompt && (
+        <div
+          className="inv-modal"
+          role="presentation"
+          onClick={(e) => e.target === e.currentTarget && setWishPrompt(null)}
+          onKeyDown={(e) => e.key === "Escape" && setWishPrompt(null)}
+        >
+          <div className="inv-modal-card" role="dialog" aria-modal="true" aria-labelledby="wish-prompt-title">
+            <span className="inv-modal-icon" aria-hidden="true">
+              {wishPrompt === "confirmed" ? <CheckCircleIcon size={26} /> : <MessageIcon size={24} />}
+            </span>
+            <h2 id="wish-prompt-title" className="font-display inv-modal-title">
+              {ui.wishPromptTitle[wishPrompt]}
+            </h2>
+            <p className="body">{ui.wishPromptBody}</p>
+            <div className="flex flex-col gap-2.5 w-full" style={{ marginTop: "1.2rem" }}>
+              <button type="button" className="pill-btn w-full" onClick={goToWish} autoFocus>
+                <MessageIcon size={17} />
+                {ui.wishPromptAdd}
+              </button>
+              <button type="button" className="pill-btn-outline w-full" onClick={() => setWishPrompt(null)}>
+                {ui.wishPromptOk}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {hasFilm ? (
         <InviteOpener
           videoUrl={event.inviteVideoUrl}

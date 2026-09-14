@@ -60,6 +60,10 @@ const AR = {
   countdownAria: "الوقت المتبقي على المناسبة",
   countdownUnits: ["يوم", "ساعة", "دقيقة"],
   errorHelp: "لو الرابط وصلك من العروسين، تواصل معهم للحصول على رابط جديد.",
+  wishPromptTitle: { confirmed: "تم تأكيد حضورك", declined: "تم تسجيل ردّك" },
+  wishPromptBody: "لا تنسَ أن تترك رسالتك للعروسين — كلماتك هدية تبقى معهم.",
+  wishPromptOk: "حسنًا",
+  wishPromptAdd: "اكتب رسالتك",
   previewBanner: "معاينة — كده هتظهر الدعوة للضيف",
   previewAction: "دي معاينة — الأزرار مش بتسجّل أي حاجة",
 };
@@ -107,6 +111,10 @@ const EN = {
   countdownAria: "Time remaining until the celebration",
   countdownUnits: ["Days", "Hours", "Minutes"],
   errorHelp: "If the couple sent you this link, ask them for a new one.",
+  wishPromptTitle: { confirmed: "Your attendance is confirmed", declined: "Thank you for letting us know" },
+  wishPromptBody: "Don't forget to leave the couple a message — your words are a gift they will keep.",
+  wishPromptOk: "OK",
+  wishPromptAdd: "Write your message",
   previewBanner: "Preview — this is how guests will see the invitation",
   previewAction: "This is a preview — nothing is recorded",
 };
