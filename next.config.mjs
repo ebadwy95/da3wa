@@ -13,13 +13,16 @@ const nextConfig = {
   // "Cannot find module '/var/task/node_modules/playwright-core/browsers.json'".
   // @sparticuz/chromium is the same story, one directory bigger: the browser
   // itself is a packed file in its bin/ that nothing imports.
-  // The routes that draw a card say so explicitly.
+  // The routes that draw a card say so explicitly. The keys are globs, so a
+  // dynamic segment is written as * — "[id]" is a glob character class that
+  // matches the single letter i or d, and the confirm route silently got none
+  // of these files because of it.
   outputFileTracingIncludes: {
-    "/api/cards/qr/[id]/card.png": [
+    "/api/cards/qr/*/card.png": [
       "./node_modules/playwright-core/**",
       "./node_modules/@sparticuz/chromium/bin/**",
     ],
-    "/api/cards/thanks/[id]/card.png": [
+    "/api/cards/thanks/*/card.png": [
       "./node_modules/playwright-core/**",
       "./node_modules/@sparticuz/chromium/bin/**",
     ],
@@ -27,7 +30,7 @@ const nextConfig = {
       "./node_modules/playwright-core/**",
       "./node_modules/@sparticuz/chromium/bin/**",
     ],
-    "/api/guests/[id]/confirm": [
+    "/api/guests/*/confirm": [
       "./node_modules/playwright-core/**",
       "./node_modules/@sparticuz/chromium/bin/**",
     ],

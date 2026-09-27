@@ -11,7 +11,13 @@
 // Locally that is the Chrome already installed on the machine; on Vercel it is
 // @sparticuz/chromium, a build of Chromium packed to fit inside a serverless
 // function. Both are driven through playwright-core.
-import { chromium as playwright } from "playwright-core";
+//
+// playwright-core is imported inside launch(), never at the top of this file.
+// This module sits on the RSVP path (the confirm route draws the entry pass),
+// and a static import meant that a browser package missing a file on the
+// server took the whole route down at load time — every guest who pressed
+// "confirm" got an error and their answer was never recorded. Loaded lazily,
+// the worst a broken browser can do is cost a guest their card image.
 import { existsSync } from "node:fs";
 
 // Where a desktop Chrome usually sits. Only consulted off Vercel.
@@ -29,6 +35,7 @@ function isServerless() {
 }
 
 async function launch() {
+  const { chromium: playwright } = await import("playwright-core");
   if (isServerless()) {
     const { default: chromium } = await import("@sparticuz/chromium");
     return playwright.launch({
