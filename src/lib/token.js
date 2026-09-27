@@ -38,6 +38,19 @@ export function makeCheckinCode(guestId) {
   return `${guestId}.${sig}`;
 }
 
+// The wedding's thank-you card, as a public image URL. WhatsApp fetches the
+// header image itself, unauthenticated and from Meta's own servers, so there
+// is no session to check — the signature is what keeps the URL from being
+// guessable by walking event ids.
+export function makeCardToken(eventId) {
+  return sign(`card:${eventId}`).slice(0, 24);
+}
+
+export function verifyCardToken(eventId, token) {
+  if (!eventId || !token) return false;
+  return makeCardToken(eventId) === token;
+}
+
 // Per-event door-scanner session: lets a specific wedding's door staff log
 // into /scan with a per-event code (NOT the platform admin password), and
 // scopes their session to that one event — so if two weddings run the same

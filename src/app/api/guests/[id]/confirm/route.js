@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { withDb } from "@/lib/db";
-import { verifyInviteToken } from "@/lib/token";
+import { verifyInviteToken, makeInviteToken } from "@/lib/token";
 import { generateGuestQr } from "@/lib/qr";
+import { buildQrCard, cardUrls } from "@/lib/cards";
+import { siteOrigin } from "@/lib/seo";
 import {
   sendTemplateMessage,
   messagingIsConfigured,
@@ -76,10 +78,34 @@ export async function POST(request, { params }) {
         "لم يُرسَل رمز QR على واتساب: WHATSAPP_QR_TEMPLATE_NAME غير مضبوط على قالب معتمد (اضبطه على da3wa_qr_delivery بعد اعتماده من Meta)",
     };
   } else if (attending) {
+    // The entry pass is an image, and WhatsApp fetches that image itself, from
+    // Meta's servers, with its own patience for a slow response. Drawing the
+    // card here first means the URL it fetches is already sitting in the cache
+    // — a render that fails is also caught here, where it can be reported,
+    // rather than becoming a broken image in a guest's chat.
+    const cardUrl = cardUrls(siteOrigin(), {
+      guestId: guest.id,
+      token: makeInviteToken(guest.id),
+    });
+    //
+    // Only when something is actually going to be sent: with no provider
+    // configured the send is simulated, and drawing a card nobody will receive
+    // would make the guest wait on a browser for nothing.
+    let cardReady = false;
+    if (messagingIsConfigured()) {
+      try {
+        await buildQrCard(guest.id);
+        cardReady = true;
+      } catch (err) {
+        console.warn("[confirm] could not draw the entry pass:", err.message);
+      }
+    }
+
     waResult = await sendTemplateMessage({
       phone: guest.phoneDisplay || guest.phone,
       templateName: qrTemplateName || "da3wa_qr",
       broadcastName: "da3wa_qr_delivery",
+      headerImageUrl: cardReady ? cardUrl : undefined,
       params: [
         { name: "name", value: guest.name },
         { name: "groom", value: coupleParts.groomName },

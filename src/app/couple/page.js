@@ -224,7 +224,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
           <h2 className="font-bold">شوفوا الدعوة زي ما الضيوف هيشوفوها</h2>
           <p className="text-xs text-ink-2">معاينة بس — الأزرار فيها مش بتسجّل حاجة.</p>
         </div>
-        <InvitePreviewButtons eventId={eventId} />
+        <InvitePreviewButtons eventId={eventId} cardToken={event?.cardToken} />
       </div>
 
       <AddGuestForm eventId={eventId} onAdded={() => refresh()} />

@@ -12,9 +12,14 @@ import { formatDateTimeArabic } from "@/lib/date";
 // The invitation as a guest will see it, one tab each for the two cards. Opens
 // the preview page, which uses a made-up guest, so looking never answers an
 // RSVP for anyone.
-export function InvitePreviewButtons({ eventId, className = "" }) {
+export function InvitePreviewButtons({ eventId, cardToken, className = "" }) {
   if (!eventId) return null;
   const href = (lang) => `/invite/preview/${eventId}?lang=${lang}`;
+  // The thank-you card goes out the day after the wedding, which is a bad time
+  // to discover what it says — so it is previewable from the day the wedding is
+  // created, in whichever language the couple is checking.
+  const thanks = (lang) =>
+    `/api/cards/thanks/${eventId}/card.png?lang=${lang}&t=${encodeURIComponent(cardToken)}`;
   return (
     <div className={`flex items-center gap-2 flex-wrap ${className}`}>
       <a href={href("ar")} target="_blank" rel="noopener" className="pill-btn-outline pill-btn-sm" title="معاينة الدعوة العربية">
@@ -25,6 +30,18 @@ export function InvitePreviewButtons({ eventId, className = "" }) {
         <EyeIcon size={15} />
         <span lang="en">View English</span>
       </a>
+      {cardToken ? (
+        <>
+          <a href={thanks("ar")} target="_blank" rel="noopener" className="pill-btn-outline pill-btn-sm" title="بطاقة الشكر التي تُرسل بعد الزفاف">
+            <EyeIcon size={15} />
+            بطاقة الشكر
+          </a>
+          <a href={thanks("en")} target="_blank" rel="noopener" className="pill-btn-outline pill-btn-sm" title="بطاقة الشكر بالإنجليزية">
+            <EyeIcon size={15} />
+            <span lang="en">Thank-you card</span>
+          </a>
+        </>
+      ) : null}
     </div>
   );
 }
@@ -152,6 +169,19 @@ export function GuestRow({ guest, onDelete, onChanged }) {
         <button onClick={copyLink} className="pill-btn-outline pill-btn-sm">
           {copied ? "تم النسخ ✓" : "نسخ الرابط"}
         </button>
+        {/* The card this guest gets on WhatsApp the moment they confirm —
+            their own code, their own name. Worth being able to look at
+            before a wedding rather than after it. */}
+        {guest.cardLink ? (
+          <a
+            href={guest.cardLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pill-btn-outline pill-btn-sm mr-2 inline-flex items-center gap-1"
+          >
+            <EyeIcon size={14} /> البطاقة
+          </a>
+        ) : null}
       </td>
       <td className="py-3 px-2 text-center">
         <button onClick={() => onDelete(guest.id)} className="pill-btn-danger pill-btn-sm">حذف</button>

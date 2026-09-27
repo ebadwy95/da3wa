@@ -1142,7 +1142,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <InvitePreviewButtons eventId={event.id} />
+          <InvitePreviewButtons eventId={event.id} cardToken={event.cardToken} />
           <button onClick={() => setShowEdit((v) => !v)} className="pill-btn-outline pill-btn-sm">
             {showEdit ? "إلغاء التعديل" : "تعديل تفاصيل الزفاف"}
           </button>

@@ -137,6 +137,18 @@ export function isUsingRedis() {
   return hasUpstash();
 }
 
+/**
+ * A plain Redis handle for things that must NOT live inside the app document:
+ * today that is the rendered WhatsApp cards, which are ~100KB each and would
+ * otherwise be rewritten, in full, on every unrelated write to the database.
+ * They are a cache — losing them costs a re-render and nothing else — so this
+ * returns null when there is no Redis (local dev) and callers just render.
+ */
+export async function getCacheClient() {
+  if (!hasUpstash()) return null;
+  return getRedis();
+}
+
 // Reads the document together with the version it was at, so a later write
 // can tell whether anyone else changed it in the meantime.
 async function readVersioned() {

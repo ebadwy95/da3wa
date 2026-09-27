@@ -33,6 +33,7 @@ const POSITIONAL_PARAM_ORDER = {
   da3wa_invite_link: ["name", "groom", "bride", "link"],
   da3wa_qr_delivery: ["name", "groom", "bride"],
   da3wa_event_reminder: ["name", "groom", "bride", "date", "time", "venue", "maplink"],
+  da3wa_thank_you: ["name", "groom", "bride"],
   main_msg: ["name", "link"],
 };
 
@@ -178,8 +179,11 @@ export function createCloudApiClient({
    * @param {string} phone        any format; reduced to digits
    * @param {string} templateName an APPROVED template on the account
    * @param {{name: string, value: string}[]} params superset of values, matched by name
+   * @param {string} [headerImageUrl] the image for a template whose header is
+   *        an image — the guest's entry pass, or the wedding's thank-you card.
+   *        Meta fetches this URL itself, so it must be public.
    */
-  async function sendTemplateMessage({ phone, templateName, params = [] }) {
+  async function sendTemplateMessage({ phone, templateName, params = [], headerImageUrl }) {
     const to = digitsOnly(phone);
     if (!isConfigured()) {
       return { simulated: true, reason: notConfiguredReason, phone: to, templateName, params };
@@ -231,6 +235,15 @@ export function createCloudApiClient({
                 : { type: "text", parameter_name: n, text: String(supplied.get(n)) }
             ),
           },
+        ];
+      }
+
+      // The header is its own component and is independent of the body's
+      // variables, so it is added whether or not the template has any.
+      if (headerImageUrl) {
+        template.components = [
+          { type: "header", parameters: [{ type: "image", image: { link: headerImageUrl } }] },
+          ...(template.components || []),
         ];
       }
 

@@ -477,49 +477,42 @@ function Solid({ children, size = 20, className = "", ...rest }) {
    The one place the references are not followed is weight: these sit at 30px
    on the invitation, where their hairlines disappear. */
 
-/** Bride — a face inside a veil, the veil falling well past it on both
- *  sides, with the hair gathered up on top.
+/** Bride — head and shoulders with the veil falling either side of them.
  *
- *  The first pass drew the veil as two thick bands close in against the face
- *  and it read as a hood; the hair was a thin crescent sitting inside the top
- *  of the face and it read as a pair of eyebrows. Thinner veil, further out,
- *  and the hair moved up above the face where hair goes. */
+ *  Two earlier passes failed the same way, both times because the veil was the
+ *  only thing in the drawing: bands held close against an outlined face read as
+ *  a hood, and a bell with the face inside it read as a map pin. The fix is not
+ *  a better veil — it is giving her the same head and shoulders the groom has,
+ *  so the veil is an addition to a person rather than the whole silhouette.
+ *  That is also what makes the pair read as a pair at 30px: identical portrait,
+ *  one with a bow tie, one with a veil. */
 export function BrideIcon(props) {
   return (
     <Solid {...props}>
-      <path
-        d="M7.6 9.3c0-2.7 1.9-4.7 4.4-4.7s4.4 2 4.4 4.7c0 3.3-2 6.2-4.4 6.2S7.6 12.6 7.6 9.3Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-      />
-      {/* the hair, gathered up — narrower than the veil, and sitting on the
-          head rather than running into it, or the two join into one arch and
-          the whole icon reads as a hood */}
-      <path d="M12 2.9c-2.4 0-4 1.5-4.3 4.1.9-1.3 2.4-2.1 4.3-2.1s3.4.8 4.3 2.1c-.3-2.6-1.9-4.1-4.3-4.1Z" />
-      <path d="M12 1.4a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 0 1 0-3.2Z" />
-      {/* the veil: from behind the head, clear of the hair, and thrown much
-          wider than the face at the hem */}
-      <path d="M6.6 9C4.4 11.5 3.4 15.4 3 18.8c-.2 1.4-.3 2.2-.3 2.8h2.5c0-.5.1-1.2.2-2.4.4-3 1.2-6.3 2.7-8.3ZM17.4 9c2.2 2.5 3.2 6.4 3.6 9.8.2 1.4.3 2.2.3 2.8h-2.5c0-.5-.1-1.2-.2-2.4-.4-3-1.2-6.3-2.7-8.3Z" />
+      {/* the veil: behind everything, clear of the head, and thrown wide at
+          the hem — close in against the shoulders it turns back into a hood */}
+      <path d="M12 1.4C7.8 1.4 4.9 4.7 4.9 9.2c0 4.7-1 9.5-2.3 12.8h4.3c-.9-3.1-1.5-6.8-1.5-10.2 0-3.3 2.6-5.7 6.6-5.7s6.6 2.4 6.6 5.7c0 3.4-.6 7.1-1.5 10.2h4.3c-1.3-3.3-2.3-8.1-2.3-12.8 0-4.5-2.9-7.8-7.1-7.8Z" />
+      <path d="M12 7a3.4 3.4 0 1 1 0 6.8A3.4 3.4 0 0 1 12 7Z" />
+      <path d="M12 14.8c-2.9 0-5.1 1.9-5.1 4.4V22h10.2v-2.8c0-2.5-2.2-4.4-5.1-4.4Z" />
     </Solid>
   );
 }
 
-/** Groom — the same portrait with hair and a bow tie. The bow tie is the whole
- *  icon: without it this is an avatar. */
+/** Groom — the same portrait in a jacket, with the shirt cut out of it and a
+ *  bow tie at the collar. The bow tie and the lapels are the whole icon:
+ *  without them this is an avatar. */
 export function GroomIcon(props) {
   return (
     <Solid {...props}>
+      <path d="M12 2.4a3.9 3.9 0 1 1 0 7.8 3.9 3.9 0 0 1 0-7.8Z" />
+      {/* jacket, with the shirt cut through it rather than painted over: the
+          card behind this is a textured image, so a "white" patch would show */}
       <path
-        d="M7.4 8.7c0-2.7 2-4.6 4.6-4.6s4.6 1.9 4.6 4.6c0 3.4-2 6.4-4.6 6.4S7.4 12.1 7.4 8.7Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
+        fillRule="evenodd"
+        d="M8.9 11.3 12 14.1l3.1-2.8c3.1.6 5.3 2.9 5.3 5.9V22H3.6v-4.8c0-3 2.2-5.3 5.3-5.9Zm3.1 4.9-1.9 5.1h3.8Z"
       />
-      <path d="M12 1.9C8.4 1.9 5.9 4.2 5.9 7.8c0 .6 0 1.2.1 1.7l1.2-.5c0-.4.1-.8.1-1.2.1-1 .5-1.7 1.2-2.1 1.2.8 2.7 1.2 4.4 1.2 1.2 0 2.1.3 2.7.9.4.4.7 1.1.8 1.8l1.2.5c.1-.5.1-1.1.1-1.7 0-3.6-2.5-5.9-5.7-5.9Z" />
-      <path d="M9.4 15.6 12 18.2l2.6-2.6" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M10.9 21 7.1 19v4l3.8-2Zm2.2 0 3.8-2v4l-3.8-2Z" />
-      <path d="M12 19.7a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6Z" />
+      <path d="M12 14.9 9.1 13.4v3l2.9-1.5 2.9 1.5v-3Z" />
+      <path d="M12 14.15a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5Z" />
     </Solid>
   );
 }

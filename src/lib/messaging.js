@@ -51,7 +51,7 @@ export function messagingIsConfigured() {
 
 /**
  * Which environment variable names the template for a kind of message —
- * "INVITE", "QR" or "REMINDER". The provider-neutral WHATSAPP_* name is
+ * "INVITE", "QR", "REMINDER" or "THANKS". The provider-neutral WHATSAPP_* name is
  * preferred; the old WATI_* name is still read so a deployment that only has
  * those keeps working until it's tidied up. When neither is set, the WHATSAPP_*
  * name is returned, since that is the one to set.

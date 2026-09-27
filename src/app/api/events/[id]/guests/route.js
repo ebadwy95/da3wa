@@ -9,7 +9,13 @@ import { normaliseInviteLanguage } from "@/lib/inviteCopy";
 function guestWithLink(guest) {
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
   const token = makeInviteToken(guest.id);
-  return { ...guest, inviteLink: `${base}/invite/${guest.id}?t=${token}` };
+  return {
+    ...guest,
+    inviteLink: `${base}/invite/${guest.id}?t=${token}`,
+    // The entry pass exactly as WhatsApp will send it, so the dashboard can
+    // show the couple the card their guest receives rather than describing it.
+    cardLink: `${base}/api/cards/qr/${guest.id}/card.png?t=${token}`,
+  };
 }
 
 export async function GET(request, { params }) {

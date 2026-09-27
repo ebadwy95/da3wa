@@ -24,6 +24,7 @@ const TEMPLATE_SETTINGS = [
   { kind: "INVITE", label: "قالب الدعوة", required: true },
   { kind: "QR", label: "قالب رمز الدخول", required: true },
   { kind: "REMINDER", label: "قالب التذكير", required: false },
+  { kind: "THANKS", label: "قالب الشكر بعد الزفاف", required: false },
 ];
 
 export async function GET() {

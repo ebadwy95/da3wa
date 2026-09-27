@@ -108,6 +108,34 @@ export const INVITE_COPY_FIELDS = [
     default: "دعوة خاصة بـ",
     defaultEn: "This invitation is especially for",
   },
+  // The two cards that reach the guest on WhatsApp rather than on the page:
+  // the entry pass sent the moment they confirm, and the thank-you sent the
+  // day after the wedding. They are edited here with everything else the
+  // couple writes, in both languages.
+  {
+    key: "qrCardNote",
+    label: "على بطاقة الدخول، تحت الكود",
+    hint: "تُرسل على واتساب أول ما الضيف يؤكّد حضوره، وفيها كود دخوله.",
+    default: "اعرض هذا الرمز عند الباب",
+    defaultEn: "Please show this code at the door",
+  },
+  {
+    key: "thanksHeadline",
+    label: "عنوان بطاقة الشكر",
+    hint: "تُرسل تاني يوم الفرح لكل من أكّد حضوره.",
+    default: "شكرًا لحضوركم",
+    defaultEn: "Thank you for being with us",
+  },
+  {
+    key: "thanksBody",
+    label: "نص بطاقة الشكر",
+    multiline: true,
+    rows: 3,
+    default:
+      "وجودكم بيننا في ليلتنا كان أجمل هدية، ودعواتكم الطيبة وصلت لقلوبنا. جزاكم الله خيرًا وجمعنا بكم دائمًا على الخير.",
+    defaultEn:
+      "Having you with us on our night was the best gift of all, and your kind words reached our hearts. Thank you, from both of us.",
+  },
 ];
 
 export const INVITE_LANGUAGES = ["ar", "en"];

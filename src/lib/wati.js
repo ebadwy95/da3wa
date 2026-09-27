@@ -193,8 +193,26 @@ async function callWati(path, body) {
  * @param {string} broadcastName - Free-text label Wati groups the send under.
  * @param {{type: 'text'|'currency'|'text', text: string}[]} params - Template variable values, in order.
  */
-export async function sendTemplateMessage({ phone, templateName, broadcastName, params = [] }) {
+export async function sendTemplateMessage({
+  phone,
+  templateName,
+  broadcastName,
+  params = [],
+  headerImageUrl,
+}) {
   const normalized = normalizePhone(phone);
+  // Wati has no separate field for a template's header media: a template whose
+  // header URL is written as a variable takes that URL through the ordinary
+  // parameter list, like any other value. The variable's name is whatever was
+  // typed when the template was created, so it is configurable — and because
+  // alignParamsToTemplate keeps only the names the template actually declares,
+  // sending it to a template without a media header is harmless.
+  if (headerImageUrl) {
+    params = [
+      ...params,
+      { name: process.env.WHATSAPP_CARD_PARAM_NAME || "card", value: headerImageUrl },
+    ];
+  }
   if (!isConfigured()) {
     return {
       simulated: true,
