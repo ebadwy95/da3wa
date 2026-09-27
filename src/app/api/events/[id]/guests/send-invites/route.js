@@ -10,7 +10,8 @@ import {
   templateNameFor,
 } from "@/lib/messaging";
 import { canAccessEvent } from "@/lib/coupleAuth";
-import { resolveCoupleParts } from "@/lib/couple";
+import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
+import { guestLanguage } from "@/lib/inviteCopy";
 
 // One-click bulk send: sends the "you're invited, tap to confirm" message
 // (a Meta-approved template with the guest's personal link) to every guest
@@ -97,12 +98,15 @@ export async function POST(request, { params }) {
   // and keeps a clean, ordered log in the feed.
   for (const guest of pendingGuests) {
     const link = `${base}/invite/${guest.id}?t=${makeInviteToken(guest.id)}`;
+    // An English guest gets the English template when there is one, and the
+    // couple's names spelt the way their English card spells them.
+    const lang = guestLanguage(guest);
     const waResult = await sendTemplateMessage({
       phone: guest.phoneDisplay || guest.phone,
       // Only ever undefined when no WhatsApp provider is configured (the
       // guard above), in which case the send is simulated and the name is
       // just a label in the admin feed.
-      templateName: templateName || "da3wa_invite",
+      templateName: templateNameFor("INVITE", lang) || templateName || "da3wa_invite",
       broadcastName: "da3wa_invite_link",
       // A superset of what any configured template might ask for, since which
       // one is active is an environment variable. sendTemplateMessage trims
@@ -112,7 +116,7 @@ export async function POST(request, { params }) {
         { name: "name", value: guest.name },
         { name: "groom", value: coupleParts.groomName },
         { name: "bride", value: coupleParts.brideName },
-        { name: "couple", value: coupleParts.coupleNames },
+        { name: "couple", value: coupleNamesIn(event, lang) },
         { name: "link", value: link },
       ],
     });

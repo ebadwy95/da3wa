@@ -157,6 +157,11 @@ export function normaliseInviteLanguage(value) {
   return null;
 }
 
+/** The language a guest was invited in: what the admin chose, else Arabic. */
+export function guestLanguage(guest) {
+  return normaliseInviteLanguage(guest?.language) || "ar";
+}
+
 function defaultFor(field, lang) {
   return lang === "en" ? field.defaultEn ?? field.default : field.default;
 }

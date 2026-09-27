@@ -12,8 +12,11 @@ import {
   daysUntil,
   formatEventDateArabic,
   formatEventTimeArabic,
+  formatEventDateEnglish,
+  formatEventTimeEnglish,
 } from "@/lib/date";
-import { resolveCoupleParts } from "@/lib/couple";
+import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
+import { guestLanguage } from "@/lib/inviteCopy";
 
 // Automatic "your wedding is in two days" reminder, sent to guests who have
 // already confirmed. Triggered by the Vercel cron in vercel.json, which runs
@@ -100,17 +103,29 @@ export async function GET(request) {
     // Sequential, same as the invite send — sends are rate-limited per account, and
     // an ordered feed is easier to read when something goes wrong.
     for (const guest of recipients) {
+      const lang = guestLanguage(guest);
+      const en = lang === "en";
       const waResult = await sendTemplateMessage({
         phone: guest.phoneDisplay || guest.phone,
-        templateName,
+        templateName: templateNameFor("REMINDER", lang) || templateName,
         broadcastName: "da3wa_event_reminder",
         params: [
           { name: "name", value: guest.name },
           { name: "groom", value: coupleParts.groomName },
           { name: "bride", value: coupleParts.brideName },
-          { name: "date", value: formatEventDateArabic(event.eventDate) },
-          { name: "time", value: formatEventTimeArabic(event.eventTime) },
-          { name: "venue", value: event.venueName || event.venueAddress },
+          { name: "couple", value: coupleNamesIn(event, lang) },
+          {
+            name: "date",
+            value: en ? formatEventDateEnglish(event.eventDate) : formatEventDateArabic(event.eventDate),
+          },
+          {
+            name: "time",
+            value: en ? formatEventTimeEnglish(event.eventTime) : formatEventTimeArabic(event.eventTime),
+          },
+          {
+            name: "venue",
+            value: (en && event.venueNameEn) || event.venueName || event.venueAddress,
+          },
           { name: "maplink", value: event.venueMapUrl },
         ],
       });

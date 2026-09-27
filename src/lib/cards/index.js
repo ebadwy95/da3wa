@@ -8,9 +8,14 @@
 import QRCode from "qrcode";
 import { getDb, getCacheClient } from "@/lib/db";
 import { makeCheckinCode } from "@/lib/token";
-import { resolveInviteCopy, normaliseInviteLanguage } from "@/lib/inviteCopy";
-import { resolveCoupleParts, joinCoupleNames } from "@/lib/couple";
-import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
+import { resolveInviteCopy, normaliseInviteLanguage, guestLanguage } from "@/lib/inviteCopy";
+import { coupleNamesIn } from "@/lib/couple";
+import {
+  formatEventDateArabic,
+  formatEventTimeArabic,
+  formatEventDateEnglish,
+  formatEventTimeEnglish,
+} from "@/lib/date";
 import { qrCardHtml, thanksCardHtml, CARD_WIDTH, CARD_HEIGHT } from "./scene";
 import { renderHtmlToPng } from "./render";
 
@@ -43,15 +48,6 @@ async function renderCached(key, html, locale) {
   return png;
 }
 
-/** The English card carries the English spellings when the couple wrote them. */
-function coupleNamesFor(event, lang) {
-  if (lang === "en") {
-    const latin = String(event.latinNames || "").trim();
-    if (latin) return latin;
-  }
-  return event.coupleNames || joinCoupleNames(event.groomName, event.brideName) || "";
-}
-
 function venueFor(event, lang) {
   if (lang === "en") {
     const en = String(event.venueNameEn || "").trim();
@@ -61,30 +57,11 @@ function venueFor(event, lang) {
 }
 
 function dateLineFor(event, lang) {
-  if (lang === "en") {
-    const parts = [];
-    try {
-      parts.push(
-        new Intl.DateTimeFormat("en-GB", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }).format(new Date(`${event.eventDate}T00:00:00`))
-      );
-    } catch {
-      parts.push(event.eventDate || "");
-    }
-    const [h, m] = String(event.eventTime || "").split(":");
-    if (h !== undefined && m !== undefined) {
-      const hour = Number(h) % 12 === 0 ? 12 : Number(h) % 12;
-      parts.push(`${hour}:${m} ${Number(h) >= 12 ? "PM" : "AM"}`);
-    }
-    return parts.filter(Boolean).join(" — ");
-  }
-  return [formatEventDateArabic(event.eventDate), formatEventTimeArabic(event.eventTime)]
-    .filter(Boolean)
-    .join(" — ");
+  const [date, time] =
+    lang === "en"
+      ? [formatEventDateEnglish(event.eventDate), formatEventTimeEnglish(event.eventTime)]
+      : [formatEventDateArabic(event.eventDate), formatEventTimeArabic(event.eventTime)];
+  return [date, time].filter(Boolean).join(" — ");
 }
 
 function seatsLine(guest, lang) {
@@ -94,11 +71,6 @@ function seatsLine(guest, lang) {
   const total = 1 + (Number(guest.confirmedCompanions) || 0);
   if (total <= 1) return lang === "en" ? "Admits 1" : "لشخص واحد";
   return lang === "en" ? `Admits ${total}` : `يشمل ${total} أشخاص`;
-}
-
-/** Language of a guest's own card: what the admin chose for them, else Arabic. */
-export function guestLanguage(guest) {
-  return normaliseInviteLanguage(guest?.language) || "ar";
 }
 
 /**
@@ -130,7 +102,7 @@ export async function buildQrCard(guestId, langOverride) {
   const html = qrCardHtml({
     lang,
     qr,
-    coupleNames: coupleNamesFor(event, lang),
+    coupleNames: coupleNamesIn(event, lang),
     guestName: guest.name,
     seats: seatsLine(guest, lang),
     dateLine: dateLineFor(event, lang),
@@ -158,8 +130,11 @@ export async function buildThanksCard(eventId, lang = "ar") {
     lang: language,
     headline: copy.thanksHeadline,
     body: copy.thanksBody,
-    coupleNames: coupleNamesFor(event, language),
-    dateLine: dateLineFor(event, language).split(" — ")[0],
+    coupleNames: coupleNamesIn(event, language),
+    dateLine:
+      language === "en"
+        ? formatEventDateEnglish(event.eventDate)
+        : formatEventDateArabic(event.eventDate),
   });
 
   const png = await renderCached(
@@ -179,4 +154,3 @@ export function cardUrls(origin, { guestId, token, eventId, lang }) {
   return `${base}/api/cards/thanks/${eventId}/card.png?lang=${lang === "en" ? "en" : "ar"}&t=${encodeURIComponent(token)}`;
 }
 
-export { resolveCoupleParts };

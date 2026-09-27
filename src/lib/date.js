@@ -128,3 +128,28 @@ export function formatEventDateArabic(isoDate) {
     return isoDate;
   }
 }
+
+// The English invitation, card and WhatsApp messages say "Thursday,
+// 22 October 2026" and "8:00 PM" — the same facts the Arabic formatters above
+// produce, in the order and words an English reader expects.
+export function formatEventDateEnglish(isoDate, { weekday = true } = {}) {
+  if (!isIsoDate(isoDate)) return isoDate || "";
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      ...(weekday ? { weekday: "long" } : {}),
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(`${isoDate}T00:00:00`));
+  } catch {
+    return isoDate;
+  }
+}
+
+export function formatEventTimeEnglish(isoTime) {
+  if (!isIsoTime(isoTime)) return isoTime || "";
+  const [rawHour, minute] = isoTime.split(":");
+  const hour24 = parseInt(rawHour, 10);
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${hour12}:${minute} ${hour24 >= 12 ? "PM" : "AM"}`;
+}

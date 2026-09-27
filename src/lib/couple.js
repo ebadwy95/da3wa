@@ -73,3 +73,17 @@ export function resolveCoupleParts(event) {
   const derived = splitCoupleNames(event.coupleNames);
   return { ...derived, coupleNames: String(event.coupleNames || "").trim() };
 }
+
+/**
+ * The couple's names as a guest reading in `lang` should see them: the English
+ * spelling the couple typed (latinNames) for English, the Arabic otherwise —
+ * and the Arabic as a fallback, since their names in the wrong script beat no
+ * names at all.
+ */
+export function coupleNamesIn(event, lang) {
+  if (lang === "en") {
+    const latin = String(event?.latinNames || "").trim();
+    if (latin) return latin;
+  }
+  return resolveCoupleParts(event).coupleNames;
+}

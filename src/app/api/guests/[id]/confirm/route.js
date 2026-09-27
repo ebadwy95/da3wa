@@ -11,7 +11,8 @@ import {
   isUsableTemplateName,
   templateNameFor,
 } from "@/lib/messaging";
-import { resolveCoupleParts } from "@/lib/couple";
+import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
+import { guestLanguage } from "@/lib/inviteCopy";
 
 // Public endpoint: the guest confirms or declines from their invite page.
 // Body: { token, attending: boolean, companions?: number }
@@ -53,6 +54,8 @@ export async function POST(request, { params }) {
     return {
       guest: structuredClone(guest),
       coupleParts: resolveCoupleParts(event),
+      // The names as this guest's own language writes them, for the message.
+      coupleNames: coupleNamesIn(event, guestLanguage(guest)),
     };
   });
 
@@ -60,7 +63,8 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: outcome.error }, { status: outcome.status || 400 });
   }
 
-  const { guest, coupleParts } = outcome;
+  const { guest, coupleParts, coupleNames } = outcome;
+  const lang = guestLanguage(guest);
 
   // 2. Send the QR over WhatsApp — outside any transaction, so a retry can
   //    never send it twice.
@@ -103,14 +107,14 @@ export async function POST(request, { params }) {
 
     waResult = await sendTemplateMessage({
       phone: guest.phoneDisplay || guest.phone,
-      templateName: qrTemplateName || "da3wa_qr",
+      templateName: templateNameFor("QR", lang) || qrTemplateName || "da3wa_qr",
       broadcastName: "da3wa_qr_delivery",
       headerImageUrl: cardReady ? cardUrl : undefined,
       params: [
         { name: "name", value: guest.name },
         { name: "groom", value: coupleParts.groomName },
         { name: "bride", value: coupleParts.brideName },
-        { name: "couple", value: coupleParts.coupleNames },
+        { name: "couple", value: coupleNames },
       ],
     });
   }

@@ -64,7 +64,19 @@ export function templateEnvFor(kind) {
   return neutral;
 }
 
-export function templateNameFor(kind) {
+/**
+ * The template to send for a kind of message, in the guest's language.
+ *
+ * English guests get WHATSAPP_<KIND>_TEMPLATE_NAME_EN when it is set; until it
+ * is (or for a kind with no English template yet) they fall back to the Arabic
+ * one — an Arabic message still arrives, where a missing template would send
+ * nothing at all.
+ */
+export function templateNameFor(kind, lang = "ar") {
+  if (lang === "en") {
+    const english = process.env[`WHATSAPP_${kind}_TEMPLATE_NAME_EN`];
+    if (english) return english;
+  }
   return process.env[templateEnvFor(kind)] || "";
 }
 

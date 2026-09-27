@@ -8,8 +8,9 @@ import {
   templateNameFor,
 } from "@/lib/messaging";
 import { daysSince } from "@/lib/date";
-import { resolveCoupleParts } from "@/lib/couple";
-import { buildThanksCard, cardUrls, guestLanguage } from "@/lib/cards";
+import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
+import { buildThanksCard, cardUrls } from "@/lib/cards";
+import { guestLanguage } from "@/lib/inviteCopy";
 import { makeCardToken } from "@/lib/token";
 import { siteOrigin } from "@/lib/seo";
 
@@ -90,14 +91,14 @@ export async function GET(request) {
       const lang = guestLanguage(guest);
       const waResult = await sendTemplateMessage({
         phone: guest.phoneDisplay || guest.phone,
-        templateName,
+        templateName: templateNameFor("THANKS", lang) || templateName,
         broadcastName: "da3wa_thank_you",
         headerImageUrl: cardUrlFor[lang],
         params: [
           { name: "name", value: guest.name },
           { name: "groom", value: coupleParts.groomName },
           { name: "bride", value: coupleParts.brideName },
-          { name: "couple", value: coupleParts.coupleNames },
+          { name: "couple", value: coupleNamesIn(event, lang) },
         ],
       });
 
