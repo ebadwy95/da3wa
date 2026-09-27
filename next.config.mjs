@@ -11,12 +11,26 @@ const nextConfig = {
   // playwright-core reads browsers.json by path rather than importing it — so
   // nothing points at it and it was left out of the deployed function:
   // "Cannot find module '/var/task/node_modules/playwright-core/browsers.json'".
+  // @sparticuz/chromium is the same story, one directory bigger: the browser
+  // itself is a packed file in its bin/ that nothing imports.
   // The routes that draw a card say so explicitly.
   outputFileTracingIncludes: {
-    "/api/cards/qr/[id]/card.png": ["./node_modules/playwright-core/**"],
-    "/api/cards/thanks/[id]/card.png": ["./node_modules/playwright-core/**"],
-    "/api/cron/thanks": ["./node_modules/playwright-core/**"],
-    "/api/guests/[id]/confirm": ["./node_modules/playwright-core/**"],
+    "/api/cards/qr/[id]/card.png": [
+      "./node_modules/playwright-core/**",
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
+    "/api/cards/thanks/[id]/card.png": [
+      "./node_modules/playwright-core/**",
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
+    "/api/cron/thanks": [
+      "./node_modules/playwright-core/**",
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
+    "/api/guests/[id]/confirm": [
+      "./node_modules/playwright-core/**",
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
   },
 };
 
