@@ -169,10 +169,11 @@ export function GuestRow({ guest, onDelete, onChanged }) {
         <button onClick={copyLink} className="pill-btn-outline pill-btn-sm">
           {copied ? "تم النسخ ✓" : "نسخ الرابط"}
         </button>
-        {/* The card this guest gets on WhatsApp the moment they confirm —
-            their own code, their own name. Worth being able to look at
-            before a wedding rather than after it. */}
-        {guest.cardLink ? (
+        {/* The card this guest got on WhatsApp when they confirmed — their
+            own code, their own name, and the party size they chose. It does
+            not exist before they answer: it carries the number of people
+            they confirmed, not the allowance they were invited with. */}
+        {guest.status === "confirmed" && guest.cardLink ? (
           <a
             href={guest.cardLink}
             target="_blank"
@@ -421,26 +422,55 @@ export function SendInvitesButton({ eventId, guests, onDone }) {
 // later over the webhook (see src/app/api/whatsapp/webhook). The labels keep
 // that distinction visible — "تم التسليم" is WhatsApp confirming the phone got
 // it, "أُرسلت" is only that it left the building.
+//
+// "opened" and "answered" are not WhatsApp's words but the guest's own: the
+// feed API upgrades a "sent" invitation once the guest has opened the link or
+// replied (see src/app/api/whatsapp/feed), since that proves it arrived.
+//
+// "sent" used to read "بانتظار التأكيد", which on a wedding dashboard reads as
+// "waiting for the guest to confirm attendance" — a guest who had already
+// confirmed still showed it. It is waiting for WhatsApp's receipt, and says so.
 const MESSAGE_STATUS = {
+  answered: { label: "وصلت — ردّ على الدعوة", chip: "chip-ok" },
+  opened: { label: "وصلت — فتح الدعوة", chip: "chip-ok" },
   read: { label: "قرأها الضيف", chip: "chip-ok" },
   delivered: { label: "تم التسليم", chip: "chip-ok" },
-  sent: { label: "أُرسلت — بانتظار التأكيد", chip: "chip-info" },
+  sent: { label: "أُرسلت", chip: "chip-info" },
   simulated: { label: "محاكاة", chip: "chip-warn" },
   failed: { label: "فشل الإرسال", chip: "chip-danger" },
   logged: { label: "مسجَّلة", chip: "chip-neutral" },
 };
 
-export function WhatsappFeed({ messages, watiConfigured }) {
+export function WhatsappFeed({ messages, watiConfigured, onClear }) {
+  const [clearing, setClearing] = useState(false);
+
+  async function clear() {
+    if (!window.confirm("مسح كل رسائل السجل لهذا الزفاف؟ ده بيمسح السجل بس — مش بيلغي أي رسالة اتبعتت.")) return;
+    setClearing(true);
+    try {
+      await onClear();
+    } finally {
+      setClearing(false);
+    }
+  }
+
   return (
     <div className="card p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <h2 className="font-bold">سجلّ رسائل واتساب</h2>
-        <span
-          className="text-xs px-2 py-1 rounded-full font-semibold"
-          style={{ background: watiConfigured ? "var(--ok-bg)" : "var(--danger-bg)", color: watiConfigured ? "var(--ok)" : "var(--danger)" }}
-        >
-          {watiConfigured ? "متصل بـ Wati — إرسال حقيقي" : "غير متصل — محاكاة فقط"}
-        </span>
+        <div className="flex items-center gap-2">
+          {onClear && messages.length > 0 ? (
+            <button onClick={clear} disabled={clearing} className="pill-btn-danger pill-btn-sm">
+              {clearing ? "جارٍ المسح..." : "مسح السجل"}
+            </button>
+          ) : null}
+          <span
+            className="text-xs px-2 py-1 rounded-full font-semibold"
+            style={{ background: watiConfigured ? "var(--ok-bg)" : "var(--danger-bg)", color: watiConfigured ? "var(--ok)" : "var(--danger)" }}
+          >
+            {watiConfigured ? "متصل بـ Wati — إرسال حقيقي" : "غير متصل — محاكاة فقط"}
+          </span>
+        </div>
       </div>
       <div className="log-scroll">
         {messages.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لا توجد رسائل بعد</p>}

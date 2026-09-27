@@ -89,12 +89,9 @@ function dateLineFor(event, lang) {
 
 function seatsLine(guest, lang) {
   // What the door will actually admit: the guest plus the companions they
-  // confirmed, falling back to their allowance before they answer.
-  const total =
-    1 +
-    (Number.isFinite(guest.confirmedCompanions) && guest.confirmedCompanions !== null
-      ? guest.confirmedCompanions
-      : guest.maxCompanions || 0);
+  // confirmed. Never the allowance — a guest invited for four who confirms two
+  // must not walk in holding a card that says four.
+  const total = 1 + (Number(guest.confirmedCompanions) || 0);
   if (total <= 1) return lang === "en" ? "Admits 1" : "لشخص واحد";
   return lang === "en" ? `Admits ${total}` : `يشمل ${total} أشخاص`;
 }
@@ -106,12 +103,14 @@ export function guestLanguage(guest) {
 
 /**
  * The entry pass for one guest. Returns null when the guest (or their wedding)
- * no longer exists, so a stale link 404s instead of throwing.
+ * no longer exists, so a stale link 404s instead of throwing — and also until
+ * the guest has confirmed: the card is made from their answer (how many are
+ * coming), so before they give one there is no card to make.
  */
 export async function buildQrCard(guestId, langOverride) {
   const db = await getDb();
   const guest = db.guests.find((g) => g.id === guestId);
-  if (!guest) return null;
+  if (!guest || guest.status !== "confirmed") return null;
   const event = db.events.find((e) => e.id === guest.eventId);
   if (!event) return null;
 

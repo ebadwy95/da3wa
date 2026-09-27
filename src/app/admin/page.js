@@ -1231,7 +1231,14 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-6 items-start">
-          <WhatsappFeed messages={feed.messages} watiConfigured={feed.watiConfigured} />
+          <WhatsappFeed
+            messages={feed.messages}
+            watiConfigured={feed.watiConfigured}
+            onClear={async () => {
+              await fetch(`/api/whatsapp/feed?eventId=${event.id}`, { method: "DELETE" });
+              await refresh();
+            }}
+          />
           <WishWall guests={guests} />
         </div>
       </div>
