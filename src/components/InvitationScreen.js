@@ -715,30 +715,16 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
                 {ui.confirmed(guest.confirmedCompanions || 0)}
               </p>
 
-              {guest.qrDataUrl ? (
-                <figure className="flex flex-col items-center gap-2 m-0">
-                  <div
-                    className="p-3 rounded-2xl"
-                    style={{ background: "var(--surface)", border: "1px solid var(--line)", boxShadow: "var(--shadow)" }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={guest.qrDataUrl}
-                      alt={ui.qrAlt(guest.name)}
-                      className="rounded-xl block"
-                      width={280}
-                      height={280}
-                      style={{ width: "100%", maxWidth: 280, height: "auto" }}
-                    />
-                  </div>
-                  <figcaption className="meta flex items-center gap-2">
-                    <QrIcon size={15} />
-                    {ui.qrCaption}
-                  </figcaption>
-                </figure>
-              ) : (
-                <p className="meta da3wa-pulse">{ui.qrPreparing}</p>
-              )}
+              {/* No code on the page: the guest gets it as a card on WhatsApp,
+                  which is where they will look for it at the door. */}
+              <div
+                className="flex flex-col items-center gap-2 text-center rounded-2xl p-4"
+                style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
+              >
+                <span style={{ color: "var(--gold-600)" }}><QrIcon size={22} /></span>
+                <p className="font-semibold" style={{ color: "var(--ink)" }}>{ui.qrOnWhatsAppTitle}</p>
+                <p className="meta" style={{ lineHeight: 1.9 }}>{ui.qrOnWhatsApp}</p>
+              </div>
             </div>
           )}
 
