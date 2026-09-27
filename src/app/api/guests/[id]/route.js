@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDb, withDb } from "@/lib/db";
+import { recordInviteOpen } from "@/lib/inviteOpens";
 import { verifyInviteToken } from "@/lib/token";
 import { normaliseInviteLanguage } from "@/lib/inviteCopy";
 import { buildInviteEvent } from "@/lib/inviteEvent";
@@ -36,7 +37,11 @@ export async function GET(request, { params }) {
   const fullEvent = db.events.find((e) => e.id === guest.eventId) || null;
   const event = buildInviteEvent(fullEvent, language);
 
-  return NextResponse.json({ guest, event, language });
+  // Only a real guest's visit counts. An admin opening the same link to check
+  // the card would otherwise look like the guest reading their invitation.
+  const opened = admin ? null : await recordInviteOpen(id);
+
+  return NextResponse.json({ guest: opened || guest, event, language });
 }
 
 // The couple or admin choosing which card a guest receives, before sending.

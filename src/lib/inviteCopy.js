@@ -50,6 +50,16 @@ export const INVITE_COPY_FIELDS = [
     defaultEn: "request the honour of your presence at the wedding celebration of their children",
   },
   {
+    key: "childrenNote",
+    label: "تنبيه قبل تأكيد الحضور (الأطفال)",
+    hint: "يظهر في صندوق صغير أول ما الضيف يضغط «أكّد الحضور»، ويكمّل التأكيد بعد ما يوافق. تقدر تخفيه من «إظهار التنبيه» تحت.",
+    multiline: true,
+    rows: 2,
+    default: "نرجو العلم بأن الدعوة لا تشمل اصطحاب الأطفال، شاكرين لكم تفهّمكم وحسن تعاونكم.",
+    defaultEn:
+      "Please note that the invitation does not include children. We are grateful for your kind understanding.",
+  },
+  {
     key: "saveTheDate",
     label: "Save the Date",
     hint: "سطران، كل واحد في صف. يُكتبان بالخط المزخرف.",

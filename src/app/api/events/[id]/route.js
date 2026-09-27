@@ -61,6 +61,7 @@ export async function PATCH(request, { params }) {
       "invitePosterUrl",
       "inviteAudioUrl",
       "inviteTheme",
+      "showChildrenNote",
       "latinNames",
       "familyNames",
       // The English card's own spellings. Empty is fine: the invitation falls
@@ -84,7 +85,13 @@ export async function PATCH(request, { params }) {
 
     for (const key of editable) {
       if (body[key] !== undefined) {
-        event[key] = key === "packageLimit" ? Math.max(1, parseInt(body[key], 10) || event.packageLimit) : body[key];
+        if (key === "packageLimit") {
+          event[key] = Math.max(1, parseInt(body[key], 10) || event.packageLimit);
+        } else if (key === "showChildrenNote") {
+          event[key] = body[key] !== false;
+        } else {
+          event[key] = body[key];
+        }
       }
     }
 

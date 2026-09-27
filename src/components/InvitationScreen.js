@@ -104,6 +104,12 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   // once the guest has answered. The answer is what brought them here; the
   // message box sits further down and most would leave without reaching it.
   const [wishPrompt, setWishPrompt] = useState(null);
+  // The note the guest has to read before confirming — the children line, by
+  // default. Confirming happens after they accept it, not before.
+  const [notice, setNotice] = useState(false);
+  // Marks the message box for a moment after the guest is taken to it, so it
+  // is obvious where they landed and why.
+  const [wishNudge, setWishNudge] = useState(false);
   const [state, setState] = useState({ loading: true, error: null, guest: null, event: null, language: null });
   const [companions, setCompanions] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -159,7 +165,14 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   // After an answer, unless they have already written: a guest who left a
   // message earlier does not need asking again.
   function promptForWish(attending, guest) {
-    if (!String(guest?.wishMessage || "").trim()) setWishPrompt(attending ? "confirmed" : "declined");
+    if (String(guest?.wishMessage || "").trim()) return;
+    // A guest who just confirmed is taken to the message box rather than
+    // asked about it: they are already saying yes, and the box is the next
+    // thing the couple wants from them. An apology is gentler — a small
+    // dialog, since scrolling someone who just declined to a "write us
+    // something" box reads as pushy.
+    if (attending) goToWish();
+    else setWishPrompt("declined");
   }
 
   // "Write your message" takes the guest straight to the box, on the card tab,
@@ -167,12 +180,21 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   function goToWish() {
     setWishPrompt(null);
     setTab("invite");
+    setWishNudge(true);
     requestAnimationFrame(() => {
       const box = document.getElementById("wish");
       if (!box) return;
       box.scrollIntoView({ behavior: "smooth", block: "center" });
       setTimeout(() => box.focus({ preventScroll: true }), 450);
     });
+  }
+
+  // "Confirm attendance" asks first, when the couple has a note to show —
+  // the guest agrees to it and the confirmation goes through on the same tap
+  // path, so nobody confirms without having read it.
+  function startConfirm() {
+    if (event?.showChildrenNote && String(copy?.childrenNote || "").trim()) setNotice(true);
+    else respond(true);
   }
 
   async function respond(attending) {
@@ -303,6 +325,45 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
 
   return (
     <PageShell theme={event.inviteTheme} lang={language}>
+      {notice && (
+        <div
+          className="inv-modal"
+          role="presentation"
+          onClick={(e) => e.target === e.currentTarget && setNotice(false)}
+          onKeyDown={(e) => e.key === "Escape" && setNotice(false)}
+        >
+          <div className="inv-modal-card" role="dialog" aria-modal="true" aria-labelledby="notice-title">
+            <span className="inv-modal-icon" aria-hidden="true">
+              <AlertIcon size={24} />
+            </span>
+            <h2 id="notice-title" className="font-display inv-modal-title">
+              {ui.noticeTitle}
+            </h2>
+            <p className="body" style={{ lineHeight: 2 }}>
+              {copy.childrenNote}
+            </p>
+            <div className="flex flex-col gap-2.5 w-full" style={{ marginTop: "1.2rem" }}>
+              <button
+                type="button"
+                className="pill-btn w-full"
+                autoFocus
+                disabled={submitting}
+                onClick={() => {
+                  setNotice(false);
+                  respond(true);
+                }}
+              >
+                <CheckCircleIcon size={17} />
+                {ui.noticeOk}
+              </button>
+              <button type="button" className="pill-btn-outline w-full" onClick={() => setNotice(false)}>
+                {ui.noticeBack}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {wishPrompt && (
         <div
           className="inv-modal"
@@ -625,7 +686,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
               <div className="flex flex-col gap-2.5">
                 <button
                   disabled={submitting}
-                  onClick={() => respond(true)}
+                  onClick={startConfirm}
                   className="pill-btn w-full whitespace-nowrap"
                 >
                   <CheckCircleIcon size={18} />
@@ -699,18 +760,23 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             </p>
 
             <div className="flex flex-col gap-2" style={{ textAlign: "start" }}>
+              {wishNudge && !guest.wishMessage && (
+                <p className="wish-nudge" aria-live="polite">
+                  {ui.wishNudge}
+                </p>
+              )}
               <label htmlFor="wish" className="label flex items-center gap-2">
                 <span style={{ color: "var(--gold-500)" }}><MessageIcon size={16} /></span>
                 {guest.wishMessage ? ui.wishEdit : copy.wishesLabel}
               </label>
               <textarea
                 id="wish"
+                className={wishNudge && !guest.wishMessage ? "field wish-lit" : "field"}
                 value={wishText}
                 onChange={(e) => setWishText(e.target.value)}
                 maxLength={500}
                 rows={3}
                 placeholder={ui.wishPlaceholder}
-                className="field"
                 aria-invalid={wishError ? "true" : undefined}
                 style={{ resize: "vertical" }}
               />

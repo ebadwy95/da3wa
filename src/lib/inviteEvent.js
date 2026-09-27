@@ -35,6 +35,10 @@ export function buildInviteEvent(fullEvent, language) {
     invitePosterUrl: fullEvent.invitePosterUrl || "",
     inviteAudioUrl: fullEvent.inviteAudioUrl || "",
     inviteTheme: fullEvent.inviteTheme === "dark" ? "dark" : "light",
+    // The note a guest sees before confirming (children, by default). On
+    // unless the couple switched it off, so a wedding created before this
+    // existed still shows it.
+    showChildrenNote: fullEvent.showChildrenNote !== false,
     // Both appear on the face of the invitation, so both have to cross the
     // whitelist — a new field that is not listed here silently never arrives.
     latinNames: fullEvent.latinNames || "",

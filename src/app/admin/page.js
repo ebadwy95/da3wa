@@ -338,6 +338,7 @@ function EditEventForm({ event, onUpdated, onClose }) {
     invitePosterUrl: event.invitePosterUrl || "",
     inviteAudioUrl: event.inviteAudioUrl || "",
     inviteTheme: event.inviteTheme === "dark" ? "dark" : "light",
+    showChildrenNote: event.showChildrenNote !== false,
     latinNames: event.latinNames || "",
     familyNames: event.familyNames || "",
     familyNamesEn: event.familyNamesEn || "",
@@ -543,6 +544,26 @@ function EditEventForm({ event, onUpdated, onClose }) {
         />
 
         <div className="inv-rule" aria-hidden="true" style={{ margin: "1.4rem auto" }} />
+
+        {/* The note shown before a guest confirms. Its wording is a copy field
+            below («تنبيه قبل تأكيد الحضور»); this only decides whether the
+            guest sees it at all. */}
+        <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.showChildrenNote}
+            onChange={(e) => setForm({ ...form, showChildrenNote: e.target.checked })}
+            style={{ marginTop: "0.3rem" }}
+          />
+          <span>
+            <span className="label" style={{ margin: 0 }}>
+              أظهر تنبيه الأطفال قبل تأكيد الحضور
+            </span>
+            <span className="hint" style={{ display: "block", margin: 0 }}>
+              الضيف يقرأه ويوافق، وبعدها يتم تأكيد حضوره. النص نفسه تعدّله من خانة «تنبيه قبل تأكيد الحضور» تحت.
+            </span>
+          </span>
+        </label>
 
         {/* Every wedding has both cards. Which one a guest gets is chosen on
             the guest's row; here is only the wording of each. */}

@@ -1865,3 +1865,22 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .inv-modal, .inv-modal-card { animation: none; }
 }
+
+/* ---- the message box, right after a guest confirms ---- */
+.wish-nudge {
+  font-size: var(--text-sm);
+  color: var(--gold-600);
+  margin-bottom: 0.15rem;
+}
+/* A ring rather than a colour change: the box keeps its own styling and just
+   says "here", then settles. */
+.wish-lit {
+  animation: wish-lit 2.6s ease-out 1;
+}
+@keyframes wish-lit {
+  0%, 60% { box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.35); border-color: var(--gold-500); }
+  100% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wish-lit { animation: none; border-color: var(--gold-500); }
+}

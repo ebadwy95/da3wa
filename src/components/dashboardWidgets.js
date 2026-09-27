@@ -136,6 +136,17 @@ export function GuestRow({ guest, onDelete, onChanged }) {
       </td>
       <td className="py-3 px-2 text-center">
         {guest.invitedAt ? <span className="text-sm text-ok">تم الإرسال</span> : <span className="text-sm text-ink-3">لم تُرسل بعد</span>}
+        {/* Whether they actually looked at it. WhatsApp's own read receipt
+            needs a webhook the cheaper provider plans don't include, and this
+            says more anyway: a guest who opened the card and still hasn't
+            answered is the one to nudge. */}
+        {guest.openedAt ? (
+          <div className="text-xs text-ok mt-0.5" title={formatDateTimeArabic(guest.lastOpenedAt || guest.openedAt)}>
+            فتح الدعوة{guest.openCount > 1 ? ` (${guest.openCount} مرات)` : ""}
+          </div>
+        ) : guest.invitedAt ? (
+          <div className="text-xs text-ink-3 mt-0.5">لم يفتحها بعد</div>
+        ) : null}
       </td>
       <td className="py-3 px-2 text-center whitespace-nowrap">
         <button onClick={copyLink} className="pill-btn-outline pill-btn-sm">
