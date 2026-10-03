@@ -256,6 +256,34 @@ export async function sendTemplateMessage({
 }
 
 /**
+ * What Wati knows about the recent messages to one number, newest first:
+ * [{ created, status: "sent"|"delivered"|"read"|"failed"|null, failedDetail }].
+ *
+ * This is how a send's real outcome is learned on plans without webhooks
+ * (Growth): Wati accepts a template, WhatsApp refuses it a second later —
+ * error 131037 for an unapproved display name, for instance — and nothing
+ * tells us unless we ask. Only template sends ("broadcastMessage") are
+ * returned, since those are the only ones this app makes.
+ */
+export async function getRecentMessages(phone, pageSize = 30) {
+  if (!isConfigured()) return [];
+  const res = await fetch(
+    endpoint(`/api/v1/getMessages/${encodeURIComponent(normalizePhone(phone))}?pageSize=${pageSize}`),
+    { headers: authHeaders() }
+  );
+  if (!res.ok) throw new Error(`getMessages ${res.status}`);
+  const json = await res.json().catch(() => ({}));
+  const STATUS = { SENT: "sent", DELIVERED: "delivered", READ: "read", FAILED: "failed" };
+  return (json?.messages?.items || [])
+    .filter((m) => m.eventType === "broadcastMessage")
+    .map((m) => ({
+      created: m.created,
+      status: STATUS[String(m.statusString || "").toUpperCase()] || null,
+      failedDetail: m.failedDetail || null,
+    }));
+}
+
+/**
  * Sends a plain session (free-form) text message via Wati. Only reliably
  * delivers within an open 24h customer-service window.
  */

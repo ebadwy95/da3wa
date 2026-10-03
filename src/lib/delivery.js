@@ -1,4 +1,6 @@
-import { withDb } from "@/lib/db";
+import { getDb, withDb } from "@/lib/db";
+import { messagingProvider } from "@/lib/messaging";
+import { getRecentMessages } from "@/lib/wati";
 
 // Recording what happened to a message after it was sent.
 //
@@ -72,4 +74,101 @@ export async function recordDeliveryUpdate({ messageId, phone, status, eventLabe
 
     return { matched: true, guestName: target.guestName, status: target.status };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Asking for the verdict instead of waiting for it.
+//
+// Wati's Growth plan sends no delivery webhooks, so without this a message
+// stays at "sent" forever — including every one WhatsApp refused. That is
+// exactly how a whole round of test sends looked fine in the dashboard while
+// none of them arrived (error 131037, display name under review). So when a
+// wedding's feed is opened, any message still waiting on a verdict is looked
+// up in Wati, and its real status and failure reason are written back.
+
+// The dashboard polls the feed every few seconds; Wati does not need to be
+// asked that often, and a sync that is already running should not start twice.
+const SYNC_EVERY_MS = 45 * 1000;
+const lastSyncByEvent = new Map();
+
+// How long a message keeps being checked. A verdict that has not arrived after
+// a week is not going to.
+const SYNC_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Our log entry is written right after Wati accepts the send, so Wati's own
+// record of it sits a few seconds either side.
+const MATCH_TOLERANCE_MS = 2 * 60 * 1000;
+
+/**
+ * Brings the statuses of one wedding's recent messages up to date from Wati.
+ * Safe to call on every feed read: it throttles itself, and does nothing
+ * unless Wati is the active provider.
+ */
+export async function syncEventDeliveries(eventId) {
+  if (messagingProvider() !== "wati") return { skipped: "provider" };
+  const now = Date.now();
+  if (now - (lastSyncByEvent.get(eventId) || 0) < SYNC_EVERY_MS) return { skipped: "recent" };
+  lastSyncByEvent.set(eventId, now);
+
+  const db = await getDb();
+  const pending = (db.messages || []).filter(
+    (m) =>
+      m.eventId === eventId &&
+      (m.status === "sent" || m.status === "delivered") &&
+      m.phone &&
+      now - new Date(m.createdAt).getTime() < SYNC_WINDOW_MS
+  );
+  if (pending.length === 0) return { checked: 0 };
+
+  const byPhone = new Map();
+  for (const m of pending) {
+    const key = digitsOnly(m.phone);
+    if (!byPhone.has(key)) byPhone.set(key, []);
+    byPhone.get(key).push(m);
+  }
+
+  const updates = [];
+  for (const [phone, ours] of byPhone) {
+    let theirs;
+    try {
+      theirs = await getRecentMessages(phone);
+    } catch (err) {
+      console.warn("[delivery] could not read Wati statuses:", err.message);
+      continue;
+    }
+    // Each Wati record is used once, closest in time first, so two messages
+    // sent to the same number a second apart are not both matched to one.
+    const unused = theirs.filter((t) => t.status && t.created);
+    for (const m of ours) {
+      const at = new Date(m.createdAt).getTime();
+      let best = null;
+      for (const t of unused) {
+        const gap = Math.abs(new Date(t.created).getTime() - at);
+        if (gap <= MATCH_TOLERANCE_MS && (!best || gap < best.gap)) best = { t, gap };
+      }
+      if (!best) continue;
+      unused.splice(unused.indexOf(best.t), 1);
+      const resolved = nextStatus(m.status, best.t.status);
+      if (resolved !== m.status) {
+        updates.push({
+          id: m.id,
+          status: resolved,
+          error: resolved === "failed" ? best.t.failedDetail || "رفضت واتساب الرسالة" : null,
+        });
+      }
+    }
+  }
+
+  if (updates.length) {
+    await withDb((fresh) => {
+      for (const u of updates) {
+        const target = (fresh.messages || []).find((x) => x.id === u.id);
+        if (!target) continue;
+        target.status = nextStatus(target.status, u.status);
+        if (target.status === "failed") target.error = u.error;
+        target.deliveryAt = new Date().toISOString();
+      }
+    });
+  }
+  return { checked: pending.length, updated: updates.length };
 }

@@ -3,6 +3,7 @@ import { getDb, withDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { messagingIsConfigured } from "@/lib/messaging";
+import { syncEventDeliveries } from "@/lib/delivery";
 
 // What the guest did proves more than any receipt. Wati's Growth plan sends no
 // delivery webhooks, so an invitation stays at "sent" forever — even for a
@@ -10,7 +11,9 @@ import { messagingIsConfigured } from "@/lib/messaging";
 // the message and read it; the feed says so instead of waiting on a report
 // that is never coming.
 function withObservedDelivery(message, guestsById) {
-  if (message.status !== "sent" || message.type !== "invite_sent") return message;
+  if (!["sent", "delivered", "read"].includes(message.status) || message.type !== "invite_sent") {
+    return message;
+  }
   const guest = guestsById.get(message.guestId);
   if (!guest) return message;
   const sentAt = new Date(message.createdAt).getTime();
@@ -31,6 +34,14 @@ export async function GET(request) {
   const authed = eventId ? await canAccessEvent(eventId) : await isAdminAuthed();
   if (!authed) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
+  }
+
+  // Learn what WhatsApp actually did with recent sends before showing them —
+  // without this a refused message reads "sent" forever (see syncEventDeliveries).
+  if (eventId) {
+    await syncEventDeliveries(eventId).catch((err) =>
+      console.warn("[feed] delivery sync failed:", err.message)
+    );
   }
 
   const db = await getDb();
