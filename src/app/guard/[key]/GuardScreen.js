@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ShieldIcon, AlertIcon, CheckCircleIcon, ClockIcon } from "@/components/icons";
-import { unlockAudio, startAlarm, stopAlarm, registerAlertWorker, keepScreenOn } from "@/lib/alarm";
+import { unlockAudio, startRing, stopAlarm, registerAlertWorker, keepScreenOn } from "@/lib/alarm";
 
 const POLL_MS = 5000;
 // An alert older than this no longer sets the page ringing when it is opened —
@@ -78,7 +78,7 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
         Date.now() - new Date(a.createdAt).getTime() < RING_WINDOW_MS
     );
     setRinging((current) => {
-      if (live && current?.id !== live.id) startAlarm();
+      if (live && current?.id !== live.id) startRing();
       if (!live && current) stopAlarm();
       return live || null;
     });
@@ -114,10 +114,10 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
       const permission = await Notification.requestPermission();
       setEnv((e) => ({ ...e, permission }));
       if (permission !== "granted") {
-        throw new Error("التنبيهات مرفوضة — افتح إعدادات الموبايل واسمح بالإشعارات للتطبيق ده، وبعدين جرّب تاني");
+        throw new Error("التنبيهات مرفوضة — افتح إعدادات التلفون واسمح بالإشعارات لهالتطبيق، وبعدين جرّب مرة ثانية");
       }
       const reg = await registerAlertWorker();
-      if (!reg) throw new Error("المتصفح ده مش بيدعم التنبيهات");
+      if (!reg) throw new Error("هالمتصفح ما يدعم التنبيهات");
       await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
       if (!sub) {
@@ -134,14 +134,14 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "تعذّر التفعيل");
       setSubscribed(true);
-      setNotice("تم التفعيل ✓ — المفروض يوصلك دلوقتي إشعار تجربة. لو ماوصلش، اتأكد إن الإشعارات مسموحة والموبايل مش صامت.");
+      setNotice("تم التفعيل ✓ — المفروض يوصلك الحين إشعار تجربة. إذا ما وصل، تأكد إن الإشعارات مسموحة والتلفون مو صامت.");
     } catch (err) {
       // The browser's own errors arrive in English ("Registration failed -
       // permission denied"); the person reading this is at a wedding gate.
       setError(
         /[\u0600-\u06FF]/.test(err.message)
           ? err.message
-          : "تعذّر التفعيل — افتح الرابط في Chrome أو Safari العادي (مش نافذة خفية)، واسمح بالإشعارات، وجرّب تاني."
+          : "تعذّر التفعيل — افتح الرابط في Chrome أو Safari العادي (مو نافذة خفية)، واسمح بالإشعارات، وجرّب مرة ثانية."
       );
     } finally {
       setBusy(false);
@@ -159,8 +159,8 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
     const data = await res.json().catch(() => ({}));
     setNotice(
       data.notified?.length
-        ? "اتبعت إشعار تجربة — المفروض يرن دلوقتي."
-        : "مفيش جهاز مفعّل يوصله الإشعار — اضغط «تفعيل التنبيهات» الأول."
+        ? "انرسل إشعار تجربة — المفروض يرن الحين."
+        : "ما في جهاز مفعّل يوصله الإشعار — اضغط «تفعيل التنبيهات» أول."
     );
   }
 
@@ -195,7 +195,7 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
           <p style={{ color: "#fff", fontSize: "1.2rem", fontWeight: 600, lineHeight: 1.6 }}>
             {describe(ringing)}
             <br />
-            {timeOf(ringing.createdAt)} — اطلع البوابة فورًا
+            {timeOf(ringing.createdAt)} — تعال البوابة الحين
           </p>
           <button
             onClick={() => acknowledge(ringing)}
@@ -215,15 +215,15 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
         </span>
         <h1 className="title">أهلًا {contactName}</h1>
         <p className="meta leading-relaxed">
-          إنت في فريق الأمن لفرح <b>{coupleNames}</b>
+          إنت ضمن فريق الأمن لعرس <b>{coupleNames}</b>
           {eventDate ? ` — ${eventDate}` : ""}
-          {venueName ? ` — ${venueName}` : ""}. أي نداء طوارئ من البوابة، أو أي حد يقدّم باركود اتمسح قبل كده، هيرن عندك هنا فورًا.
+          {venueName ? ` — ${venueName}` : ""}. أي نداء طوارئ من البوابة، أو أي أحد يقدّم باركود انمسح من قبل، بيرن عندك هني على طول.
         </p>
       </header>
 
       {!env.supported && !needsHomeScreen && (
         <p className="card-flat p-4" style={{ color: "var(--danger)", background: "var(--danger-bg)" }}>
-          المتصفح ده مش بيدعم التنبيهات. افتح الرابط من Chrome على أندرويد، أو من Safari على الآيفون.
+          هالمتصفح ما يدعم التنبيهات. افتح الرابط من Chrome على الأندرويد، أو من Safari على الآيفون.
         </p>
       )}
 
@@ -232,9 +232,9 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
           <h2 className="font-bold flex items-center gap-2">
             <AlertIcon size={18} /> خطوة لازمة على الآيفون
           </h2>
-          <p className="meta leading-relaxed">الآيفون مش بيبعت تنبيهات غير لو الصفحة متثبّتة كتطبيق على الشاشة:</p>
+          <p className="meta leading-relaxed">الآيفون ما يرسل تنبيهات إلا إذا الصفحة مثبّتة كتطبيق على الشاشة:</p>
           <ol className="flex flex-col gap-2 leading-relaxed" style={{ listStyle: "decimal", paddingInlineStart: "1.25rem" }}>
-            <li>افتح الرابط ده من <b>Safari</b>.</li>
+            <li>افتح هالرابط من <b>Safari</b>.</li>
             <li>اضغط زر <b>المشاركة</b> (المربع اللي طالع منه سهم) تحت.</li>
             <li>اختار <b>«إضافة إلى الشاشة الرئيسية»</b> ثم «إضافة».</li>
             <li>افتح <b>«أمن دعوة»</b> من الشاشة الرئيسية واضغط «تفعيل التنبيهات».</li>
@@ -246,7 +246,7 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
             {subscribed ? (
               <>
                 <p className="font-bold flex items-center gap-2" style={{ color: "var(--ok)" }}>
-                  <CheckCircleIcon size={20} /> التنبيهات شغالة على الموبايل ده
+                  <CheckCircleIcon size={20} /> التنبيهات شغالة على هالتلفون
                 </p>
                 <button onClick={sendTest} className="pill-btn-outline">إرسال تنبيه تجربة</button>
               </>
@@ -274,11 +274,11 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
       )}
 
       <section className="card p-5 flex flex-col gap-3">
-        <h2 className="font-bold">ليلة الفرح</h2>
+        <h2 className="font-bold">ليلة العرس</h2>
         <ul className="meta leading-relaxed flex flex-col gap-1" style={{ listStyle: "disc", paddingInlineStart: "1.25rem" }}>
-          <li>خلّي الموبايل <b>مش صامت</b> وشغّل الصوت عالي.</li>
-          <li>الإشعار هيفضل على الشاشة لحد ما تضغط عليه — الضغط عليه معناه «أنا جاي» وبيظهر عند الباب.</li>
-          <li>لو هتفضل فاتح الصفحة دي، اضغط «بدء المناوبة» عشان الشاشة متطفيش والإنذار يرن بصوت عالي.</li>
+          <li>خل التلفون <b>مو صامت</b> وارفع الصوت.</li>
+          <li>الإشعار بيظل يرن ويهتز كل كم ثانية لين تضغط عليه — ضغطتك عليه تعني «أنا جاي» وتطلع عند الباب.</li>
+          <li>إذا بتخلي هالصفحة مفتوحة، اضغط «بدء المناوبة» علشان الشاشة ما تطفي والرنة تشتغل.</li>
         </ul>
         <button onClick={startDuty} disabled={onDuty} className="pill-btn-outline">
           {onDuty ? "المناوبة شغالة ✓" : "بدء المناوبة"}
@@ -290,14 +290,14 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
           <ClockIcon size={18} /> آخر التنبيهات
         </h2>
         {alerts.length === 0 ? (
-          <p className="meta">مفيش تنبيهات — كله تمام.</p>
+          <p className="meta">ما في تنبيهات — كل شي تمام.</p>
         ) : (
           alerts.map((a) => (
             <div key={a.id} className="border rounded-lg p-3 flex flex-col gap-1" style={{ borderColor: "var(--line-soft)" }}>
               <p className="font-semibold">{describe(a)}</p>
               <p className="hint">
                 {timeOf(a.createdAt)}
-                {a.acks?.length ? ` — في الطريق: ${a.acks.map((x) => x.name).join("، ")}` : " — محدش رد لسه"}
+                {a.acks?.length ? ` — في الطريق: ${a.acks.map((x) => x.name).join("، ")}` : " — للحين محد رد"}
               </p>
               {!a.ackedByMe && (
                 <button onClick={() => acknowledge(a)} className="pill-btn-sm pill-btn-danger self-start">🏃 أنا جاي</button>

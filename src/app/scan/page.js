@@ -27,6 +27,9 @@ const READER_ID = "da3wa-qr-reader";
 // pressing all night, and a pocket or a stray thumb must not call the team.
 const SOS_HOLD_MS = 1200;
 
+// The camera turns itself off after this long without a scan.
+const CAMERA_IDLE_MS = 3 * 60 * 1000;
+
 function playAlertSound() {
   beepAlarm();
 }
@@ -76,7 +79,7 @@ function InstallHint() {
       <div className="card-flat p-3 text-right leading-relaxed" style={{ fontSize: "var(--text-sm)" }}>
         <p className="font-bold mb-1">📲 ثبّت السكانر كتطبيق على الآيفون:</p>
         اضغط زر <b>المشاركة</b> (المربع اللي طالع منه سهم) ← <b>«إضافة إلى الشاشة الرئيسية»</b> ← «إضافة»،
-        وبعدها افتحه من أيقونة <b>«سكانر دعوة»</b>.
+        وبعدين افتحه من أيقونة <b>«سكانر دعوة»</b>.
       </div>
     );
   }
@@ -233,6 +236,12 @@ export default function ScanPage() {
   const [eventInfo, setEventInfo] = useState(null);
   const [staffName, setStaffName] = useState("");
   const [cameraError, setCameraError] = useState(null);
+  // The camera is the battery's biggest drain, and a door shift is hours
+  // long with guests arriving in waves. So it runs only while the staff
+  // member has it open — a button opens it, X closes it, and it closes
+  // itself after a few quiet minutes in case they forget.
+  const [cameraOn, setCameraOn] = useState(false);
+  const cameraOpenedAt = useRef(0);
   const [manualCode, setManualCode] = useState("");
   const [result, setResult] = useState(null);
   // A validated-but-not-yet-confirmed scan: the door staff must explicitly
@@ -424,10 +433,21 @@ export default function ScanPage() {
   }, [alarm?.alertId, loadTeam]);
 
   useEffect(() => {
-    if (authed !== true) return;
+    if (!cameraOn) return;
+    const timer = setInterval(() => {
+      const lastUse = Math.max(cameraOpenedAt.current, lastScanRef.current.at);
+      if (Date.now() - lastUse > CAMERA_IDLE_MS) setCameraOn(false);
+    }, 15000);
+    return () => clearInterval(timer);
+  }, [cameraOn]);
+
+  useEffect(() => {
+    if (authed !== true || !cameraOn) return;
 
     let cancelled = false;
     let html5QrCode;
+    cameraOpenedAt.current = Date.now();
+    setCameraError(null);
 
     import("html5-qrcode").then(({ Html5Qrcode }) => {
       if (cancelled) return;
@@ -459,7 +479,7 @@ export default function ScanPage() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authed]);
+  }, [authed, cameraOn]);
 
   if (authed === null) {
     return (
@@ -571,7 +591,34 @@ export default function ScanPage() {
         </section>
       )}
 
-      <div id={READER_ID} className="card overflow-hidden" />
+      {/* The reader stays mounted while the camera is off, so the scanner
+          library always has its element to stop and clear. */}
+      <div className="relative" style={{ display: cameraOn ? "block" : "none" }}>
+        <div id={READER_ID} className="card overflow-hidden" />
+        <button
+          type="button"
+          onClick={() => setCameraOn(false)}
+          aria-label="إغلاق الكاميرا"
+          className="absolute z-10 flex items-center justify-center"
+          style={{ top: "0.6rem", left: "0.6rem", width: "2.75rem", height: "2.75rem", borderRadius: "9999px", background: "rgba(23,20,15,0.75)", color: "#fff", fontSize: "1.4rem", fontWeight: 700 }}
+        >
+          ✕
+        </button>
+      </div>
+      {!cameraOn && (
+        <button
+          type="button"
+          onClick={() => {
+            unlockAudio();
+            setCameraOn(true);
+          }}
+          className="pill-btn w-full"
+          style={{ minHeight: "4.5rem", fontSize: "var(--text-lg)" }}
+        >
+          <ScanIcon size={24} />
+          افتح الكاميرا للمسح
+        </button>
+      )}
 
       {cameraError && (
         <p

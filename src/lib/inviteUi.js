@@ -64,13 +64,13 @@ const AR = {
   noticeTitle: "قبل تأكيد الحضور",
   noticeOk: "موافق، أكمل التأكيد",
   noticeBack: "رجوع",
-  wishNudge: "وكمان، اترك رسالتك للعروسين 🤍",
+  wishNudge: "ولا تنسى، اترك رسالتك للعروسين 🤍",
   wishPromptTitle: { confirmed: "تم تأكيد حضورك", declined: "تم تسجيل ردّك" },
   wishPromptBody: "لا تنسَ أن تترك رسالتك للعروسين — كلماتك هدية تبقى معهم.",
   wishPromptOk: "حسنًا",
   wishPromptAdd: "اكتب رسالتك",
-  previewBanner: "معاينة — كده هتظهر الدعوة للضيف",
-  previewAction: "دي معاينة — الأزرار مش بتسجّل أي حاجة",
+  previewBanner: "معاينة — جذي بتطلع الدعوة للضيف",
+  previewAction: "هذي معاينة — الأزرار ما تسجّل أي شي",
 };
 
 const EN = {

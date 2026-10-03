@@ -1,8 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { getScannerSession } from "@/lib/scannerAuth";
-import { raiseSecurityAlert, resolveGuard } from "@/lib/security";
+import { raiseSecurityAlert, resolveGuard, keepRinging } from "@/lib/security";
+
+// An SOS keeps ringing the team after the scanner has its answer — see
+// keepRinging. A literal, because Next reads this config at build time.
+export const maxDuration = 120;
 
 // Raises an alert by hand:
 //  - the door scanner's SOS button (a scanner session, scoped to its wedding);
@@ -32,6 +36,7 @@ export async function POST(request) {
       type,
       staffName: scanner.staffName || null,
     });
+    if (type === "sos") after(() => keepRinging(result.alert.id));
     return NextResponse.json({ ok: true, alertId: result.alert.id, notified: result.notified });
   }
 
@@ -42,6 +47,7 @@ export async function POST(request) {
       type,
       staffName: "مسؤول المنصة",
     });
+    if (type === "sos") after(() => keepRinging(result.alert.id));
     return NextResponse.json({ ok: true, alertId: result.alert.id, notified: result.notified });
   }
 

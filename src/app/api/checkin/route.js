@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { randomUUID } from "crypto";
 import { withDb } from "@/lib/db";
 import { verifyCheckinCode } from "@/lib/token";
 import { isAdminAuthed } from "@/lib/auth";
 import { getScannerSession } from "@/lib/scannerAuth";
-import { raiseSecurityAlert } from "@/lib/security";
+import { raiseSecurityAlert, keepRinging } from "@/lib/security";
+
+// A used entry code keeps ringing the security team after the door has its
+// answer (see keepRinging). A literal, because Next reads it at build time.
+export const maxDuration = 120;
 
 // How many door-scan log entries to keep for each event.
 const PER_EVENT_LOG_LIMIT = 500;
@@ -207,6 +211,7 @@ export async function POST(request) {
         guestName: result.guestName,
       });
       result.security = { alertId: raised.alert.id, notified: raised.notified };
+      if (!raised.throttled) after(() => keepRinging(raised.alert.id));
     } catch (err) {
       console.warn("[checkin] security alert failed:", err.message);
       result.security = { alertId: null, notified: [] };

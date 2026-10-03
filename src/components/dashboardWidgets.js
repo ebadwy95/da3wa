@@ -445,7 +445,7 @@ export function WhatsappFeed({ messages, watiConfigured, onClear }) {
   const [clearing, setClearing] = useState(false);
 
   async function clear() {
-    if (!window.confirm("مسح كل رسائل السجل لهذا الزفاف؟ ده بيمسح السجل بس — مش بيلغي أي رسالة اتبعتت.")) return;
+    if (!window.confirm("مسح كل رسائل السجل لهذا الزفاف؟ هذا يمسح السجل بس — ما يلغي أي رسالة انرسلت.")) return;
     setClearing(true);
     try {
       await onClear();

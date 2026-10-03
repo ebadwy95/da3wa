@@ -66,6 +66,46 @@ export function startAlarm() {
   timer = setInterval(ring, 2000);
 }
 
+// A phone ringing rather than a siren — for the security contact's own
+// phone, which rings in the middle of the wedding hall among the guests. A
+// warbling bell, twice, then a pause: unmistakably "your phone is ringing",
+// and nothing that makes the guests around him think something is wrong.
+function ring() {
+  const c = context();
+  if (!c) return;
+  if (c.state === "suspended") c.resume().catch(() => {});
+  const start = c.currentTime;
+  for (const offset of [0, 0.6]) {
+    const t0 = start + offset;
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = "triangle";
+    // The trill: two notes swapped twenty times a second, like a bell.
+    for (let i = 0; i < 8; i += 1) {
+      osc.frequency.setValueAtTime(i % 2 ? 1318 : 1046, t0 + i * 0.05);
+    }
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.45, t0 + 0.02);
+    gain.gain.setValueAtTime(0.45, t0 + 0.36);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.4);
+    osc.connect(gain);
+    gain.connect(c.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.42);
+  }
+}
+
+/** Rings like an incoming call until stopAlarm(), vibrating with each ring. */
+export function startRing() {
+  stopAlarm();
+  const once = () => {
+    ring();
+    navigator.vibrate?.([400, 200, 400]);
+  };
+  once();
+  timer = setInterval(once, 2500);
+}
+
 export function stopAlarm() {
   if (timer) clearInterval(timer);
   timer = null;

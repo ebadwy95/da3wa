@@ -50,7 +50,7 @@ export function normalizePhone(raw) {
   if (/^\d+([.,]\d+)?e\+?\d+$/i.test(s)) {
     return {
       valid: false,
-      error: "الرقم اتحفظ في Excel بالشكل 9.66E+11 وضاعت منه أرقام — خلّي عمود الرقم «نص» (Text) واكتبه تاني",
+      error: "الرقم انحفظ في Excel بشكل 9.66E+11 وضاعت منه أرقام — خل عمود الرقم «نص» (Text) واكتبه من جديد",
     };
   }
 

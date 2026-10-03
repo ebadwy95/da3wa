@@ -176,7 +176,7 @@ export function HandSendPanel({ event, guests, onChanged }) {
               </span>
               <p className="font-bold">تم إرسال الدعوة لكل الضيوف</p>
               <p className="hint" style={{ margin: 0 }}>
-                أي ضيف تضيفوه بعد كده حيظهر هنا لوحده.
+                أي ضيف تضيفونه بعدين بيطلع هني بروحه.
               </p>
             </div>
           )}

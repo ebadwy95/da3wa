@@ -978,7 +978,7 @@ function SecurityTeamCard({ event }) {
       if (!res.ok) throw new Error(json.error || "تعذّر الحفظ");
       setData(json);
       setRows(json.contacts.length ? json.contacts.map(({ id, name, phone }) => ({ id, name, phone })) : [{ name: "", phone: "" }]);
-      setNotice("تم الحفظ ✓ — ابعت لكل واحد الرابط بتاعه");
+      setNotice("تم الحفظ ✓ — أرسل لكل واحد الرابط الخاص فيه");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -996,7 +996,7 @@ function SecurityTeamCard({ event }) {
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return setError(json.error || "تعذّر الإرسال");
-    setNotice(json.notified?.length ? `وصل التنبيه التجريبي لـ: ${json.notified.join("، ")}` : "مفيش حد مفعّل التنبيهات لسه");
+    setNotice(json.notified?.length ? `وصل التنبيه التجريبي لـ: ${json.notified.join("، ")}` : "للحين محد مفعّل التنبيهات");
     load();
   }
 
@@ -1021,13 +1021,13 @@ function SecurityTeamCard({ event }) {
         <ShieldIcon size={18} /> فريق الأمن — نداء البوابة
       </h2>
       <p className="text-xs text-ink-2 leading-relaxed">
-        لما موظف الباب يضغط زر SOS، أو حد يقدّم باركود اتمسح قبل كده، موبايل الأشخاص دول بيرن فورًا
-        بإشعار (مش واتساب). كل شخص له رابط خاص: يفتحه ويضغط «تفعيل التنبيهات» — وعلى الآيفون لازم
-        يضيفه للشاشة الرئيسية الأول. موظف الباب كمان يقدر يتصل بيهم بضغطة. حتى {data.max} أشخاص.
+        لما موظف الباب يضغط زر SOS، أو أحد يقدّم باركود انمسح من قبل، تلفونات هالأشخاص ترن على طول
+        بإشعار (مو واتساب) وتظل ترن لين يردون. كل شخص له رابط خاص: يفتحه ويضغط «تفعيل التنبيهات» — وعلى الآيفون لازم
+        يضيفه للشاشة الرئيسية أول. موظف الباب بعد يقدر يتصل فيهم بضغطة. لين {data.max} أشخاص.
       </p>
       {!data.pushConfigured && (
         <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
-          مفاتيح التنبيهات (VAPID) مش مضبوطة على الخادم — التنبيهات مش هتشتغل.
+          مفاتيح التنبيهات (VAPID) مو مضبوطة على الخادم — التنبيهات ما بتشتغل.
         </p>
       )}
 
@@ -1047,19 +1047,19 @@ function SecurityTeamCard({ event }) {
                     className="text-xs px-2 py-1 rounded-full font-semibold"
                     style={c.devices ? { background: "var(--ok-bg)", color: "var(--ok)" } : { background: "var(--warn-bg)", color: "var(--warn)" }}
                   >
-                    {c.devices ? `التنبيهات مفعّلة ✓ (${c.devices} جهاز)` : "لسه ما فعّلش التنبيهات"}
+                    {c.devices ? `التنبيهات مفعّلة ✓ (${c.devices} جهاز)` : "للحين ما فعّل التنبيهات"}
                   </span>
                   <button onClick={() => copy(c.link, c.id)} className="pill-btn-outline pill-btn-sm">
                     {copied === c.id ? "تم النسخ ✓" : "نسخ رابطه"}
                   </button>
                   <a
-                    href={`https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`أهلًا ${c.name}، ده رابط تنبيهات الأمن لفرح ${event.coupleNames}. افتحه واضغط «تفعيل التنبيهات» (على الآيفون: من Safari ← مشاركة ← إضافة إلى الشاشة الرئيسية، وافتحه من الأيقونة):\n${c.link}`)}`}
+                    href={`https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`هلا ${c.name}، هذا رابط تنبيهات الأمن لعرس ${event.coupleNames}. افتحه واضغط «تفعيل التنبيهات» (على الآيفون: من Safari ← مشاركة ← إضافة إلى الشاشة الرئيسية، وافتحه من الأيقونة):\n${c.link}`)}`}
                     target="_blank"
                     rel="noreferrer"
                     className="pill-btn-ghost pill-btn-sm"
                     style={{ color: "var(--gold-600)" }}
                   >
-                    ابعته واتساب
+                    أرسله واتساب
                   </a>
                 </div>
               )}
@@ -1093,7 +1093,7 @@ function SecurityTeamCard({ event }) {
               {a.guestName ? ` — ${a.guestName}` : ""}
               {a.staffName ? ` — ${a.staffName}` : ""}
               {" — "}
-              {a.acks.length ? `ردّ: ${a.acks.map((x) => x.name).join("، ")}` : a.notified.length ? `وصل لـ ${a.notified.join("، ")}` : "ما وصلش لحد"}
+              {a.acks.length ? `ردّ: ${a.acks.map((x) => x.name).join("، ")}` : a.notified.length ? `وصل لـ ${a.notified.join("، ")}` : "ما وصل لأحد"}
             </p>
           ))}
         </div>

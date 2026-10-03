@@ -65,7 +65,7 @@ export async function listAccountTemplates() {
 export async function describeTemplateProblem(templateName) {
   if (!zokoIsConfigured()) return null;
   if (!positionalOrderFor(templateName)) {
-    return `القالب "${templateName}" مالوش ترتيب متغيرات معرّف — Zoko بيبعت القيم بالترتيب، فأضفه لـ WHATSAPP_POSITIONAL_PARAM_ORDER (أو [] لو القالب من غير متغيرات)`;
+    return `القالب "${templateName}" ما له ترتيب متغيرات معرّف — Zoko يرسل القيم بالترتيب، فأضفه لـ WHATSAPP_POSITIONAL_PARAM_ORDER (أو [] إذا القالب بدون متغيرات)`;
   }
   return null;
 }

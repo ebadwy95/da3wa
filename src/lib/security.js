@@ -85,24 +85,59 @@ function getWebPush() {
   return webPushPromise;
 }
 
+// Written in Gulf Arabic, like everything the door and the security team
+// read: these are Kuwaiti weddings.
 function notificationFor(alert, event) {
   const couple = event?.coupleNames || "";
   if (alert.type === "sos") {
     return {
       title: "🚨 طوارئ عند البوابة",
-      body: `${alert.staffName || "موظف الباب"} ضغط زر الطوارئ${couple ? ` — ${couple}` : ""}. اطلع البوابة فورًا.`,
+      body: `${alert.staffName || "موظف الباب"} ضغط زر الطوارئ${couple ? ` — ${couple}` : ""}. تعال البوابة الحين.`,
     };
   }
   if (alert.type === "duplicate") {
     return {
       title: "⚠️ باركود مستخدم عند البوابة",
-      body: `${alert.guestName ? `بطاقة ${alert.guestName}` : "بطاقة دخول"} اتمسحت قبل كده واتقدّمت تاني. ${alert.staffName || "الباب"} محتاجك فورًا.`,
+      body: `${alert.guestName ? `بطاقة ${alert.guestName}` : "بطاقة دخول"} انمسحت من قبل وانعرضت مرة ثانية. ${alert.staffName || "الباب"} يبيك الحين.`,
     };
   }
   return {
     title: "✅ تجربة تنبيه",
-    body: "التنبيهات شغالة على الجهاز ده — كده هيوصلك أي نداء من البوابة.",
+    body: "التنبيهات شغالة على هالجهاز — أي نداء من البوابة بيوصلك.",
   };
+}
+
+// How a call keeps ringing until it is answered. One notification vibrates
+// once and then lies silent on the lock screen — easy to miss in a loud hall
+// with the phone in a pocket. So until a contact presses "on my way", their
+// phones are rung again every few seconds, each time with fresh sound and
+// vibration, for as long as the request is allowed to run.
+const RERING_EVERY_MS = 8 * 1000;
+const RERING_FOR_MS = 100 * 1000;
+export const RERING_MAX_DURATION_S = 120;
+
+/**
+ * Re-rings every contact who has not answered alert alertId. Meant to run
+ * inside after(), once the scanner already has its response.
+ */
+export async function keepRinging(alertId) {
+  const started = Date.now();
+  while (Date.now() - started < RERING_FOR_MS) {
+    await new Promise((r) => setTimeout(r, RERING_EVERY_MS));
+    const db = await getDb();
+    const alert = (db.securityAlerts || []).find((a) => a.id === alertId);
+    if (!alert) return;
+    const event = db.events.find((e) => e.id === alert.eventId);
+    const team = new Set((event?.securityContacts || []).map((c) => c.id));
+    const answered = new Set((alert.acks || []).map((a) => a.contactId));
+    const waiting = (db.pushSubscriptions || []).filter(
+      (s) => s.eventId === alert.eventId && team.has(s.contactId) && !answered.has(s.contactId)
+    );
+    if (waiting.length === 0) return;
+    // A short life: a phone that was offline should get the alert once when
+    // it reconnects, not every ring it missed.
+    await deliver(alert, event, waiting, 20);
+  }
 }
 
 /**
@@ -112,7 +147,7 @@ function notificationFor(alert, event) {
  * service reports as gone (the app was uninstalled, permission revoked) are
  * returned so the caller can forget them.
  */
-async function deliver(alert, event, subscriptions) {
+async function deliver(alert, event, subscriptions, ttl = 300) {
   if (!pushIsConfigured() || subscriptions.length === 0) {
     return { delivered: [], dead: [] };
   }
@@ -139,7 +174,7 @@ async function deliver(alert, event, subscriptions) {
           // "high" wakes a phone that is dozing; five minutes is long enough
           // to reach a phone that just lost signal, and short enough that a
           // phone switched on tomorrow does not ring about tonight.
-          { TTL: 300, urgency: "high" }
+          { TTL: ttl, urgency: "high" }
         );
         delivered.push(sub.contactId);
       } catch (err) {

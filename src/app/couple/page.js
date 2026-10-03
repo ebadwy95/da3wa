@@ -222,7 +222,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
       <div className="card p-4 flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="font-bold">شوفوا الدعوة زي ما الضيوف هيشوفوها</h2>
-          <p className="text-xs text-ink-2">معاينة بس — الأزرار فيها مش بتسجّل حاجة.</p>
+          <p className="text-xs text-ink-2">معاينة بس — الأزرار فيها ما تسجّل شي.</p>
         </div>
         <InvitePreviewButtons eventId={eventId} cardToken={event?.cardToken} />
       </div>

@@ -29,7 +29,7 @@ export default async function GuardPage({ params }) {
         <div className="card max-w-sm w-full p-8 text-center flex flex-col gap-3">
           <h1 className="title" style={{ color: "var(--danger)" }}>الرابط غير صالح</h1>
           <p className="meta leading-relaxed">
-            يمكن يكون اسمك اتشال من فريق الأمن للفرح ده، أو الرابط ناقص. اطلب رابط جديد من إدارة دعوة.
+            يمكن اسمك انشال من فريق الأمن لهالعرس، أو الرابط ناقص. اطلب رابط جديد من إدارة دعوة.
           </p>
         </div>
       </main>
