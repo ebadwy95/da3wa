@@ -4,6 +4,7 @@ import { withDb } from "@/lib/db";
 import { verifyCheckinCode } from "@/lib/token";
 import { isAdminAuthed } from "@/lib/auth";
 import { getScannerSession } from "@/lib/scannerAuth";
+import { raiseSecurityAlert } from "@/lib/security";
 
 // How many door-scan log entries to keep for each event.
 const PER_EVENT_LOG_LIMIT = 500;
@@ -191,6 +192,26 @@ export async function POST(request) {
       remaining: remainingAfter,
     });
   });
+
+  // An entry code that has already let its whole party in is being shown
+  // again: either the card was shared, or someone is trying it on. The
+  // security team is called from here rather than by the scanner page, so the
+  // alarm goes out even if the page is old, offline-cached or tampered with.
+  if (result.reason === "already_full" && result.eventId) {
+    try {
+      const raised = await raiseSecurityAlert({
+        eventId: result.eventId,
+        type: "duplicate",
+        staffName,
+        guestId: result.guestId,
+        guestName: result.guestName,
+      });
+      result.security = { alertId: raised.alert.id, notified: raised.notified };
+    } catch (err) {
+      console.warn("[checkin] security alert failed:", err.message);
+      result.security = { alertId: null, notified: [] };
+    }
+  }
 
   return NextResponse.json(result, { status: result.ok ? 200 : 409 });
 }

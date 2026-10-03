@@ -17,7 +17,7 @@ import {
   CheckinLogFeed,
   WishWall,
 } from "@/components/dashboardWidgets";
-import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon } from "@/components/icons";
+import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon, ShieldIcon } from "@/components/icons";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { joinCoupleNames, resolveCoupleParts } from "@/lib/couple";
 import { LoginScreen, DashboardHeader } from "@/components/dashboardChrome";
@@ -940,6 +940,168 @@ function ScannerAccessCard({ event, onUpdated }) {
   );
 }
 
+// The people called to the gate when the door needs help: an SOS from the
+// scanner, or an entry code that was already used. Each gets a personal link
+// that installs as an app and rings their phone — not a WhatsApp message,
+// which can sit in a queue or be refused exactly when it matters.
+function SecurityTeamCard({ event }) {
+  const [data, setData] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [copied, setCopied] = useState(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/events/${event.id}/security`, { cache: "no-store" });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    setData(json);
+    setRows(json.contacts.length ? json.contacts.map(({ id, name, phone }) => ({ id, name, phone })) : [{ name: "", phone: "" }]);
+  }, [event.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function save() {
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const res = await fetch(`/api/events/${event.id}/security`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contacts: rows }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "تعذّر الحفظ");
+      setData(json);
+      setRows(json.contacts.length ? json.contacts.map(({ id, name, phone }) => ({ id, name, phone })) : [{ name: "", phone: "" }]);
+      setNotice("تم الحفظ ✓ — ابعت لكل واحد الرابط بتاعه");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function sendTest() {
+    setNotice("");
+    setError("");
+    const res = await fetch("/api/security/alert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "test", eventId: event.id }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return setError(json.error || "تعذّر الإرسال");
+    setNotice(json.notified?.length ? `وصل التنبيه التجريبي لـ: ${json.notified.join("، ")}` : "مفيش حد مفعّل التنبيهات لسه");
+    load();
+  }
+
+  function copy(text, key) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
+
+  function update(i, field, value) {
+    setRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+  }
+
+  if (!data) return null;
+  const saved = new Map(data.contacts.map((c) => [c.id, c]));
+  const typeLabel = { sos: "🚨 طوارئ (SOS)", duplicate: "⚠️ باركود مستخدم", test: "تجربة" };
+
+  return (
+    <div className="card p-4 space-y-3">
+      <h2 className="font-bold flex items-center gap-2">
+        <ShieldIcon size={18} /> فريق الأمن — نداء البوابة
+      </h2>
+      <p className="text-xs text-ink-2 leading-relaxed">
+        لما موظف الباب يضغط زر SOS، أو حد يقدّم باركود اتمسح قبل كده، موبايل الأشخاص دول بيرن فورًا
+        بإشعار (مش واتساب). كل شخص له رابط خاص: يفتحه ويضغط «تفعيل التنبيهات» — وعلى الآيفون لازم
+        يضيفه للشاشة الرئيسية الأول. موظف الباب كمان يقدر يتصل بيهم بضغطة. حتى {data.max} أشخاص.
+      </p>
+      {!data.pushConfigured && (
+        <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
+          مفاتيح التنبيهات (VAPID) مش مضبوطة على الخادم — التنبيهات مش هتشتغل.
+        </p>
+      )}
+
+      <div className="space-y-2">
+        {rows.map((r, i) => {
+          const c = r.id ? saved.get(r.id) : null;
+          return (
+            <div key={r.id || `new-${i}`} className="border rounded-lg p-2 flex flex-col gap-2" style={{ borderColor: "var(--line-soft)" }}>
+              <div className="flex flex-wrap gap-2 items-center">
+                <input value={r.name} onChange={(e) => update(i, "name", e.target.value)} placeholder="الاسم" className="field flex-1 min-w-[120px]" />
+                <input value={r.phone} onChange={(e) => update(i, "phone", e.target.value)} placeholder="+965…" dir="ltr" className="field flex-1 min-w-[140px]" />
+                <button onClick={() => setRows((prev) => prev.filter((_, idx) => idx !== i))} className="pill-btn-danger pill-btn-sm">حذف</button>
+              </div>
+              {c && (
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span
+                    className="text-xs px-2 py-1 rounded-full font-semibold"
+                    style={c.devices ? { background: "var(--ok-bg)", color: "var(--ok)" } : { background: "var(--warn-bg)", color: "var(--warn)" }}
+                  >
+                    {c.devices ? `التنبيهات مفعّلة ✓ (${c.devices} جهاز)` : "لسه ما فعّلش التنبيهات"}
+                  </span>
+                  <button onClick={() => copy(c.link, c.id)} className="pill-btn-outline pill-btn-sm">
+                    {copied === c.id ? "تم النسخ ✓" : "نسخ رابطه"}
+                  </button>
+                  <a
+                    href={`https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`أهلًا ${c.name}، ده رابط تنبيهات الأمن لفرح ${event.coupleNames}. افتحه واضغط «تفعيل التنبيهات» (على الآيفون: من Safari ← مشاركة ← إضافة إلى الشاشة الرئيسية، وافتحه من الأيقونة):\n${c.link}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="pill-btn-ghost pill-btn-sm"
+                    style={{ color: "var(--gold-600)" }}
+                  >
+                    ابعته واتساب
+                  </a>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {rows.length < data.max && (
+          <button onClick={() => setRows((prev) => [...prev, { name: "", phone: "" }])} className="pill-btn-outline text-sm">
+            + إضافة شخص
+          </button>
+        )}
+        <button onClick={save} disabled={saving} className="pill-btn text-sm">
+          {saving ? "..." : "حفظ"}
+        </button>
+        {data.contacts.length > 0 && (
+          <button onClick={sendTest} className="pill-btn-outline text-sm">إرسال تنبيه تجربة للكل</button>
+        )}
+      </div>
+      {notice && <p className="hint">{notice}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
+
+      {data.alerts.length > 0 && (
+        <div className="space-y-1 pt-2 border-t" style={{ borderColor: "var(--line-soft)" }}>
+          <p className="text-sm font-semibold">آخر التنبيهات</p>
+          {data.alerts.slice(0, 8).map((a) => (
+            <p key={a.id} className="text-xs text-ink-2">
+              {new Date(a.createdAt).toLocaleString("ar-EG", { hour: "numeric", minute: "2-digit", day: "numeric", month: "short" })} — {typeLabel[a.type] || a.type}
+              {a.guestName ? ` — ${a.guestName}` : ""}
+              {a.staffName ? ` — ${a.staffName}` : ""}
+              {" — "}
+              {a.acks.length ? `ردّ: ${a.acks.map((x) => x.name).join("، ")}` : a.notified.length ? `وصل لـ ${a.notified.join("، ")}` : "ما وصلش لحد"}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CoupleCredentialsCard({ event, onUpdated }) {
   const [copied, setCopied] = useState(null);
   const [resetting, setResetting] = useState(false);
@@ -1170,6 +1332,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       )}
 
       <ScannerAccessCard event={eventForDisplay} onUpdated={(scanners) => setOverrides((prev) => ({ ...prev, scanners }))} />
+      <SecurityTeamCard event={eventForDisplay} />
       <CoupleCredentialsCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
 
       {stats && (

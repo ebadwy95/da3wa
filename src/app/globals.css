@@ -1884,3 +1884,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .wish-lit { animation: none; border-color: var(--gold-500); }
 }
+
+/* The gate alarm's full-screen red. A safety signal like the rejection flash,
+   so it is not switched off for reduced motion. */
+@keyframes da3wa-alarm {
+  0%, 100% { background: #a6321f; }
+  50%      { background: #6e140a; }
+}
+.da3wa-alarm-overlay { animation: da3wa-alarm 0.8s steps(1) infinite; }

@@ -37,4 +37,18 @@ const nextConfig = {
   },
 };
 
+// The service worker that rings a security contact's phone (public/sw.js).
+// Never cached: a fix to the alarm must reach phones on their next visit, not
+// whenever the browser's HTTP cache decides to let go of the old copy.
+nextConfig.headers = async () => [
+  {
+    source: "/sw.js",
+    headers: [
+      { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+      { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+      { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'" },
+    ],
+  },
+];
+
 export default nextConfig;

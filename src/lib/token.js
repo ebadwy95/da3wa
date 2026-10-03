@@ -109,3 +109,29 @@ export function verifyCheckinCode(code) {
     crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected));
   return { valid, guestId: valid ? guestId : null };
 }
+
+// A security contact's personal link to the alert page (/guard/<key>). One
+// signature per person, not per wedding: each contact's alerts, "on my way"
+// replies and subscribed phones are attributed to them, and removing someone
+// from the wedding's security team is enough to make their link dead.
+export function makeGuardToken(eventId, contactId) {
+  return sign(`guard:${eventId}:${contactId}`).slice(0, 24);
+}
+
+export function verifyGuardToken(eventId, contactId, token) {
+  if (!eventId || !contactId || !token) return false;
+  return makeGuardToken(eventId, contactId) === token;
+}
+
+// The three parts travel as one path segment so the installed app's start URL
+// is a plain path — iOS keeps the path of a home-screen app but not always
+// its query string.
+export function makeGuardKey(eventId, contactId) {
+  return `${eventId}.${contactId}.${makeGuardToken(eventId, contactId)}`;
+}
+
+export function parseGuardKey(key) {
+  const [eventId, contactId, token] = String(key || "").split(".");
+  if (!verifyGuardToken(eventId, contactId, token)) return null;
+  return { eventId, contactId };
+}

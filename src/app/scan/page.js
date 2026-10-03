@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ScanIcon,
   ShieldIcon,
@@ -10,48 +10,25 @@ import {
   LogOutIcon,
   UsersIcon,
   LockIcon,
+  PhoneIcon,
 } from "@/components/icons";
+import {
+  beepAlarm,
+  startAlarm,
+  stopAlarm,
+  unlockAudio,
+  keepScreenOn,
+  registerAlertWorker,
+} from "@/lib/alarm";
 
 const READER_ID = "da3wa-qr-reader";
 
-// A longer siren-style rejection alert (frequency sweeping up and down for
-// about 1.6 seconds) rather than a couple of short beeps — loud and
-// distinctive enough that door staff notice it even without looking at the
-// screen. Pure Web Audio API, no audio file needed.
+// Holding, not tapping: the SOS button is on the same screen the staff are
+// pressing all night, and a pocket or a stray thumb must not call the team.
+const SOS_HOLD_MS = 1200;
+
 function playAlertSound() {
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const now = ctx.currentTime;
-    const duration = 1.6;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sawtooth";
-
-    // Sweep the frequency up and down repeatedly — the classic siren shape.
-    const sweepMs = 0.4;
-    let t = now;
-    osc.frequency.setValueAtTime(500, t);
-    while (t < now + duration) {
-      osc.frequency.linearRampToValueAtTime(1100, t + sweepMs);
-      osc.frequency.linearRampToValueAtTime(500, t + sweepMs * 2);
-      t += sweepMs * 2;
-    }
-
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.3, now + 0.05);
-    gain.gain.setValueAtTime(0.3, now + duration - 0.15);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + duration);
-  } catch {
-    // Best-effort only — a browser blocking audio shouldn't break scanning.
-  }
+  beepAlarm();
 }
 
 function LoginGate({ onLoggedIn }) {
@@ -214,6 +191,12 @@ export default function ScanPage() {
   const [flash, setFlash] = useState(false);
   const scannerRef = useRef(null);
   const lastScanRef = useRef({ code: null, at: 0 });
+  // The security team for this wedding, for the call buttons, and the alarm
+  // in progress: { kind: "sos"|"duplicate", alertId, message, notified, acks }.
+  const [team, setTeam] = useState([]);
+  const [alarm, setAlarm] = useState(null);
+  const [sosProgress, setSosProgress] = useState(0);
+  const sosTimer = useRef(null);
 
   useEffect(() => {
     fetch("/api/scan-auth").then(async (res) => {
@@ -229,6 +212,73 @@ export default function ScanPage() {
     setFlash(true);
     playAlertSound();
     setTimeout(() => setFlash(false), 500);
+  }
+
+  // A code that already let its whole party in, shown again. The server has
+  // already called the security team (see /api/checkin); this side makes the
+  // door itself impossible to ignore: a siren that keeps going, the phone
+  // vibrating, the whole screen red, until the staff member stops it.
+  function raiseDuplicateAlarm(data) {
+    setResult({ ok: false, message: data.message });
+    startAlarm();
+    setAlarm({
+      kind: "duplicate",
+      alertId: data.security?.alertId || null,
+      message: data.message,
+      notified: data.security?.notified || [],
+      acks: [],
+    });
+  }
+
+  function silenceAlarm() {
+    stopAlarm();
+    setAlarm(null);
+  }
+
+  const loadTeam = useCallback(async () => {
+    const res = await fetch("/api/security/alerts", { cache: "no-store" }).catch(() => null);
+    if (!res?.ok) return null;
+    const data = await res.json();
+    setTeam(data.contacts || []);
+    return data.alerts || [];
+  }, []);
+
+  async function sendSos() {
+    navigator.vibrate?.(300);
+    setAlarm({ kind: "sos", alertId: null, sending: true, notified: [], acks: [] });
+    try {
+      const res = await fetch("/api/security/alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "sos" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "تعذّر الإرسال");
+      setAlarm({ kind: "sos", alertId: data.alertId, notified: data.notified || [], acks: [] });
+    } catch (err) {
+      setAlarm({ kind: "sos", alertId: null, failed: err.message, notified: [], acks: [] });
+    }
+  }
+
+  function startSosHold(e) {
+    e.preventDefault();
+    unlockAudio();
+    const began = Date.now();
+    clearInterval(sosTimer.current);
+    sosTimer.current = setInterval(() => {
+      const p = Math.min(1, (Date.now() - began) / SOS_HOLD_MS);
+      setSosProgress(p);
+      if (p >= 1) {
+        clearInterval(sosTimer.current);
+        setSosProgress(0);
+        sendSos();
+      }
+    }, 30);
+  }
+
+  function cancelSosHold() {
+    clearInterval(sosTimer.current);
+    setSosProgress(0);
   }
 
   async function submitCode(code) {
@@ -248,6 +298,10 @@ export default function ScanPage() {
         body: JSON.stringify({ code, mode: "peek" }),
       });
       const data = await res.json();
+      if (!data.ok && data.reason === "already_full") {
+        raiseDuplicateAlarm(data);
+        return;
+      }
       if (!data.ok) {
         reject(data.message || "مرفوض");
         return;
@@ -284,6 +338,37 @@ export default function ScanPage() {
       setConfirming(false);
     }
   }
+
+  useEffect(() => {
+    if (authed !== true) return;
+    loadTeam();
+    registerAlertWorker();
+    let lock = null;
+    keepScreenOn().then((l) => (lock = l));
+    // The siren can only sound after the page has been touched once.
+    const unlock = () => unlockAudio();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      lock?.release?.().catch(() => {});
+      stopAlarm();
+    };
+  }, [authed, loadTeam]);
+
+  // While an alarm is up, watch for the team's "on my way".
+  useEffect(() => {
+    if (!alarm?.alertId) return;
+    const timer = setInterval(async () => {
+      const alerts = await loadTeam();
+      const latest = alerts?.find((a) => a.id === alarm.alertId);
+      if (latest) {
+        setAlarm((cur) =>
+          cur?.alertId === latest.id ? { ...cur, acks: latest.acks, notified: latest.notified } : cur
+        );
+      }
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [alarm?.alertId, loadTeam]);
 
   useEffect(() => {
     if (authed !== true) return;
@@ -338,6 +423,7 @@ export default function ScanPage() {
     return (
       <LoginGate
         onLoggedIn={(event, name) => {
+          unlockAudio();
           setEventInfo(event);
           setStaffName(name || "");
           setAuthed(true);
@@ -347,7 +433,30 @@ export default function ScanPage() {
   }
 
   return (
-    <main className="min-h-screen p-5 max-w-md mx-auto flex flex-col gap-4 relative">
+    <main className="min-h-screen p-5 pb-32 max-w-md mx-auto flex flex-col gap-4 relative">
+      {alarm?.kind === "duplicate" && (
+        <div
+          className="fixed inset-0 z-[60] da3wa-alarm-overlay flex flex-col items-center justify-center gap-5 p-6 text-center"
+          role="alertdialog"
+          aria-live="assertive"
+          style={{ color: "#fff" }}
+        >
+          <BanIcon size={64} />
+          <p style={{ fontSize: "2rem", fontWeight: 800, lineHeight: 1.3 }}>باركود مستخدم من قبل!</p>
+          <p style={{ fontSize: "1.1rem", fontWeight: 600, lineHeight: 1.7 }}>
+            {alarm.message}
+            <br />
+            لا تسمح بالدخول.
+          </p>
+          <TeamStatus alarm={alarm} team={team} light />
+          <button
+            onClick={silenceAlarm}
+            style={{ background: "#fff", color: "#a6321f", fontSize: "1.3rem", fontWeight: 800, borderRadius: "9999px", padding: "0.9rem 2.2rem" }}
+          >
+            إيقاف الإنذار
+          </button>
+        </div>
+      )}
       {flash && (
         <div
           className="fixed inset-0 pointer-events-none z-50 da3wa-flash-overlay"
@@ -387,6 +496,27 @@ export default function ScanPage() {
           )}
         </div>
       </header>
+
+      {alarm?.kind === "sos" && (
+        <section
+          className="card p-4 flex flex-col gap-3 da3wa-fade-in"
+          style={{ border: "2px solid var(--danger)", background: "var(--danger-bg)" }}
+          role="status"
+          aria-live="assertive"
+        >
+          <p className="title" style={{ color: "var(--danger)" }}>
+            {alarm.sending
+              ? "جارٍ إرسال نداء الطوارئ..."
+              : alarm.failed
+                ? "تعذّر إرسال النداء — اتصل فورًا"
+                : "🚨 تم إرسال نداء الطوارئ"}
+          </p>
+          <TeamStatus alarm={alarm} team={team} />
+          <button onClick={() => setAlarm(null)} className="pill-btn-outline pill-btn-sm self-start">
+            إغلاق
+          </button>
+        </section>
+      )}
 
       <div id={READER_ID} className="card overflow-hidden" />
 
@@ -525,6 +655,94 @@ export default function ScanPage() {
           </button>
         </div>
       </div>
+
+      {team.length > 0 && (
+        <div className="card p-4 flex flex-col gap-2">
+          <p className="label">فريق الأمن — اتصال مباشر</p>
+          <CallButtons team={team} />
+        </div>
+      )}
+
+      {eventInfo && (
+        <button
+          onPointerDown={startSosHold}
+          onPointerUp={cancelSosHold}
+          onPointerLeave={cancelSosHold}
+          onPointerCancel={cancelSosHold}
+          onContextMenu={(e) => e.preventDefault()}
+          aria-label="طوارئ — اضغط مطوّلًا لاستدعاء فريق الأمن"
+          className="fixed z-40 select-none"
+          style={{
+            bottom: "1.25rem",
+            left: "1.25rem",
+            width: "5.5rem",
+            height: "5.5rem",
+            borderRadius: "9999px",
+            padding: "5px",
+            touchAction: "none",
+            WebkitUserSelect: "none",
+            WebkitTouchCallout: "none",
+            boxShadow: "0 6px 20px rgba(166,50,31,0.45)",
+            background: `conic-gradient(#fff ${sosProgress * 360}deg, #a6321f 0deg)`,
+          }}
+        >
+          <span
+            className="flex flex-col items-center justify-center w-full h-full"
+            style={{ borderRadius: "9999px", background: "#a6321f", color: "#fff", fontWeight: 900, fontSize: "1.35rem", letterSpacing: "0.05em" }}
+          >
+            SOS
+            <span style={{ fontSize: "0.6rem", fontWeight: 600, letterSpacing: 0 }}>اضغط مطوّلًا</span>
+          </span>
+        </button>
+      )}
     </main>
+  );
+}
+
+function CallButtons({ team, light = false }) {
+  return (
+    <div className="flex flex-wrap gap-2 justify-center">
+      {team.map((c) => (
+        <a
+          key={c.phone}
+          href={`tel:${c.phone}`}
+          className={light ? "inline-flex items-center gap-2" : "pill-btn-outline pill-btn-sm"}
+          style={
+            light
+              ? { color: "#fff", border: "2px solid #fff", borderRadius: "9999px", padding: "0.5rem 1.1rem", fontWeight: 700 }
+              : undefined
+          }
+        >
+          <PhoneIcon size={16} />
+          اتصال بـ{c.name}
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// Who was called, who answered, and a one-tap call to each — the person at
+// the gate should never have to wonder whether help is coming.
+function TeamStatus({ alarm, team, light = false }) {
+  if (team.length === 0) {
+    return <p style={{ fontWeight: 600 }}>لم يُضَف أحد لفريق الأمن لهذا الزفاف — بلّغ الإدارة.</p>;
+  }
+  let line = null;
+  if (alarm.acks?.length > 0) {
+    line = (
+      <p style={{ fontWeight: 800, fontSize: "1.15rem" }}>
+        ✓ في الطريق إليك: {alarm.acks.map((a) => a.name).join("، ")}
+      </p>
+    );
+  } else if (alarm.notified?.length > 0) {
+    line = <p style={{ fontWeight: 600 }}>تم إبلاغ: {alarm.notified.join("، ")} — بانتظار الرد...</p>;
+  } else if (!alarm.sending) {
+    line = <p style={{ fontWeight: 700 }}>⚠️ لم يصل التنبيه لأحد — اتصل بهم الآن</p>;
+  }
+  return (
+    <div className="flex flex-col gap-3 items-center">
+      {line}
+      <CallButtons team={team} light={light} />
+    </div>
   );
 }
