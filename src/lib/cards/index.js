@@ -69,8 +69,13 @@ function seatsLine(guest, lang) {
   // confirmed. Never the allowance — a guest invited for four who confirms two
   // must not walk in holding a card that says four.
   const total = 1 + (Number(guest.confirmedCompanions) || 0);
-  if (total <= 1) return lang === "en" ? "Admits 1" : "لشخص واحد";
-  return lang === "en" ? `Admits ${total}` : `يشمل ${total} أشخاص`;
+  if (lang === "en") return `Admits ${total}`;
+  // Arabic counts its nouns: one and two have their own forms, three to ten
+  // take the plural, and eleven upwards go back to the singular.
+  if (total <= 1) return "لشخص واحد";
+  if (total === 2) return "لشخصين";
+  if (total <= 10) return `يشمل ${total} أشخاص`;
+  return `يشمل ${total} شخصًا`;
 }
 
 /**
