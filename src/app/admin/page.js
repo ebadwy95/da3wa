@@ -3,6 +3,7 @@
 import { TimelineEditor } from "@/components/TimelineEditor";
 import { InviteCopyEditor } from "@/components/InviteCopyEditor";
 import { HandSendPanel } from "@/components/HandSendPanel";
+import InstallHint from "@/components/InstallHint";
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -54,6 +55,7 @@ function LoginForm({ onLoggedIn }) {
     <LoginScreen
       title="لوحة الإدارة"
       hint="الدخول لمسؤول المنصّة."
+      footer={<InstallHint label="ثبّت لوحة الإدارة على الشاشة" appName="إدارة دعوة" />}
       error={error}
       loading={loading}
       onSubmit={submit}
@@ -1602,6 +1604,10 @@ export default function AdminPage() {
       />
 
       <div className="wrap p-5 flex flex-col gap-6" style={{ maxWidth: "80rem" }}>
+      <a href="/apps" className="card-flat px-4 py-3 flex items-center justify-between gap-3" style={{ textDecoration: "none" }}>
+        <span className="font-semibold">📱 كل تطبيقات دعوة — مين يستخدم أي تطبيق</span>
+        <span style={{ color: "var(--gold-600)" }}>←</span>
+      </a>
       <EnquiriesInbox />
 
       <div className="tab-switch">

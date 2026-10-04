@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import InstallHint from "@/components/InstallHint";
 import {
   StatCard,
   InvitePreviewButtons,
@@ -46,6 +47,7 @@ function LoginForm({ onLoggedIn }) {
     <LoginScreen
       title="لوحة مناسبتكما"
       hint="استخدما اسم المستخدم وكلمة المرور اللذين وصلاكما من الإدارة."
+      footer={<InstallHint label="ثبّتوا اللوحة على الشاشة" appName="دعوة العروسين" />}
       error={error}
       loading={loading}
       onSubmit={submit}

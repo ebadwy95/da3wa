@@ -15,7 +15,7 @@ import { StarOrnamentIcon, AlertIcon, LogOutIcon } from "@/components/icons";
  * The gate. Renders whatever fields the page passes as children, so the admin's
  * single password and the couple's username-and-password use one screen.
  */
-export function LoginScreen({ title, hint, error, loading, onSubmit, submitLabel, children }) {
+export function LoginScreen({ title, hint, error, loading, onSubmit, submitLabel, children, footer }) {
   return (
     <main className="min-h-screen flex flex-col" style={{ background: "var(--paper)" }}>
       <DashboardHeader />
@@ -44,6 +44,7 @@ export function LoginScreen({ title, hint, error, loading, onSubmit, submitLabel
           <button type="submit" disabled={loading} className="pill-btn w-full">
             {loading ? "جارٍ الدخول..." : submitLabel || "تسجيل الدخول"}
           </button>
+          {footer}
         </form>
       </div>
     </main>
