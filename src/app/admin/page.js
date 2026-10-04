@@ -17,7 +17,7 @@ import {
   CheckinLogFeed,
   WishWall,
 } from "@/components/dashboardWidgets";
-import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon, ShieldIcon } from "@/components/icons";
+import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon, ShieldIcon, SendIcon } from "@/components/icons";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { joinCoupleNames, resolveCoupleParts } from "@/lib/couple";
 import { LoginScreen, DashboardHeader } from "@/components/dashboardChrome";
@@ -1102,6 +1102,148 @@ function SecurityTeamCard({ event }) {
   );
 }
 
+// The sending app (/send): the groom and the bride each send every message
+// from their own WhatsApp. Here the admin creates their logins and decides
+// when the reminder and the thank-you open in it.
+function SendAppCard({ event }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [copied, setCopied] = useState(null);
+  const [dates, setDates] = useState({ reminderFrom: "", thanksFrom: "" });
+
+  const apply = useCallback((json) => {
+    setData(json);
+    setDates({ reminderFrom: json.reminderFrom || "", thanksFrom: json.thanksFrom || "" });
+  }, []);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/events/${event.id}/senders`, { cache: "no-store" });
+    if (res.ok) apply(await res.json());
+  }, [event.id, apply]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function call(method, body, okNotice) {
+    setError("");
+    setNotice("");
+    const res = await fetch(`/api/events/${event.id}/senders`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return setError(json.error || "تعذّر الحفظ");
+    apply(json);
+    setNotice(okNotice);
+  }
+
+  function copy(text, key) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
+
+  if (!data) return null;
+  const sides = [
+    ["groom", "العريس"],
+    ["bride", "العروس"],
+  ];
+
+  return (
+    <div className="card p-4 space-y-3">
+      <h2 className="font-bold flex items-center gap-2">
+        <SendIcon size={18} /> تطبيق الإرسال للعرسان
+      </h2>
+      <p className="text-xs text-ink-2 leading-relaxed">
+        العريس والعروس يرسلون كل الرسائل من واتساب حقهم: الدعوة، ثم بطاقة الـ QR، ثم التذكير، ثم الشكر. كل واحد
+        يدخل بحسابه ويشوف ضيوفه بس (حسب عمود «الطرف»)، والضيف اللي ما له طرف يطلع عند الاثنين.
+      </p>
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="field flex-1 min-w-[160px]" dir="ltr">{data.link}</div>
+        <button onClick={() => copy(data.link, "link")} className="pill-btn-outline pill-btn-sm">
+          {copied === "link" ? "تم النسخ ✓" : "نسخ الرابط"}
+        </button>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {sides.map(([side, label]) => {
+          const account = data.senders[side];
+          const count = data.counts[side];
+          return (
+            <div key={side} className="border rounded-lg p-3 flex flex-col gap-2" style={{ borderColor: "var(--line-soft)" }}>
+              <p className="font-semibold">
+                {label} <span className="text-xs text-ink-2">— {count} ضيف</span>
+              </p>
+              {account ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm" dir="ltr">
+                    <span className="font-mono">{account.username}</span>
+                    <span className="text-ink-3">/</span>
+                    <span className="font-mono">{account.password}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() =>
+                        copy(
+                          `تطبيق الإرسال — دعوة\n${data.link}\nاسم المستخدم: ${account.username}\nكلمة المرور: ${account.password}`,
+                          side
+                        )
+                      }
+                      className="pill-btn-outline pill-btn-sm"
+                    >
+                      {copied === side ? "تم النسخ ✓" : "نسخ بيانات الدخول"}
+                    </button>
+                    <button
+                      onClick={() => call("POST", { side }, `كلمة مرور جديدة لـ${label} — الدخول القديم وقف`)}
+                      className="pill-btn-ghost pill-btn-sm"
+                    >
+                      كلمة مرور جديدة
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button onClick={() => call("POST", { side }, `تم إنشاء دخول ${label} ✓`)} className="pill-btn pill-btn-sm self-start">
+                  إنشاء دخول {label}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {data.counts.none > 0 && (
+        <p className="text-xs" style={{ color: "var(--warn)" }}>
+          {data.counts.none} ضيف بدون طرف — يطلعون عند العريس والعروس الاثنين. حدّد الطرف من جدول الضيوف.
+        </p>
+      )}
+
+      <div className="flex flex-wrap gap-3 items-end pt-2 border-t" style={{ borderColor: "var(--line-soft)" }}>
+        <div>
+          <label className="label">التذكير يفتح من</label>
+          <input type="date" value={dates.reminderFrom} onChange={(e) => setDates((d) => ({ ...d, reminderFrom: e.target.value }))} className="field" />
+        </div>
+        <div>
+          <label className="label">الشكر يفتح من</label>
+          <input type="date" value={dates.thanksFrom} onChange={(e) => setDates((d) => ({ ...d, thanksFrom: e.target.value }))} className="field" />
+        </div>
+        <button onClick={() => call("PUT", dates, "تم حفظ التواريخ ✓")} className="pill-btn pill-btn-sm">
+          حفظ
+        </button>
+        {(data.customReminderFrom || data.customThanksFrom) && (
+          <button onClick={() => call("PUT", { reminderFrom: null, thanksFrom: null }, "رجعت للتواريخ الافتراضية")} className="pill-btn-ghost pill-btn-sm">
+            الافتراضي (قبل الفرح بيومين / بعده بيوم)
+          </button>
+        )}
+      </div>
+      {notice && <p className="hint">{notice}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
+    </div>
+  );
+}
+
 function CoupleCredentialsCard({ event, onUpdated }) {
   const [copied, setCopied] = useState(null);
   const [resetting, setResetting] = useState(false);
@@ -1333,6 +1475,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
 
       <ScannerAccessCard event={eventForDisplay} onUpdated={(scanners) => setOverrides((prev) => ({ ...prev, scanners }))} />
       <SecurityTeamCard event={eventForDisplay} />
+      <SendAppCard event={eventForDisplay} />
       <CoupleCredentialsCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
 
       {stats && (
@@ -1368,6 +1511,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
               <tr className="text-xs text-ink-2 border-b" style={{ borderColor: "var(--line-soft)" }}>
                 <th className="py-2 px-2">الاسم</th>
                 <th className="py-2 px-2 text-center">لغة الدعوة</th>
+                <th className="py-2 px-2 text-center">الطرف</th>
                 <th className="py-2 px-2">الرقم</th>
                 <th className="py-2 px-2 text-center">إجمالي الحضور المسموح</th>
                 <th className="py-2 px-2 text-center">الحالة</th>
@@ -1383,7 +1527,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
               ))}
               {guests.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center text-ink-3 py-8">لا يوجد ضيوف مضافون بعد</td>
+                  <td colSpan={10} className="text-center text-ink-3 py-8">لا يوجد ضيوف مضافون بعد</td>
                 </tr>
               )}
             </tbody>

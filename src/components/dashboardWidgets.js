@@ -103,6 +103,53 @@ export function GuestLanguageToggle({ guest, onChanged }) {
   );
 }
 
+// Whose guest this is — the groom's or the bride's. Decides which of the two
+// see them in the sending app (/send); a guest with no side shows to both.
+// Tapping the chosen side again clears it.
+export function GuestSideToggle({ guest, onChanged }) {
+  const [side, setSide] = useState(guest.side || null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function choose(next) {
+    if (saving) return;
+    const value = next === side ? null : next;
+    const previous = side;
+    setSide(value);
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/guests/${guest.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ side: value }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "تعذّر الحفظ");
+      onChanged?.();
+    } catch (err) {
+      setSide(previous);
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="inline-flex flex-col items-center gap-1">
+      <div className="lang-toggle" role="radiogroup" aria-label={`طرف ${guest.name}`}>
+        <button type="button" role="radio" aria-checked={side === "groom"} data-on={side === "groom"} onClick={() => choose("groom")} disabled={saving}>
+          العريس
+        </button>
+        <button type="button" role="radio" aria-checked={side === "bride"} data-on={side === "bride"} onClick={() => choose("bride")} disabled={saving}>
+          العروس
+        </button>
+      </div>
+      {error && <span className="text-danger text-xs">{error}</span>}
+    </div>
+  );
+}
+
 export function GuestRow({ guest, onDelete, onChanged }) {
   const [copied, setCopied] = useState(false);
   const statusLabel = { pending: "لم يردّ بعد", confirmed: "أكّد الحضور", declined: "اعتذر" }[guest.status];
@@ -127,6 +174,9 @@ export function GuestRow({ guest, onDelete, onChanged }) {
       <td className="py-3 px-2 font-medium">{guest.name}</td>
       <td className="py-3 px-2 text-center">
         <GuestLanguageToggle guest={guest} onChanged={onChanged} />
+      </td>
+      <td className="py-3 px-2 text-center">
+        <GuestSideToggle guest={guest} onChanged={onChanged} />
       </td>
       <td className="py-3 px-2 text-ink-2" dir="ltr">{guest.phoneDisplay || guest.phone}</td>
       <td className="py-3 px-2 text-center">{maxTotalGuests}</td>
@@ -230,6 +280,8 @@ export function AddGuestForm({ eventId, onAdded }) {
   const [maxGuests, setMaxGuests] = useState(1);
   // Arabic by default; English for a guest who doesn't read Arabic.
   const [language, setLanguage] = useState("ar");
+  // The groom's guest or the bride's — who sends to them from /send.
+  const [side, setSide] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [limitInfo, setLimitInfo] = useState(null);
@@ -241,7 +293,7 @@ export function AddGuestForm({ eventId, onAdded }) {
       const res = await fetch(`/api/events/${eventId}/guests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, maxGuests, language, force }),
+        body: JSON.stringify({ name, phone, maxGuests, language, side: side || null, force }),
       });
       const data = await res.json();
       if (res.status === 409 && data.limitReached) {
@@ -254,6 +306,7 @@ export function AddGuestForm({ eventId, onAdded }) {
       setPhone("");
       setMaxGuests(1);
       setLanguage("ar");
+      setSide("");
       setLimitInfo(null);
     } catch (err) {
       setError(err.message);
@@ -292,6 +345,14 @@ export function AddGuestForm({ eventId, onAdded }) {
           <select value={language} onChange={(e) => setLanguage(e.target.value)} className="field">
             <option value="ar">عربي</option>
             <option value="en">English</option>
+          </select>
+        </div>
+        <div className="w-36">
+          <label className="label">الطرف</label>
+          <select value={side} onChange={(e) => setSide(e.target.value)} className="field">
+            <option value="">—</option>
+            <option value="groom">العريس</option>
+            <option value="bride">العروس</option>
           </select>
         </div>
         <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الإضافة..." : "إضافة"}</button>
@@ -345,7 +406,8 @@ export function BulkUpload({ eventId, onDone }) {
       <p className="text-xs text-ink-2">
         يجب أن يكون الملف بنفس أعمدة النموذج وبنفس الترتيب تمامًا: الاسم، رقم الواتساب بكود الدولة من غير +
         (مثلًا 96550012345 للكويت أو 966512345678 للسعودية)، إجمالي عدد الحضور (شامل الضيف نفسه — أي لو سيأتي مع
-        مرافقَين، يُكتب 3 وليس 2)، ولغة الدعوة: AR للعربي أو ENG للإنجليزي (لو الخانة فاضية تبقى عربي). أي ملف بترتيب
+        مرافقَين، يُكتب 3 وليس 2)، ولغة الدعوة: AR للعربي أو ENG للإنجليزي (لو الخانة فاضية تبقى عربي)، والطرف:
+        العريس أو العروس — يحدد مين يرسل للضيف من تطبيق الإرسال (لو فاضية يظهر عند الاثنين). أي ملف بترتيب
         مختلف سيُرفض.
       </p>
       <div className="flex gap-2 items-center flex-wrap">

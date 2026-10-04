@@ -135,3 +135,22 @@ export function parseGuardKey(key) {
   if (!verifyGuardToken(eventId, contactId, token)) return null;
   return { eventId, contactId };
 }
+
+// The groom's or bride's session in the sending app (/send). The password is
+// part of what is signed, so resetting it from the dashboard logs out every
+// phone that was using the old one.
+export function makeSenderToken(eventId, side, password) {
+  return sign(`sender:${eventId}:${side}:${password}`).slice(0, 24);
+}
+
+// The guest-facing pages a hand-sent message links to (the entry pass, the
+// thank-you card, the reminder's map). One signature per guest and purpose,
+// so a pass link can't be edited into somebody else's.
+export function makeGuestPageToken(guestId, purpose) {
+  return sign(`page:${purpose}:${guestId}`).slice(0, 20);
+}
+
+export function verifyGuestPageToken(guestId, purpose, token) {
+  if (!guestId || !token) return false;
+  return makeGuestPageToken(guestId, purpose) === token;
+}

@@ -44,14 +44,28 @@ export async function GET(request, { params }) {
   return NextResponse.json({ guest: opened || guest, event, language });
 }
 
-// The couple or admin choosing which card a guest receives, before sending.
+// The couple or admin choosing which card a guest receives, before sending,
+// and whose guest they are (which of the two sends to them from /send).
 export async function PATCH(request, { params }) {
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
 
-  const language = normaliseInviteLanguage(body.language);
-  if (!language) {
-    return NextResponse.json({ error: "لغة الدعوة لازم تكون عربي أو English" }, { status: 400 });
+  const changes = {};
+  if ("language" in body) {
+    changes.language = normaliseInviteLanguage(body.language);
+    if (!changes.language) {
+      return NextResponse.json({ error: "لغة الدعوة لازم تكون عربي أو English" }, { status: 400 });
+    }
+  }
+  // Whose guest: the groom's, the bride's, or null for not decided.
+  if ("side" in body) {
+    if (body.side !== null && !["groom", "bride"].includes(body.side)) {
+      return NextResponse.json({ error: "الطرف لازم يكون العريس أو العروس" }, { status: 400 });
+    }
+    changes.side = body.side;
+  }
+  if (Object.keys(changes).length === 0) {
+    return NextResponse.json({ error: "لا يوجد تعديل" }, { status: 400 });
   }
 
   const db = await getDb();
@@ -66,13 +80,13 @@ export async function PATCH(request, { params }) {
   const guest = await withDb((freshDb) => {
     const g = freshDb.guests.find((x) => x.id === id);
     if (!g) return null;
-    g.language = language;
+    Object.assign(g, changes);
     return g;
   });
   if (!guest) {
     return NextResponse.json({ error: "الضيف غير موجود" }, { status: 404 });
   }
-  return NextResponse.json({ guest: { id: guest.id, language: guest.language } });
+  return NextResponse.json({ guest: { id: guest.id, language: guest.language, side: guest.side || null } });
 }
 
 export async function DELETE(request, { params }) {

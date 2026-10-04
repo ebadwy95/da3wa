@@ -45,6 +45,7 @@ export async function POST(request, { params }) {
   if (!language) {
     return NextResponse.json({ error: "لغة الدعوة لازم تكون عربي أو English" }, { status: 400 });
   }
+  const side = ["groom", "bride"].includes(body.side) ? body.side : null;
   const parsedPhone = normalizePhone(phone);
   if (!parsedPhone.valid) {
     return NextResponse.json({ error: parsedPhone.error }, { status: 400 });
@@ -81,6 +82,7 @@ export async function POST(request, { params }) {
       phoneDisplay: parsedPhone.e164,
       maxCompanions: parsedMaxGuests - 1,
       language,
+      side,
       status: "pending",
       confirmedCompanions: null,
       checkedIn: false,

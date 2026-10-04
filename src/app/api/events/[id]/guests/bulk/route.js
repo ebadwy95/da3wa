@@ -15,6 +15,7 @@ export const TEMPLATE_HEADERS = [
   "رقم الواتساب (مع كود الدولة)",
   "إجمالي عدد الحضور (شامل الضيف نفسه)",
   "لغة الدعوة (AR أو ENG)",
+  "الطرف (العريس أو العروس)",
 ];
 
 // The language column came later. A sheet downloaded before it existed has the
@@ -22,6 +23,18 @@ export const TEMPLATE_HEADERS = [
 // Arabic card, which is what that sheet meant when it was filled in.
 const REQUIRED_HEADERS = TEMPLATE_HEADERS.slice(0, 3);
 const LANGUAGE_HEADER = TEMPLATE_HEADERS[3];
+// The side column came after that, for the sending app. Optional the same
+// way: a sheet without it leaves every guest with no side, shown to both.
+const SIDE_HEADER = TEMPLATE_HEADERS[4];
+
+// What people actually type in the side column.
+function readSide(cell) {
+  const v = String(cell ?? "").trim().toLowerCase();
+  if (!v) return { side: null };
+  if (/^(العريس|عريس|الزوج|groom|g)$/.test(v)) return { side: "groom" };
+  if (/^(العروس|العروسة|عروس|عروسة|الزوجة|bride|b)$/.test(v)) return { side: "bride" };
+  return { error: true };
+}
 
 function normalizeHeaderCell(v) {
   return String(v ?? "").trim();
@@ -60,9 +73,13 @@ export async function POST(request, { params }) {
 
   const headerRow = rows[0].map(normalizeHeaderCell);
   const fourth = headerRow[3] || "";
+  const fifth = headerRow[4] || "";
   const hasLanguageColumn = fourth === LANGUAGE_HEADER;
+  const hasSideColumn = hasLanguageColumn && fifth === SIDE_HEADER;
   const headerMatches =
-    REQUIRED_HEADERS.every((h, i) => headerRow[i] === h) && (hasLanguageColumn || fourth === "");
+    REQUIRED_HEADERS.every((h, i) => headerRow[i] === h) &&
+    (hasLanguageColumn || fourth === "") &&
+    (hasSideColumn || fifth === "");
 
   if (!headerMatches) {
     return NextResponse.json(
@@ -83,7 +100,7 @@ export async function POST(request, { params }) {
 
   dataRows.forEach((row, idx) => {
     const rowNumber = idx + 2; // +1 for header, +1 for 1-indexing
-    const [rawName, rawPhone, rawTotalGuests, rawLanguage] = row;
+    const [rawName, rawPhone, rawTotalGuests, rawLanguage, rawSide] = row;
     const name = String(rawName ?? "").trim();
     if (!name) {
       errors.push({ row: rowNumber, reason: "الاسم فارغ" });
@@ -110,12 +127,20 @@ export async function POST(request, { params }) {
         return;
       }
     }
+    const sideCell = hasSideColumn ? readSide(rawSide) : { side: null };
+    if (sideCell.error) {
+      errors.push({
+        row: rowNumber,
+        reason: `طرف الضيف "${name}" غير مفهوم ("${String(rawSide).trim()}") — اكتب العريس أو العروس`,
+      });
+      return;
+    }
     // The sheet's number is the TOTAL party size including the guest
     // themself (e.g. 3 = هو + مرافقين اتنين) — stored internally as
     // companions beyond the guest, same as the single-add form.
     const maxTotalGuests = Math.max(1, parseInt(rawTotalGuests, 10) || 1);
     const maxCompanions = maxTotalGuests - 1;
-    candidates.push({ name, phone, maxCompanions, language, rowNumber });
+    candidates.push({ name, phone, maxCompanions, language, side: sideCell.side, rowNumber });
   });
 
   const result = await withDb((db) => {
@@ -137,6 +162,7 @@ export async function POST(request, { params }) {
         phoneDisplay: c.phone.e164,
         maxCompanions: c.maxCompanions,
         language: c.language,
+        side: c.side,
         status: "pending",
         confirmedCompanions: null,
         checkedIn: false,
