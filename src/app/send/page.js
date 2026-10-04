@@ -29,21 +29,18 @@ const STEP_COLOR = {
 const STEPS = ["invite", "qr", "reminder", "thanks"];
 
 // A phone with both WhatsApp and WhatsApp Business asks "open with which?"
-// for every wa.me link — two hundred times over a guest list. Both phones can
-// name the app instead: Android with an intent link, iPhone with each app's
-// own URL scheme. So the choice is asked once and remembered on this phone.
+// for every wa.me link — two hundred times over a guest list. On Android the
+// link can name the app instead, so the choice is asked once and remembered
+// on this phone.
+//
+// iPhone can't be helped: with both installed, iOS hands every WhatsApp link
+// and scheme (whatsapp:// included) to WhatsApp Business, which then asks
+// itself. Tried on a real phone; a phone with one WhatsApp never asks.
 const WA_PACKAGES = { personal: "com.whatsapp", business: "com.whatsapp.w4b" };
-const WA_SCHEMES = { personal: "whatsapp", business: "whatsapp-business" };
 const WA_PREF_KEY = "da3wa-send-whatsapp";
 
 function isAndroid() {
   return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
-}
-
-function isIOS() {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  return /iPhone|iPad|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
 }
 
 function readWaPref() {
@@ -69,18 +66,6 @@ function openWhatsApp(link, pref) {
     window.location.href =
       `intent://send/?phone=${phone}&text=${encodeURIComponent(text)}` +
       `#Intent;scheme=whatsapp;package=${pkg};S.browser_fallback_url=${encodeURIComponent(link)};end`;
-    return;
-  }
-  if (isIOS() && WA_SCHEMES[pref]) {
-    const url = new URL(link);
-    const phone = url.pathname.replace(/[^0-9]/g, "");
-    const text = url.searchParams.get("text") || "";
-    window.location.href = `${WA_SCHEMES[pref]}://send?phone=${phone}&text=${encodeURIComponent(text)}`;
-    // If that app isn't on the phone the scheme goes nowhere and the page is
-    // still showing; fall back to the ordinary link.
-    setTimeout(() => {
-      if (document.visibilityState === "visible") window.location.href = link;
-    }, 1500);
     return;
   }
   window.open(link, "_blank", "noopener");
@@ -278,7 +263,7 @@ export default function SendApp() {
   const [canPickApp, setCanPickApp] = useState(false);
 
   useEffect(() => {
-    setCanPickApp(isAndroid() || isIOS());
+    setCanPickApp(isAndroid());
     setWaPref(readWaPref());
   }, []);
 
