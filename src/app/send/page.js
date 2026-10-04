@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SendIcon, LogOutIcon, CheckCircleIcon, SearchIcon } from "@/components/icons";
+import InstallHint from "@/components/InstallHint";
 
 // The sending app: the groom or the bride, one list of their guests, and on
 // each guest one button for whichever message is due next. Pressing it opens
@@ -26,6 +27,62 @@ const STEP_COLOR = {
   thanks: "#1d5c47",
 };
 const STEPS = ["invite", "qr", "reminder", "thanks"];
+
+// A phone with both WhatsApp and WhatsApp Business asks "open with which?"
+// for every wa.me link — two hundred times over a guest list. On Android the
+// link can name the app instead, so the choice is asked once and remembered
+// on this phone. iPhone has no chooser to skip.
+const WA_PACKAGES = { personal: "com.whatsapp", business: "com.whatsapp.w4b" };
+const WA_PREF_KEY = "da3wa-send-whatsapp";
+
+function isAndroid() {
+  return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+}
+
+function readWaPref() {
+  try {
+    return localStorage.getItem(WA_PREF_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveWaPref(value) {
+  try {
+    localStorage.setItem(WA_PREF_KEY, value);
+  } catch {}
+}
+
+function openWhatsApp(link, pref) {
+  const pkg = WA_PACKAGES[pref];
+  if (isAndroid() && pkg) {
+    const url = new URL(link);
+    const phone = url.pathname.replace(/[^0-9]/g, "");
+    const text = url.searchParams.get("text") || "";
+    window.location.href =
+      `intent://send/?phone=${phone}&text=${encodeURIComponent(text)}` +
+      `#Intent;scheme=whatsapp;package=${pkg};S.browser_fallback_url=${encodeURIComponent(link)};end`;
+    return;
+  }
+  window.open(link, "_blank", "noopener");
+}
+
+function WhatsAppPicker({ onPick, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onCancel}>
+      <div className="card w-full max-w-md p-5 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+        <p className="font-bold text-center">ترسل من أي واتساب؟</p>
+        <p className="hint text-center" style={{ margin: 0 }}>نسألك مرة وحدة بس — وتقدر تغيّرها بعدين من فوق.</p>
+        <button onClick={() => onPick("personal")} className="pill-btn w-full" style={{ background: "#1d5c47", borderColor: "#1d5c47" }}>
+          واتساب العادي
+        </button>
+        <button onClick={() => onPick("business")} className="pill-btn w-full" style={{ background: "#2f5f9e", borderColor: "#2f5f9e" }}>
+          واتساب بزنس
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function dayLabel(iso) {
   if (!iso) return "";
@@ -73,6 +130,7 @@ function LoginForm({ onDone }) {
         <button disabled={busy} className="pill-btn w-full" style={{ background: "#1d5c47", borderColor: "#1d5c47" }}>
           {busy ? "..." : "دخول"}
         </button>
+        <InstallHint label="ثبّت التطبيق على الشاشة" appName="إرسال دعوة" />
       </form>
     </main>
   );
@@ -195,6 +253,15 @@ export default function SendApp() {
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
+  // Which WhatsApp to open on Android: "personal", "business", or not chosen.
+  const [waPref, setWaPref] = useState(null);
+  const [picker, setPicker] = useState(null); // { guest, step } waiting on the choice
+  const [android, setAndroid] = useState(false);
+
+  useEffect(() => {
+    setAndroid(isAndroid());
+    setWaPref(readWaPref());
+  }, []);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/send/guests", { cache: "no-store" });
@@ -222,10 +289,14 @@ export default function SendApp() {
     };
   }, [authed, load]);
 
-  async function tap(guest, step) {
+  async function tap(guest, step, pref = waPref) {
+    if (android && !WA_PACKAGES[pref]) {
+      setPicker({ guest, step });
+      return;
+    }
     // Opened first, inside the tap: a window opened after an await has lost
     // the gesture that allows it, and the phone blocks it.
-    window.open(guest.links[step], "_blank", "noopener");
+    openWhatsApp(guest.links[step], pref);
     setBusy(true);
     await fetch("/api/send/tap", {
       method: "POST",
@@ -293,6 +364,18 @@ export default function SendApp() {
 
   return (
     <main className="min-h-screen p-4 max-w-md mx-auto flex flex-col gap-3">
+      {picker && (
+        <WhatsAppPicker
+          onCancel={() => setPicker(null)}
+          onPick={(choice) => {
+            saveWaPref(choice);
+            setWaPref(choice);
+            const pending = picker;
+            setPicker(null);
+            tap(pending.guest, pending.step, choice);
+          }}
+        />
+      )}
       <header className="flex items-center justify-between gap-2">
         <div>
           <h1 className="title" style={{ color: "#1d5c47" }}>{sideLabel}</h1>
@@ -309,6 +392,24 @@ export default function SendApp() {
           <LogOutIcon size={15} /> خروج
         </button>
       </header>
+
+      <InstallHint label="ثبّت التطبيق على الشاشة" appName="إرسال دعوة" />
+
+      {android && WA_PACKAGES[waPref] && (
+        <p className="text-xs text-ink-2 flex items-center gap-2">
+          ترسل من: <b>{waPref === "business" ? "واتساب بزنس" : "واتساب العادي"}</b>
+          <button
+            onClick={() => {
+              saveWaPref("");
+              setWaPref(null);
+            }}
+            className="underline"
+            style={{ color: "#1d5c47" }}
+          >
+            تغيير
+          </button>
+        </p>
+      )}
 
       <div className="card-flat p-3 text-xs leading-relaxed text-ink-2">
         اضغط الزر، بيفتح واتساب والرسالة جاهزة — اضغط إرسال وارجع هني. أول شي أرسل الدعوة لكل القائمة، بعدين

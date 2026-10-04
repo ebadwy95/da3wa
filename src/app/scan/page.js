@@ -20,6 +20,7 @@ import {
   keepScreenOn,
   registerAlertWorker,
 } from "@/lib/alarm";
+import InstallHint from "@/components/InstallHint";
 
 const READER_ID = "da3wa-qr-reader";
 
@@ -32,58 +33,6 @@ const CAMERA_IDLE_MS = 3 * 60 * 1000;
 
 function playAlertSound() {
   beepAlarm();
-}
-
-// Getting the scanner onto the home screen. Android's Chrome offers its own
-// install prompt, which this button triggers; iPhone has no prompt at all, so
-// it gets the three taps spelled out. Hidden once it is running as the app.
-function InstallHint() {
-  const [mode, setMode] = useState(null); // "android" | "ios" | null
-  const prompt = useRef(null);
-
-  useEffect(() => {
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
-    if (standalone) return;
-    const ua = navigator.userAgent;
-    if (/iPhone|iPad|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document)) {
-      setMode("ios");
-      return;
-    }
-    const onPrompt = (e) => {
-      e.preventDefault();
-      prompt.current = e;
-      setMode("android");
-    };
-    window.addEventListener("beforeinstallprompt", onPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
-  }, []);
-
-  if (mode === "android") {
-    return (
-      <button
-        type="button"
-        onClick={async () => {
-          prompt.current?.prompt();
-          await prompt.current?.userChoice;
-          setMode(null);
-        }}
-        className="pill-btn-outline w-full"
-      >
-        📲 تثبيت السكانر كتطبيق على الشاشة
-      </button>
-    );
-  }
-  if (mode === "ios") {
-    return (
-      <div className="card-flat p-3 text-right leading-relaxed" style={{ fontSize: "var(--text-sm)" }}>
-        <p className="font-bold mb-1">📲 ثبّت السكانر كتطبيق على الآيفون:</p>
-        اضغط زر <b>المشاركة</b> (المربع اللي طالع منه سهم) ← <b>«إضافة إلى الشاشة الرئيسية»</b> ← «إضافة»،
-        وبعدين افتحه من أيقونة <b>«سكانر دعوة»</b>.
-      </div>
-    );
-  }
-  return null;
 }
 
 function LoginGate({ onLoggedIn }) {
@@ -178,7 +127,7 @@ function LoginGate({ onLoggedIn }) {
               <ScanIcon size={18} />
               دخول
             </button>
-            <InstallHint />
+            <InstallHint label="ثبّت السكانر كتطبيق على الشاشة" appName="سكانر دعوة" />
             <button
               type="button"
               onClick={() => {
@@ -763,7 +712,7 @@ export default function ScanPage() {
         </div>
       )}
 
-      <InstallHint />
+      <InstallHint label="ثبّت السكانر كتطبيق على الشاشة" appName="سكانر دعوة" />
 
       {eventInfo && (
         <button
