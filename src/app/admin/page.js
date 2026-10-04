@@ -8,6 +8,7 @@ import InstallHint from "@/components/InstallHint";
 import { useCallback, useEffect, useState } from "react";
 import {
   StatCard,
+  GuestBreakdown,
   InvitePreviewButtons,
   GuestRow,
   LimitReachedModal,
@@ -1480,16 +1481,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       <SendAppCard event={eventForDisplay} />
       <CoupleCredentialsCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
 
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          <StatCard label="إجمالي الدعوات" value={stats.invited} />
-          <StatCard label="أكدوا" value={stats.confirmed} accent="var(--ok)" />
-          <StatCard label="لم يردّوا بعد" value={stats.pending} accent="var(--gold-600)" />
-          <StatCard label="اعتذروا" value={stats.declined} accent="var(--danger)" />
-          <StatCard label="إجمالي الحضور المتوقع" value={stats.expectedAttendees} accent="var(--info)" />
-          <StatCard label="دخلوا فعلاً (عدد الأفراد)" value={stats.peopleCheckedIn} accent="var(--info)" />
-        </div>
-      )}
+      <GuestBreakdown stats={stats} guests={guests} />
       <p className="text-xs text-ink-3 -mt-3">
         &quot;إجمالي الدعوات&quot; = عدد الضيوف المضافين، بصرف النظر عن حالتهم. &quot;إجمالي الحضور المتوقع&quot; = مجموع
         كل ضيف مؤكَّد زائد عدد مرافقيه الذين أكّدهم فعليًا. &quot;دخلوا فعلًا&quot; = عدد الأفراد الذين سُجِّل دخولهم فعليًا

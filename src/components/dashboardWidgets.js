@@ -5,8 +5,8 @@
 // and work identically for both, the only difference is WHICH event(s)
 // each one is allowed to touch (enforced server-side, not here).
 
-import { useRef, useState } from "react";
-import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon } from "@/components/icons";
+import { useMemo, useRef, useState } from "react";
+import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon, PhoneIcon, MessageIcon, XIcon, SearchIcon } from "@/components/icons";
 import { formatDateTimeArabic } from "@/lib/date";
 
 // The invitation as a guest will see it, one tab each for the two cards. Opens
@@ -54,6 +54,205 @@ export function StatCard({ label, value, accent }) {
       </div>
       <div className="text-xs text-ink-2 mt-1">{label}</div>
     </div>
+  );
+}
+
+// The numbers at the top of a wedding's dashboard, each one a door: tap it
+// and see who is behind it, with a call and a WhatsApp button on every name —
+// so the couple can follow up personally, from their own phone, with the
+// people who haven't answered (or ask gently why someone declined).
+const BREAKDOWNS = [
+  {
+    key: "invited",
+    label: "إجمالي الدعوات",
+    accent: null,
+    sections: (g) => [{ title: null, list: g }],
+  },
+  {
+    key: "confirmed",
+    label: "أكدوا",
+    accent: "var(--ok)",
+    sections: (g) => [{ title: null, list: g.filter((x) => x.status === "confirmed") }],
+  },
+  {
+    key: "pending",
+    label: "لم يردّوا بعد",
+    accent: "var(--gold-600)",
+    sections: (g) => {
+      const pending = g.filter((x) => x.status === "pending");
+      return [
+        { title: "فتحوا الدعوة وما ردّوا", list: pending.filter((x) => x.openedAt) },
+        { title: "ما فتحوا الدعوة", list: pending.filter((x) => !x.openedAt) },
+      ];
+    },
+  },
+  {
+    key: "declined",
+    label: "اعتذروا",
+    accent: "var(--danger)",
+    sections: (g) => [{ title: null, list: g.filter((x) => x.status === "declined") }],
+  },
+  {
+    key: "expectedAttendees",
+    label: "إجمالي الحضور المتوقع",
+    accent: "var(--info)",
+    sections: (g) => [{ title: null, list: g.filter((x) => x.status === "confirmed") }],
+  },
+  {
+    key: "peopleCheckedIn",
+    label: "دخلوا فعلاً (عدد الأفراد)",
+    accent: "var(--info)",
+    sections: (g) => {
+      const confirmed = g.filter((x) => x.status === "confirmed");
+      return [
+        { title: "دخلوا القاعة", list: confirmed.filter((x) => (x.checkedInCount || 0) > 0) },
+        { title: "أكدوا وما وصلوا للحين", list: confirmed.filter((x) => !(x.checkedInCount || 0)) },
+      ];
+    },
+  },
+];
+
+function partyLabel(n) {
+  if (n === 1) return "شخص واحد";
+  if (n === 2) return "شخصين";
+  return `${n} أشخاص`;
+}
+
+function guestDetail(g) {
+  const party = 1 + (g.confirmedCompanions || 0);
+  if (g.status === "confirmed") {
+    const inside = g.checkedInCount || 0;
+    return inside ? `دخل ${inside} من ${party}` : `أكد — ${partyLabel(party)}`;
+  }
+  if (g.status === "declined") return "اعتذر";
+  if (g.openedAt) return "فتح الدعوة وما رد";
+  return g.invitedAt ? "انرسلت له وما فتحها" : "ما انرسلت له الدعوة";
+}
+
+function BreakdownSheet({ item, guests, onClose }) {
+  const [query, setQuery] = useState("");
+  const sections = useMemo(() => {
+    const q = query.trim();
+    const match = (g) => !q || g.name.includes(q) || String(g.phoneDisplay || g.phone).includes(q);
+    return item.sections(guests).map((sec) => ({ ...sec, list: sec.list.filter(match) }));
+  }, [item, guests, query]);
+  const total = sections.reduce((n, sec) => n + sec.list.length, 0);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={onClose}
+    >
+      <div
+        className="card w-full sm:max-w-lg flex flex-col"
+        style={{ maxHeight: "85vh" }}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label={item.label}
+      >
+        <div className="p-4 flex items-center justify-between gap-3 border-b" style={{ borderColor: "var(--line-soft)" }}>
+          <p className="font-bold" style={{ color: item.accent || "var(--gold-600)" }}>
+            {item.label} <span className="tnum text-ink-2">({total})</span>
+          </p>
+          <button onClick={onClose} className="pill-btn-ghost pill-btn-sm" aria-label="إغلاق">
+            <XIcon size={16} />
+          </button>
+        </div>
+        <div className="px-4 pt-3">
+          <div className="relative">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="دوّر باسم أو رقم"
+              className="field w-full"
+              style={{ paddingInlineStart: "2.25rem" }}
+            />
+            <span
+              className="absolute"
+              style={{ insetInlineStart: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "var(--ink-3)" }}
+            >
+              <SearchIcon size={16} />
+            </span>
+          </div>
+        </div>
+        <div className="overflow-y-auto p-4 flex flex-col gap-4">
+          {sections.map((sec, i) => (
+            <div key={i} className="flex flex-col gap-2">
+              {sec.title && (
+                <p className="text-sm font-semibold text-ink-2">
+                  {sec.title} <span className="tnum">({sec.list.length})</span>
+                </p>
+              )}
+              {sec.list.length === 0 ? (
+                <p className="text-sm text-ink-3">ما في أحد.</p>
+              ) : (
+                sec.list.map((g) => {
+                  const digits = String(g.phoneDisplay || g.phone || "").replace(/[^0-9]/g, "");
+                  return (
+                    <div
+                      key={g.id}
+                      className="flex items-center justify-between gap-2 rounded-xl p-2.5"
+                      style={{ background: "var(--surface-2)" }}
+                    >
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{g.name}</p>
+                        <p className="text-xs text-ink-2">{guestDetail(g)}</p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <a href={`tel:+${digits}`} className="pill-btn-outline pill-btn-sm" aria-label={`اتصال بـ${g.name}`}>
+                          <PhoneIcon size={15} /> اتصال
+                        </a>
+                        <a
+                          href={`https://wa.me/${digits}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="pill-btn pill-btn-sm"
+                          style={{ background: "#1d5c47", borderColor: "#1d5c47" }}
+                          aria-label={`واتساب ${g.name}`}
+                        >
+                          <MessageIcon size={15} /> واتساب
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function GuestBreakdown({ stats, guests }) {
+  const [open, setOpen] = useState(null);
+  if (!stats) return null;
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {BREAKDOWNS.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setOpen(item)}
+            className="card p-4 text-center"
+            style={{ cursor: "pointer" }}
+            aria-label={`${item.label}: ${stats[item.key]} — اعرض الأسماء`}
+          >
+            <div className="text-3xl font-bold" style={{ color: item.accent || "var(--gold-600)" }}>
+              {stats[item.key]}
+            </div>
+            <div className="text-xs text-ink-2 mt-1">{item.label}</div>
+            <div className="mt-1" style={{ fontSize: "0.65rem", color: "var(--ink-3)" }}>
+              اضغط لعرض الأسماء
+            </div>
+          </button>
+        ))}
+      </div>
+      {open && <BreakdownSheet item={open} guests={guests} onClose={() => setOpen(null)} />}
+    </>
   );
 }
 
