@@ -4,7 +4,7 @@
 // (src/app/invite/[id]/page.js) and the dashboard preview
 // (src/app/invite/preview/[eventId]/page.js).
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { InviteOpener } from "@/components/InviteOpener";
 import { EnvelopeOpener } from "@/components/EnvelopeOpener";
 import { Countdown } from "@/components/Countdown";
@@ -12,6 +12,7 @@ import { Reveal } from "@/components/Reveal";
 import { BrandLoader } from "@/components/BrandLoader";
 import { normaliseInviteLanguage, resolveInviteCopy, splitLines } from "@/lib/inviteCopy";
 import { inviteUi } from "@/lib/inviteUi";
+import { eventWindow, calendarTitle, googleCalendarUrl } from "@/lib/calendar";
 import { Timeline } from "@/components/Timeline";
 import {
   MapPinIcon,
@@ -92,6 +93,75 @@ export function LoadingCard({ lang }) {
  * and admin (previewEventId). A preview gets a made-up guest from the
  * dashboard-only preview endpoint, and its buttons record nothing.
  */
+// The entry pass, on the invitation itself: once the guest confirms, the link
+// they were sent is the pass they show at the door. The code is drawn from
+// the guest record (instant); the designed card is one tap away to save.
+function EntryPass({ guest, event, token, ui, language }) {
+  const seats = 1 + (guest.confirmedCompanions || 0);
+  const span = eventWindow(event.eventDate, event.eventTime);
+  const [calendarHref, setCalendarHref] = useState(null);
+
+  useEffect(() => {
+    if (!span || !guest.id) return;
+    const ics = `/api/guests/${guest.id}/calendar?t=${encodeURIComponent(token || "")}`;
+    if (/Android/i.test(navigator.userAgent)) {
+      setCalendarHref(
+        googleCalendarUrl({
+          title: calendarTitle(event.coupleNames, language),
+          ...span,
+          location: event.venueName || "",
+          details: `${window.location.origin}/invite/${guest.id}?t=${token || ""}`,
+        })
+      );
+    } else {
+      setCalendarHref(ics);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guest.id, token, event.eventDate, event.eventTime, language]);
+
+  return (
+    <div id="entry-pass" className="flex flex-col items-center gap-3 text-center">
+      <p className="inv-eyebrow">{ui.passTitle}</p>
+      <div
+        className="rounded-2xl p-3"
+        style={{ background: "#fff", border: "1px solid var(--line)", boxShadow: "0 6px 24px rgba(44,38,32,0.08)" }}
+      >
+        {guest.qrDataUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={guest.qrDataUrl} alt={ui.passTitle} width={220} height={220} style={{ display: "block" }} />
+        ) : (
+          <span style={{ color: "var(--gold-600)", display: "block", padding: "3rem" }}>
+            <QrIcon size={64} />
+          </span>
+        )}
+      </div>
+      <p className="font-display" style={{ fontSize: "var(--text-xl)", color: "var(--ink)" }}>{guest.name}</p>
+      <p className="chip chip-ok" style={{ fontSize: "var(--text-sm)", padding: "0.35rem 0.85rem" }}>
+        {ui.passSeats(seats)}
+      </p>
+      <p className="meta" style={{ lineHeight: 1.9 }}>{ui.passNote}</p>
+      <div className="flex flex-col gap-2 w-full" style={{ maxWidth: "20rem" }}>
+        {guest.id && token && (
+          <a
+            href={`/api/cards/qr/${guest.id}/card.png?t=${encodeURIComponent(token)}`}
+            target="_blank"
+            rel="noreferrer"
+            download="da3wa-entry-pass.png"
+            className="pill-btn-outline pill-btn-sm w-full"
+          >
+            {ui.passSave}
+          </a>
+        )}
+        {calendarHref && (
+          <a href={calendarHref} target="_blank" rel="noreferrer" className="pill-btn-outline pill-btn-sm w-full">
+            📅 {ui.addToCalendar}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function InvitationScreen({ guestId, token, previewEventId, initialLang }) {
   const id = guestId;
   const preview = Boolean(previewEventId);
@@ -104,6 +174,12 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   // once the guest has answered. The answer is what brought them here; the
   // message box sits further down and most would leave without reaching it.
   const [wishPrompt, setWishPrompt] = useState(null);
+  // Shown once, the moment the guest confirms: this link is now their pass.
+  const [passPrompt, setPassPrompt] = useState(false);
+  // A guest who had already confirmed before opening the page is coming back
+  // for their entry pass — it goes first, before anything else on the card.
+  const [returning, setReturning] = useState(false);
+  const loadedOnce = useRef(false);
   // The note the guest has to read before confirming — the children line, by
   // default. Confirming happens after they accept it, not before.
   const [notice, setNotice] = useState(false);
@@ -138,6 +214,13 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
         .then(({ guest, event, language }) => {
           // Switching language replaces the content without going back through
           // the loading state, which would put the envelope up a second time.
+          // Only the first load decides: switching language reloads the
+          // guest, and a guest who confirms on this visit isn't "returning".
+          if (!loadedOnce.current && guest.status === "confirmed" && !preview) {
+            setReturning(true);
+            setOpened(true);
+          }
+          loadedOnce.current = true;
           setState({ loading: false, error: null, guest, event, language: language === "en" ? "en" : "ar" });
           setCompanions(guest.confirmedCompanions || 0);
           setWishText(guest.wishMessage || "");
@@ -165,6 +248,10 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   // After an answer, unless they have already written: a guest who left a
   // message earlier does not need asking again.
   function promptForWish(attending, guest) {
+    if (attending) {
+      setPassPrompt(true);
+      return;
+    }
     if (String(guest?.wishMessage || "").trim()) return;
     // A guest who just confirmed is taken to the message box rather than
     // asked about it: they are already saying yes, and the box is the next
@@ -173,6 +260,16 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
     // something" box reads as pushy.
     if (attending) goToWish();
     else setWishPrompt("declined");
+  }
+
+  // "OK" on the pass prompt: on to the message box, as before — unless they
+  // already wrote one, in which case to the pass they were just told about.
+  function closePassPrompt() {
+    setPassPrompt(false);
+    if (!String(state.guest?.wishMessage || "").trim()) return goToWish();
+    requestAnimationFrame(() =>
+      document.getElementById("entry-pass")?.scrollIntoView({ behavior: "smooth", block: "center" })
+    );
   }
 
   // "Write your message" takes the guest straight to the box, on the card tab,
@@ -364,6 +461,26 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
         </div>
       )}
 
+      {passPrompt && (
+        <div className="inv-modal" role="presentation" onKeyDown={(e) => e.key === "Escape" && closePassPrompt()}>
+          <div className="inv-modal-card" role="dialog" aria-modal="true" aria-labelledby="pass-prompt-title">
+            <span className="inv-modal-icon" aria-hidden="true">
+              <QrIcon size={24} />
+            </span>
+            <h2 id="pass-prompt-title" className="font-display inv-modal-title">
+              {ui.passPromptTitle}
+            </h2>
+            <p className="body" style={{ lineHeight: 2 }}>{ui.passPromptBody}</p>
+            <div className="flex flex-col gap-2.5 w-full" style={{ marginTop: "1.2rem" }}>
+              <button type="button" className="pill-btn w-full" onClick={closePassPrompt} autoFocus>
+                <CheckCircleIcon size={17} />
+                {ui.passPromptOk}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {wishPrompt && (
         <div
           className="inv-modal"
@@ -392,7 +509,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
         </div>
       )}
 
-      {hasFilm ? (
+      {returning ? null : hasFilm ? (
         <InviteOpener
           videoUrl={event.inviteVideoUrl}
           posterUrl={event.invitePosterUrl}
@@ -456,6 +573,12 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             "inv invite-card w-full " + (opened ? "da3wa-fade-in" : "invisible")
           }
         >
+          {returning && guest.status === "confirmed" && (
+            <div className="inv-sec pad">
+              <EntryPass guest={guest} event={event} token={token} ui={ui} language={language} />
+            </div>
+          )}
+
           {/* The order Eslam specified: the opening line, the date, the names
               in Latin, the two families, the names again, save the date, the
               time, then the venue. The English card keeps the same order. */}
@@ -715,16 +838,11 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
                 {ui.confirmed(guest.confirmedCompanions || 0)}
               </p>
 
-              {/* No code on the page: the guest gets it as a card on WhatsApp,
-                  which is where they will look for it at the door. */}
-              <div
-                className="flex flex-col items-center gap-2 text-center rounded-2xl p-4"
-                style={{ background: "var(--surface)", border: "1px solid var(--line)" }}
-              >
-                <span style={{ color: "var(--gold-600)" }}><QrIcon size={22} /></span>
-                <p className="font-semibold" style={{ color: "var(--ink)" }}>{ui.qrOnWhatsAppTitle}</p>
-                <p className="meta" style={{ lineHeight: 1.9 }}>{ui.qrOnWhatsApp}</p>
-              </div>
+              {returning ? (
+                <p className="meta">{ui.passAbove} ↑</p>
+              ) : (
+                <EntryPass guest={guest} event={event} token={token} ui={ui} language={language} />
+              )}
             </div>
           )}
 

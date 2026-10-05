@@ -13,20 +13,18 @@ import InstallHint from "@/components/InstallHint";
 
 const STEP_LABEL = {
   invite: "إرسال الدعوة",
-  qr: "إرسال بطاقة الدخول",
   reminder: "إرسال التذكير",
   thanks: "إرسال الشكر",
 };
-const STEP_NAME = { invite: "الدعوة", qr: "بطاقة الدخول", reminder: "التذكير", thanks: "الشكر" };
+const STEP_NAME = { invite: "الدعوة", reminder: "التذكير", thanks: "الشكر" };
 // One colour per message, so the list reads at a glance: which guests are on
 // which message.
 const STEP_COLOR = {
   invite: "#a8823f",
-  qr: "#2f5f9e",
   reminder: "#7a4a9e",
   thanks: "#1d5c47",
 };
-const STEPS = ["invite", "qr", "reminder", "thanks"];
+const STEPS = ["invite", "reminder", "thanks"];
 
 // A phone with both WhatsApp and WhatsApp Business asks "open with which?"
 // for every wa.me link — two hundred times over a guest list. On Android the
@@ -140,7 +138,7 @@ function LoginForm({ onDone }) {
   );
 }
 
-// Four dots, one per message: grey to do, amber sent, green opened.
+// One dot per message: grey to do, amber sent, green opened.
 function StepDots({ steps }) {
   return (
     <div className="flex items-center gap-1" aria-hidden="true">
@@ -209,7 +207,7 @@ function GuestCard({ guest, onTap, onUndo, busy }) {
           <button disabled className="pill-btn w-full" style={{ background: "var(--line-soft)", borderColor: "var(--line-soft)", color: "var(--ink-3)" }}>
             {cur.reason === "date"
               ? `${STEP_NAME[current]} يفتح يوم ${dayLabel(cur.until)}`
-              : `${STEP_NAME[current]} — ننتظر الضيف يأكد حضوره`}
+              : "ننتظر الضيف يأكد حضوره"}
           </button>
           {cur.reason === "date" && (
             <p className="text-xs text-ink-2 text-center">تبي ترسله قبل؟ كلّم الأدمن يفتحه لك.</p>
@@ -323,7 +321,7 @@ export default function SendApp() {
   }
 
   const counts = useMemo(() => {
-    const c = { all: 0, invite: 0, qr: 0, reminder: 0, thanks: 0, waiting: 0, done: 0 };
+    const c = { all: 0, invite: 0, reminder: 0, thanks: 0, waiting: 0, done: 0 };
     for (const g of data?.guests || []) {
       c.all += 1;
       const cur = g.steps.current;
@@ -359,7 +357,6 @@ export default function SendApp() {
   const tabs = [
     ["all", "الكل"],
     ["invite", "الدعوة"],
-    ["qr", "بطاقة الدخول"],
     ["reminder", "التذكير"],
     ["thanks", "الشكر"],
     ["waiting", "ننتظر الضيف"],
@@ -416,8 +413,8 @@ export default function SendApp() {
       )}
 
       <div className="card-flat p-3 text-xs leading-relaxed text-ink-2">
-        اضغط الزر، بيفتح واتساب والرسالة جاهزة — اضغط إرسال وارجع هني. أول شي أرسل الدعوة لكل القائمة، بعدين
-        ارجع من فوق وأرسل بطاقات الدخول للي أكدوا. السطر يتلوّن أخضر لما الضيف يفتح الرابط.
+        اضغط الزر، بيفتح واتساب والرسالة جاهزة — اضغط إرسال وارجع هني. السطر يتلوّن أخضر لما الضيف يفتح
+        الرابط. ما في رسالة ثانية للباركود: أول ما الضيف يأكد، نفس رابط الدعوة يصير بطاقة دخوله.
         {data.reminderFrom && <> التذكير يفتح {dayLabel(data.reminderFrom)}، والشكر {dayLabel(data.thanksFrom)}.</>}
       </div>
 

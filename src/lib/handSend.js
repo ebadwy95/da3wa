@@ -1,9 +1,11 @@
 // The sending app (/send): the groom and the bride sending every message from
 // their own WhatsApp, one guest at a time, when the business number can't.
 //
-// Each guest goes through four messages in order — the invitation, the entry
-// pass, the reminder, the thank-you — and the app shows one button per guest:
-// whichever message is due next. A message has three states:
+// Each guest goes through three messages in order — the invitation, the
+// reminder, the thank-you — and the app shows one button per guest: whichever
+// message is due next. There is no separate entry-pass message: the moment a
+// guest confirms, their invitation link becomes their pass. A message has
+// three states:
 //
 //   todo  — not sent yet; the button opens WhatsApp with it written out.
 //   sent  — the button was pressed. WhatsApp tells nobody whether the send
@@ -29,7 +31,7 @@ import {
 } from "@/lib/date";
 import { siteOrigin } from "@/lib/seo";
 
-export const STEPS = ["invite", "qr", "reminder", "thanks"];
+export const STEPS = ["invite", "reminder", "thanks"];
 
 // Weddings are in Kuwait; the server runs on UTC. "Is the reminder open yet"
 // is a question about the date on the couple's phone, not on the server.
@@ -79,18 +81,13 @@ export function messageFor(step, guest, event) {
       ? `Hello ${guest.name}, ${couple} are delighted to invite you to celebrate their wedding with them. To confirm your attendance or send your apologies, please open your personal invitation:\n${links.invite}\nWe look forward to your reply.`
       : `مرحباً ${guest.name} 🌸، يتشرف ${groomName} و${brideName} بدعوتكم لمشاركتهما فرحة الزفاف. للتأكيد أو الاعتذار، يرجى الضغط على الرابط التالي:\n${links.invite}\nبانتظار ردكم بكل سرور 💍`;
   }
-  if (step === "qr") {
-    return en
-      ? `Hello ${guest.name}, your attendance at the wedding of ${couple} is confirmed. Your entry pass is at the link below; please show it at the venue entrance on the day:\n${links.pass}`
-      : `مرحبًا ${guest.name}، تم تأكيد حضوركم لحفل زفاف ${groomName} و${brideName}. بطاقة الدخول الخاصة بكم على الرابط التالي، يُرجى إبرازها عند بوابة القاعة يوم الحفل:\n${links.pass}`;
-  }
   if (step === "reminder") {
     const date = en ? formatEventDateEnglish(event.eventDate) : formatEventDateArabic(event.eventDate);
     const time = en ? formatEventTimeEnglish(event.eventTime) : formatEventTimeArabic(event.eventTime);
     const venue = (en && event.venueNameEn) || event.venueName || event.venueAddress || "";
     return en
-      ? `Hello ${guest.name}, this is a kind reminder of the wedding celebration of ${couple}, which will take place on ${date} at ${time} at ${venue}. You can find the venue on the map using this link:\n${links.map}\nPlease remember to show your entry pass at the venue entrance. We look forward to seeing you.`
-      : `مرحبًا ${guest.name}، نودّ أن نذكّركم بموعد حفل زفاف ${groomName} و${brideName}، والذي سيُقام بإذن الله يوم ${date} في تمام الساعة ${time}، وذلك في ${venue}. يمكنكم الاطلاع على موقع القاعة على الخريطة من خلال الرابط التالي:\n${links.map}\nنرجو التكرم بإبراز بطاقة الدخول عند باب القاعة، ونتشرف بحضوركم.`;
+      ? `Hello ${guest.name}, this is a kind reminder of the wedding celebration of ${couple}, which will take place on ${date} at ${time} at ${venue}. You can find the venue on the map using this link:\n${links.map}\nYour entry pass is on your invitation — please show it at the venue entrance:\n${links.invite}\nWe look forward to seeing you.`
+      : `مرحبًا ${guest.name}، نودّ أن نذكّركم بموعد حفل زفاف ${groomName} و${brideName}، والذي سيُقام بإذن الله يوم ${date} في تمام الساعة ${time}، وذلك في ${venue}. يمكنكم الاطلاع على موقع القاعة على الخريطة من خلال الرابط التالي:\n${links.map}\nوبطاقة الدخول على رابط دعوتكم، نرجو التكرم بإبرازها عند باب القاعة:\n${links.invite}\nونتشرف بحضوركم.`;
   }
   // The template says "yesterday"; a hand-sent thank-you can go out any day
   // after, so the day is left out rather than risk being wrong.
@@ -104,8 +101,8 @@ export function whatsappLink(phone, text) {
 }
 
 /**
- * Where each of the guest's four messages stands. Returns
- * { invite, qr, reminder, thanks } each { state, at, until }, with state one
+ * Where each of the guest's three messages stands. Returns
+ * { invite, reminder, thanks } each { state, at, until }, with state one
  * of todo / sent / done / locked / skip, plus `current`: the step the guest's
  * button is for.
  */
@@ -127,18 +124,22 @@ export function guestSteps(guest, event, today = kuwaitToday()) {
     invite: progress("invite", guest.openedAt || (answered ? guest.respondedAt || guest.createdAt : null)),
   };
 
+  // The reminder carries two links — the map and the invitation (the pass);
+  // either one opened after it was sent means it arrived.
+  const reminderOpened =
+    guest.reminderOpenedAt ||
+    (tapped.reminder && guest.lastOpenedAt && guest.lastOpenedAt > tapped.reminder ? guest.lastOpenedAt : null);
+
   if (declined) {
-    steps.qr = steps.reminder = steps.thanks = { state: "skip" };
+    steps.reminder = steps.thanks = { state: "skip" };
   } else if (!confirmed) {
-    steps.qr = { state: "locked", reason: "waiting_rsvp" };
     steps.reminder = { state: "locked", reason: "waiting_rsvp" };
     steps.thanks = { state: "locked", reason: "waiting_rsvp" };
   } else {
-    steps.qr = progress("qr", guest.passViewedAt);
     steps.reminder =
       reminderFrom && today < reminderFrom
         ? { state: "locked", reason: "date", until: reminderFrom }
-        : progress("reminder", guest.reminderOpenedAt);
+        : progress("reminder", reminderOpened);
     steps.thanks =
       thanksFrom && today < thanksFrom
         ? { state: "locked", reason: "date", until: thanksFrom }
