@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SendIcon, LogOutIcon, CheckCircleIcon, SearchIcon } from "@/components/icons";
+import { SendIcon, LogOutIcon, CheckCircleIcon, SearchIcon, PhoneIcon, MessageIcon } from "@/components/icons";
 import InstallHint from "@/components/InstallHint";
 
 // The sending app: the groom or the bride, one list of their guests, and on
@@ -171,7 +171,29 @@ function PartySize({ guest, onResize, busy }) {
   );
 }
 
-function GuestCard({ guest, onTap, onUndo, onResize, busy }) {
+// For a guest who got the invitation and hasn't answered: a call, or a plain
+// WhatsApp chat (no message written) to follow up in their own words.
+function FollowUp({ guest, waPref }) {
+  const digits = String(guest.phone).replace(/[^0-9]/g, "");
+  return (
+    <div className="flex gap-2">
+      <a href={`tel:+${digits}`} className="pill-btn-outline pill-btn-sm flex-1" aria-label={`اتصال بـ${guest.name}`}>
+        <PhoneIcon size={15} /> اتصال
+      </a>
+      <button
+        type="button"
+        onClick={() => openWhatsApp(`https://wa.me/${digits}`, waPref)}
+        className="pill-btn pill-btn-sm flex-1"
+        style={{ background: "#1d5c47", borderColor: "#1d5c47" }}
+        aria-label={`واتساب ${guest.name}`}
+      >
+        <MessageIcon size={15} /> واتساب
+      </button>
+    </div>
+  );
+}
+
+function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
   const stage = STAGE[guest.stage];
   const thanksColor = "#1d5c47";
   return (
@@ -216,6 +238,7 @@ function GuestCard({ guest, onTap, onUndo, onResize, busy }) {
           </button>
         </div>
       )}
+      {(guest.stage === "sent" || guest.stage === "opened") && <FollowUp guest={guest} waPref={waPref} />}
 
       {/* After the wedding: the thank-you, whenever they like. */}
       {guest.thanks === "todo" && (
@@ -339,10 +362,11 @@ export default function SendApp() {
   }
 
   const counts = useMemo(() => {
-    const c = { all: 0, todo: 0, sent: 0, opened: 0, confirmed: 0, declined: 0, thanks: 0 };
+    const c = { all: 0, todo: 0, sent: 0, opened: 0, noreply: 0, confirmed: 0, declined: 0, thanks: 0 };
     for (const g of data?.guests || []) {
       c.all += 1;
       c[g.stage] += 1;
+      if (g.stage === "sent" || g.stage === "opened") c.noreply += 1;
       if (g.thanks === "todo") c.thanks += 1;
     }
     return c;
@@ -353,6 +377,7 @@ export default function SendApp() {
     return (data?.guests || []).filter((g) => {
       if (q && !g.name.includes(q) && !g.phone.includes(q)) return false;
       if (filter === "thanks") return g.thanks === "todo";
+      if (filter === "noreply") return g.stage === "sent" || g.stage === "opened";
       return filter === "all" || g.stage === filter;
     });
   }, [data, filter, query]);
@@ -370,6 +395,7 @@ export default function SendApp() {
   const tabs = [
     ["all", "الكل"],
     ["todo", "ما انرسلت"],
+    ["noreply", "ما ردّوا"],
     ["sent", "ننتظر يفتحون"],
     ["opened", "فتحوا وما ردوا"],
     ["confirmed", "أكدوا"],
@@ -465,7 +491,7 @@ export default function SendApp() {
       {visible.length === 0 ? (
         <p className="meta text-center py-8">ما في أحد هني.</p>
       ) : (
-        visible.map((g) => <GuestCard key={g.id} guest={g} onTap={tap} onUndo={undo} onResize={resize} busy={busy} />)
+        visible.map((g) => <GuestCard key={g.id} guest={g} onTap={tap} onUndo={undo} onResize={resize} busy={busy} waPref={waPref} />)
       )}
     </main>
   );
