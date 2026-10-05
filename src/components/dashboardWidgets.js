@@ -6,7 +6,7 @@
 // each one is allowed to touch (enforced server-side, not here).
 
 import { useMemo, useRef, useState } from "react";
-import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon, PhoneIcon, MessageIcon, XIcon, SearchIcon } from "@/components/icons";
+import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon, PhoneIcon, MessageIcon, XIcon, SearchIcon, PencilIcon, LockIcon } from "@/components/icons";
 import { formatDateTimeArabic } from "@/lib/date";
 
 // The invitation as a guest will see it, one tab each for the two cards. Opens
@@ -349,7 +349,67 @@ export function GuestSideToggle({ guest, onChanged }) {
   );
 }
 
-export function GuestRow({ guest, onDelete, onChanged }) {
+// Correcting a guest — name, number, how many the invitation is for — from
+// the admin dashboard, until the guest opens their invitation. After that the
+// pencil is a lock: they've seen the card, and the server refuses it too.
+function EditGuestDialog({ guest, onClose, onSaved }) {
+  const [name, setName] = useState(guest.name);
+  const [phone, setPhone] = useState(guest.phoneDisplay || guest.phone);
+  const [maxGuests, setMaxGuests] = useState((guest.maxCompanions || 0) + 1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function save(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/guests/${guest.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, maxGuests }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "تعذّر الحفظ");
+      onSaved();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
+      <form onSubmit={save} className="card w-full max-w-sm p-5 flex flex-col gap-3" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`تعديل ${guest.name}`}>
+        <p className="font-bold">تعديل بيانات الضيف</p>
+        <div>
+          <label className="label">الاسم</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} className="field w-full" required autoFocus />
+        </div>
+        <div>
+          <label className="label">رقم الواتساب (مع كود الدولة)</label>
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} className="field w-full" dir="ltr" required />
+        </div>
+        <div>
+          <label className="label">إجمالي عدد الحضور (شامل الضيف نفسه)</label>
+          <input type="number" min={1} value={maxGuests} onChange={(e) => setMaxGuests(e.target.value)} className="field w-full" />
+        </div>
+        {error && <p className="text-danger text-sm">{error}</p>}
+        <div className="flex gap-2">
+          <button disabled={saving} className="pill-btn flex-1">{saving ? "..." : "حفظ"}</button>
+          <button type="button" onClick={onClose} className="pill-btn-outline">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
+  const [editing, setEditing] = useState(false);
+  // Open (or answered) means the guest has seen their card: no more edits.
+  const locked = Boolean(guest.openedAt) || guest.status !== "pending";
   const [copied, setCopied] = useState(false);
   const statusLabel = { pending: "لم يردّ بعد", confirmed: "أكّد الحضور", declined: "اعتذر" }[guest.status];
   const statusColor = { pending: "var(--gold-600)", confirmed: "var(--ok)", declined: "var(--danger)" }[guest.status];
@@ -370,7 +430,29 @@ export function GuestRow({ guest, onDelete, onChanged }) {
 
   return (
     <tr className="border-b last:border-0" style={{ borderColor: "var(--line-soft)" }}>
-      <td className="py-3 px-2 font-medium">{guest.name}</td>
+      <td className="py-3 px-2 font-medium">
+        <span className="inline-flex items-center gap-1.5">
+          {guest.name}
+          {editable &&
+            (locked ? (
+              <span title="الضيف فتح الدعوة — ما يصير تعديل" style={{ color: "var(--ink-3)" }} aria-label="مقفول للتعديل">
+                <LockIcon size={13} />
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="pill-btn-ghost"
+                style={{ padding: "0.15rem", color: "var(--gold-600)" }}
+                aria-label={`تعديل ${guest.name}`}
+                title="تعديل الاسم أو الرقم أو العدد"
+              >
+                <PencilIcon size={14} />
+              </button>
+            ))}
+        </span>
+        {editing && <EditGuestDialog guest={guest} onClose={() => setEditing(false)} onSaved={() => onChanged?.()} />}
+      </td>
       <td className="py-3 px-2 text-center">
         <GuestLanguageToggle guest={guest} onChanged={onChanged} />
       </td>

@@ -1616,7 +1616,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
             </thead>
             <tbody>
               {guests.map((g) => (
-                <GuestRow key={g.id} guest={g} onDelete={deleteGuest} onChanged={() => refresh()} />
+                <GuestRow key={g.id} guest={g} onDelete={deleteGuest} onChanged={() => refresh()} editable />
               ))}
               {guests.length === 0 && (
                 <tr>

@@ -4,6 +4,7 @@ import { recordInviteOpen } from "@/lib/inviteOpens";
 import { verifyInviteToken, makeCardToken } from "@/lib/token";
 import { thanksOpen } from "@/lib/handSend";
 import { normaliseInviteLanguage } from "@/lib/inviteCopy";
+import { normalizePhone } from "@/lib/phone";
 import { buildInviteEvent } from "@/lib/inviteEvent";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
@@ -72,7 +73,26 @@ export async function PATCH(request, { params }) {
     }
     changes.side = body.side;
   }
-  if (Object.keys(changes).length === 0) {
+  // Correcting the guest themself — the name, the number, how many the
+  // invitation is for. Only until they open it: after that the guest has seen
+  // the card, and a name or allowance that changes under them is worse than
+  // one with a typo.
+  const details = {};
+  if ("name" in body) {
+    details.name = String(body.name || "").trim();
+    if (!details.name) return NextResponse.json({ error: "الاسم مطلوب" }, { status: 400 });
+  }
+  if ("phone" in body) {
+    const parsed = normalizePhone(body.phone);
+    if (!parsed.valid) return NextResponse.json({ error: parsed.error }, { status: 400 });
+    details.phone = parsed.digits;
+    details.phoneDisplay = parsed.e164;
+  }
+  if ("maxGuests" in body) {
+    details.maxCompanions = Math.max(1, parseInt(body.maxGuests, 10) || 1) - 1;
+  }
+
+  if (Object.keys(changes).length === 0 && Object.keys(details).length === 0) {
     return NextResponse.json({ error: "لا يوجد تعديل" }, { status: 400 });
   }
 
@@ -87,14 +107,21 @@ export async function PATCH(request, { params }) {
 
   const guest = await withDb((freshDb) => {
     const g = freshDb.guests.find((x) => x.id === id);
-    if (!g) return null;
-    Object.assign(g, changes);
+    if (!g) return { missing: true };
+    if (Object.keys(details).length && (g.openedAt || g.status !== "pending")) return { locked: true };
+    Object.assign(g, changes, details);
     return g;
   });
-  if (!guest) {
+  if (guest.missing) {
     return NextResponse.json({ error: "الضيف غير موجود" }, { status: 404 });
   }
-  return NextResponse.json({ guest: { id: guest.id, language: guest.language, side: guest.side || null } });
+  if (guest.locked) {
+    return NextResponse.json(
+      { error: "الضيف فتح الدعوة — ما يصير تعديل الاسم أو الرقم أو العدد بعد ما شافها" },
+      { status: 409 }
+    );
+  }
+  return NextResponse.json({ guest });
 }
 
 export async function DELETE(request, { params }) {
