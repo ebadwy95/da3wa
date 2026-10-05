@@ -60,7 +60,10 @@ export async function POST(request) {
     return NextResponse.json({ error: "غير مصرح" }, { status: 401 });
   }
 
-  const { code, mode, count } = await request.json().catch(() => ({}));
+  const { code, mode, count, out } = await request.json().catch(() => ({}));
+  // A peek while the door is letting people out (out: true) asks who this is
+  // and how many of them are inside, not whether there is room. mode "out"
+  // is the departure itself.
   const isConfirm = mode === "confirm";
   const { valid, guestId } = verifyCheckinCode(code);
 
@@ -146,6 +149,32 @@ export async function POST(request) {
     const remaining = partySize - checkedInCount;
 
     const steppedOut = guest.steppedOutCount || 0;
+
+    // Who is inside, for the door in "out" mode to ask how many are going.
+    if (out === true && mode !== "out") {
+      if (checkedInCount <= 0) {
+        return logAndReturn({
+          ok: false,
+          reason: "not_inside",
+          message: `${guest.name} ما دخل القاعة أصلًا — ما في أحد يطلع`,
+          eventId: guest.eventId,
+          guestId: guest.id,
+          guestName: guest.name,
+        });
+      }
+      return {
+        ok: true,
+        pending: true,
+        leaving: true,
+        eventId: guest.eventId,
+        guestId: guest.id,
+        guestName: guest.name,
+        partySize,
+        checkedInCount,
+        steppedOut,
+        remaining,
+      };
+    }
 
     // Stepping outside — to the car, for some air. Those people come off the
     // headcount so the code opens again when they come back, and nobody is

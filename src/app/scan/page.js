@@ -198,6 +198,12 @@ export default function ScanPage() {
   // alone never counts anyone as having entered.
   const [pending, setPending] = useState(null); // { code, guestName, remaining, partySize, checkedInCount }
   const [pendingCount, setPendingCount] = useState(1);
+  // The door works in two modes. In "in" a scan admits people and a used-up
+  // code sounds the alarm. In "out" a scan only records people leaving —
+  // never an alarm, since the camera fires the moment a code is held up and
+  // a guest stepping outside must not be met with a siren.
+  const [doorMode, setDoorMode] = useState("in");
+  const doorModeRef = useRef("in");
   const [confirming, setConfirming] = useState(false);
   const [flash, setFlash] = useState(false);
   const scannerRef = useRef(null);
@@ -239,6 +245,14 @@ export default function ScanPage() {
       notified: data.security?.notified || [],
       acks: [],
     });
+  }
+
+  function switchDoorMode(next) {
+    doorModeRef.current = next;
+    setDoorMode(next);
+    setPending(null);
+    setResult(null);
+    lastScanRef.current = { code: null, at: 0 };
   }
 
   function silenceAlarm() {
@@ -293,6 +307,7 @@ export default function ScanPage() {
   }
 
   async function submitCode(code) {
+    const leaving = doorModeRef.current === "out";
     // Ignore new camera decodes while a confirmation is already pending, or
     // while the exact same code was just handled within the last 3s.
     if (pending) return;
@@ -306,10 +321,12 @@ export default function ScanPage() {
       const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, mode: "peek" }),
+        body: JSON.stringify({ code, mode: "peek", out: leaving }),
       });
       const data = await res.json();
-      if (!data.ok && data.reason === "already_full") {
+      // No alarm while the door is letting people out: the scan is a
+      // departure, and a full code is exactly what it should be.
+      if (!data.ok && data.reason === "already_full" && !leaving) {
         raiseDuplicateAlarm(data);
         return;
       }
@@ -318,9 +335,11 @@ export default function ScanPage() {
         return;
       }
       setResult(null);
-      // Coming back: the whole group that stepped out, usually together.
-      setPendingCount(data.returning ? data.steppedOut || 1 : Math.min(1, data.remaining) || 1);
-      setPending({ code, ...data });
+      // Coming back, or going out: the whole group, usually together.
+      setPendingCount(
+        leaving ? data.checkedInCount || 1 : data.returning ? data.steppedOut || 1 : Math.min(1, data.remaining) || 1
+      );
+      setPending({ code, ...data, leaving });
     } catch {
       reject("خطأ في الاتصال بالخادم");
     }
@@ -521,6 +540,38 @@ export default function ScanPage() {
         </div>
       </header>
 
+      {/* Which way the door is working right now. Deliberately large and
+          coloured: a staff member who forgets they are in "out" mode would
+          send arriving guests back out. */}
+      <div className="tab-switch" role="tablist" aria-label="وضع الباب">
+        <button
+          role="tab"
+          aria-selected={doorMode === "in"}
+          data-active={doorMode === "in"}
+          onClick={() => switchDoorMode("in")}
+        >
+          🎉 دخول
+        </button>
+        <button
+          role="tab"
+          aria-selected={doorMode === "out"}
+          data-active={doorMode === "out"}
+          onClick={() => switchDoorMode("out")}
+        >
+          🚪 خروج
+        </button>
+      </div>
+
+      {doorMode === "out" && (
+        <p
+          className="card-flat p-3 text-center"
+          style={{ background: "#e8eef7", color: "#2f5f9e", fontWeight: 700, borderColor: "transparent" }}
+          role="status"
+        >
+          وضع الخروج — امسح رمز اللي طالعين، ما في إنذار. ارجع لـ«دخول» بعد ما تخلص.
+        </p>
+      )}
+
       {alarm?.kind === "sos" && (
         <section
           className="card p-4 flex flex-col gap-3 da3wa-fade-in"
@@ -589,7 +640,12 @@ export default function ScanPage() {
           aria-live="polite"
         >
           <div className="flex flex-col gap-1">
-            {pending.returning && (
+            {pending.leaving && (
+              <p className="chip self-center" style={{ background: "#e8eef7", color: "#2f5f9e", fontWeight: 700 }}>
+                🚪 خروج
+              </p>
+            )}
+            {!pending.leaving && pending.returning && (
               <p className="chip self-center" style={{ background: "#e8eef7", color: "#2f5f9e", fontWeight: 700 }}>
                 🔵 رجوع — طلعوا وراجعين
               </p>
@@ -615,14 +671,21 @@ export default function ScanPage() {
 
           <div className="flex flex-col gap-3">
             <p style={{ fontSize: "var(--text-base)", fontWeight: 700 }} id="count-question">
-              {pending.returning ? "كم واحد راجع الآن؟" : "كم شخصًا من هذه الدعوة يدخل الآن؟"}
+              {pending.leaving
+                ? "كم واحد طالع الآن؟"
+                : pending.returning
+                  ? "كم واحد راجع الآن؟"
+                  : "كم شخصًا من هذه الدعوة يدخل الآن؟"}
             </p>
             <div
               className="flex flex-wrap justify-center gap-2"
               role="radiogroup"
               aria-labelledby="count-question"
             >
-              {Array.from({ length: pending.remaining }, (_, i) => i + 1).map((n) => (
+              {Array.from(
+                { length: Math.max(1, pending.leaving ? pending.checkedInCount : pending.remaining) },
+                (_, i) => i + 1
+              ).map((n) => (
                 <button
                   key={n}
                   type="button"
@@ -649,6 +712,16 @@ export default function ScanPage() {
           </div>
 
           <div className="flex gap-2">
+            {pending.leaving ? (
+              <button
+                onClick={() => confirmEntry("out")}
+                disabled={confirming}
+                className="pill-btn flex-1"
+                style={{ minHeight: "3.25rem", fontSize: "var(--text-base)", background: "#2f5f9e", borderColor: "#2f5f9e" }}
+              >
+                🚪 {confirming ? "جارٍ التسجيل..." : `تسجيل خروج ${pendingCount}`}
+              </button>
+            ) : (
             <button
               onClick={() => confirmEntry("confirm")}
               disabled={confirming}
@@ -666,6 +739,7 @@ export default function ScanPage() {
                   ? `أهلًا برجوع ${pendingCount}`
                   : `تأكيد دخول ${pendingCount}`}
             </button>
+            )}
             <button
               onClick={() => setPending(null)}
               className="pill-btn-outline"
@@ -675,18 +749,7 @@ export default function ScanPage() {
             </button>
           </div>
 
-          {/* Stepping outside — to the car, for some air. Recorded so the
-              same code welcomes them back instead of sounding the alarm. */}
-          {!pending.returning && pending.checkedInCount > 0 && (
-            <button
-              onClick={() => confirmEntry("out")}
-              disabled={confirming}
-              className="pill-btn-outline"
-              style={{ borderColor: "#2f5f9e", color: "#2f5f9e" }}
-            >
-              🚪 تسجيل خروج {pendingCount} — راجعين بعدين
-            </button>
-          )}
+
         </section>
       )}
 
@@ -694,9 +757,11 @@ export default function ScanPage() {
         <section
           className="card p-4 text-center flex flex-col items-center gap-2 da3wa-fade-in"
           style={
-            result.ok
-              ? { background: "var(--ok-bg)", border: "2px solid var(--ok)" }
-              : { background: "var(--danger-bg)", border: "2px solid var(--danger)" }
+            !result.ok
+              ? { background: "var(--danger-bg)", border: "2px solid var(--danger)" }
+              : result.steppedOut !== undefined && !result.returning
+                ? { background: "#e8eef7", border: "2px solid #2f5f9e" }
+                : { background: "var(--ok-bg)", border: "2px solid var(--ok)" }
           }
           role="status"
           aria-live="assertive"
@@ -706,7 +771,7 @@ export default function ScanPage() {
             style={{ color: result.ok ? "var(--ok)" : "var(--danger)" }}
           >
             {result.ok ? <CheckCircleIcon size={22} /> : <BanIcon size={22} />}
-            {result.ok ? "دخول ناجح" : "مرفوض"}
+            {!result.ok ? "مرفوض" : result.steppedOut !== undefined && !result.returning ? "تم تسجيل الخروج" : "دخول ناجح"}
           </p>
           <p
             style={{
