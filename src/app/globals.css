@@ -1904,3 +1904,45 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .star-spin { animation-duration: 3s; }
 }
+
+/* ============================================================================
+   The corner sash
+   ----------------------------------------------------------------------------
+   A ribbon across the card's top-left corner, for the cards that are not the
+   invitation: the family's, and the one that shares the joy from afar. It
+   names the card before a word of it is read, so nobody wonders why their
+   card has no date on it.
+
+   Rotated through the corner rather than drawn as an image, so it reads at
+   any size and in both languages. The card itself clips it (overflow: clip),
+   which is what gives the ends their cut-off look.
+   ========================================================================= */
+.inv-sash {
+  position: absolute;
+  top: 0;
+  /* The physical left corner in both languages: inset-inline-start would put
+     it on the right of an Arabic card, where the eye starts reading. */
+  left: 0;
+  width: 11rem;
+  height: 11rem;
+  pointer-events: none;
+  z-index: 2;
+}
+.inv-sash span {
+  position: absolute;
+  top: 2.1rem;
+  left: -3.2rem;
+  width: 14rem;
+  padding: 0.38rem 0;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: linear-gradient(135deg, var(--gold-600), var(--gold-500));
+  box-shadow: 0 2px 10px rgba(44, 38, 32, 0.28);
+  transform: rotate(-45deg);
+}
+.inv-sash.share span {
+  background: linear-gradient(135deg, #2f5f9e, #4b7bc0);
+}

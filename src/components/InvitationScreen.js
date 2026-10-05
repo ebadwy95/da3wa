@@ -640,6 +640,15 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             "inv invite-card w-full " + (opened ? "da3wa-fade-in" : "invisible")
           }
         >
+          {/* A sash across the top corner, so the card says what it is before
+              a word of it is read — this is not the invitation the other
+              guests received. */}
+          {special && (
+            <div className={`inv-sash ${kind}`} aria-hidden="true">
+              <span>{kind === "family" ? ui.familySash : ui.shareSash}</span>
+            </div>
+          )}
+
           {/* After the wedding: the thank-you card first. Before it: the
               entry pass, for a guest coming back to find it. */}
           {state.thanksCard ? (

@@ -48,6 +48,9 @@ const AR = {
   passPromptOk: "تمام",
   addToCalendar: "أضف الموعد إلى التقويم",
   thanksTitle: "شكرًا لحضوركم",
+  // The sash across the card's corner, naming what the card is.
+  familySash: "بطاقة خاصة بأهل العروسين",
+  shareSash: "بطاقة مشاركة الفرحة",
   declined: "تم تسجيل اعتذارك، نتمنى أن نراك في مناسبة أخرى",
   wishEdit: "تعديل رسالتك للعروسين",
   wishPlaceholder: "اكتب هنا رسالتك أو تهنئتك...",
@@ -110,6 +113,8 @@ const EN = {
   passPromptOk: "OK",
   addToCalendar: "Add to calendar",
   thanksTitle: "Thank you for coming",
+  familySash: "For the couple's family",
+  shareSash: "Sharing our joy",
   declined: "Your apology has been received — we hope to see you at another occasion",
   wishEdit: "Edit your message to the couple",
   wishPlaceholder: "Write your message or congratulations here...",
