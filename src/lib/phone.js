@@ -26,6 +26,7 @@ const COUNTRIES = [
   { code: "20", national: [10] }, // Egypt
   { code: "44", national: [10] }, // UK
   { code: "1", national: [10] }, // US/Canada (free Meta test numbers, etc.)
+  { code: "7", national: [10] }, // Russia/Kazakhstan
 ];
 
 const EXAMPLE = "مثلًا 96550012345 للكويت أو 966512345678 للسعودية";
