@@ -5,26 +5,27 @@ import { SendIcon, LogOutIcon, CheckCircleIcon, SearchIcon } from "@/components/
 import InstallHint from "@/components/InstallHint";
 
 // The sending app: the groom or the bride, one list of their guests, and on
-// each guest one button for whichever message is due next. Pressing it opens
-// WhatsApp on that guest's chat with the message written out; they press
-// send there, and come back for the next one.
+// each guest one button — the invitation, the only message there is. Pressing
+// it opens WhatsApp on that guest's chat with the message written out; they
+// press send there, and come back for the next one. After that the row just
+// follows the guest: opened, confirmed, declined.
 //
 // Written in Gulf Arabic, like everything the couple and their guests read.
 
-const STEP_LABEL = {
-  invite: "إرسال الدعوة",
-  reminder: "إرسال التذكير",
-  thanks: "إرسال الشكر",
+// Where each guest stands, and the colour of their row.
+const STAGE = {
+  todo: { label: "ما انرسلت له", color: "#a8823f", tint: "var(--surface)" },
+  sent: { label: "انرسلت — ننتظر يفتحها", color: "#9a6a0a", tint: "#fbf1dc" },
+  opened: { label: "فتح الدعوة وللحين ما رد", color: "#2f5f9e", tint: "#e8eef7" },
+  confirmed: { label: "أكد الحضور", color: "var(--ok)", tint: "var(--ok-bg)" },
+  declined: { label: "اعتذر عن الحضور", color: "var(--ink-3)", tint: "#f1eeea" },
 };
-const STEP_NAME = { invite: "الدعوة", reminder: "التذكير", thanks: "الشكر" };
-// One colour per message, so the list reads at a glance: which guests are on
-// which message.
-const STEP_COLOR = {
-  invite: "#a8823f",
-  reminder: "#7a4a9e",
-  thanks: "#1d5c47",
-};
-const STEPS = ["invite", "reminder", "thanks"];
+
+function seatsLabel(n) {
+  if (n === 1) return "شخص واحد";
+  if (n === 2) return "شخصين";
+  return `${n} أشخاص`;
+}
 
 // A phone with both WhatsApp and WhatsApp Business asks "open with which?"
 // for every wa.me link — two hundred times over a guest list. On Android the
@@ -86,11 +87,6 @@ function WhatsAppPicker({ onPick, onCancel }) {
   );
 }
 
-function dayLabel(iso) {
-  if (!iso) return "";
-  return new Date(`${iso}T12:00:00`).toLocaleDateString("ar-KW", { day: "numeric", month: "long" });
-}
-
 function LoginForm({ onDone }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -138,47 +134,11 @@ function LoginForm({ onDone }) {
   );
 }
 
-// One dot per message: grey to do, amber sent, green opened.
-function StepDots({ steps }) {
-  return (
-    <div className="flex items-center gap-1" aria-hidden="true">
-      {STEPS.map((s) => {
-        const state = steps[s].state;
-        const bg =
-          state === "done" ? "var(--ok)" : state === "sent" ? "#d99a1e" : state === "skip" ? "transparent" : "var(--line)";
-        return (
-          <span
-            key={s}
-            title={STEP_NAME[s]}
-            style={{
-              width: 10,
-              height: 10,
-              borderRadius: 9999,
-              background: bg,
-              border: state === "skip" ? "1px dashed var(--line)" : "none",
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 function GuestCard({ guest, onTap, onUndo, busy }) {
-  const { steps } = guest;
-  const current = steps.current;
-  const cur = current ? steps[current] : null;
-
-  // Messages sent but not yet opened, other than the one the button is for.
-  const waiting = STEPS.filter((s) => s !== current && steps[s].state === "sent");
-
-  let tint = "var(--surface)";
-  if (guest.status === "declined") tint = "#f1eeea";
-  else if (!current) tint = "var(--ok-bg)";
-  else if (cur.state === "sent") tint = "#fbf1dc";
-
+  const stage = STAGE[guest.stage];
+  const thanksColor = "#1d5c47";
   return (
-    <div className="rounded-2xl p-3 flex flex-col gap-2" style={{ background: tint, border: "1px solid var(--line-soft)" }}>
+    <div className="rounded-2xl p-3 flex flex-col gap-2" style={{ background: stage.tint, border: "1px solid var(--line-soft)" }}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-bold truncate">
@@ -187,63 +147,62 @@ function GuestCard({ guest, onTap, onUndo, busy }) {
           </p>
           <p className="meta tnum" dir="ltr" style={{ textAlign: "right" }}>{guest.phone}</p>
         </div>
-        <StepDots steps={steps} />
+        {guest.stage !== "todo" && (
+          <span className="text-xs font-semibold shrink-0 flex items-center gap-1" style={{ color: stage.color }}>
+            {guest.stage === "confirmed" && <CheckCircleIcon size={14} />}
+            {stage.label}
+            {guest.stage === "confirmed" && guest.seats ? ` — ${seatsLabel(guest.seats)}` : ""}
+          </span>
+        )}
       </div>
 
-      {waiting.map((s) => (
-        <p key={s} className="text-xs" style={{ color: "#9a6a0a" }}>
-          {STEP_NAME[s]}: انرسلت — ننتظر الضيف يفتحها
-        </p>
-      ))}
-
-      {guest.status === "declined" ? (
-        <p className="text-sm font-semibold text-ink-2">اعتذر عن الحضور — ما يحتاج رسائل ثانية</p>
-      ) : !current ? (
-        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: "var(--ok)" }}>
-          <CheckCircleIcon size={16} /> خلصت كل الرسائل
-        </p>
-      ) : cur.state === "locked" ? (
-        <>
-          <button disabled className="pill-btn w-full" style={{ background: "var(--line-soft)", borderColor: "var(--line-soft)", color: "var(--ink-3)" }}>
-            {cur.reason === "date"
-              ? `${STEP_NAME[current]} يفتح يوم ${dayLabel(cur.until)}`
-              : "ننتظر الضيف يأكد حضوره"}
-          </button>
-          {cur.reason === "date" && (
-            <p className="text-xs text-ink-2 text-center">تبي ترسله قبل؟ كلّم الأدمن يفتحه لك.</p>
-          )}
-          {cur.reason === "waiting_rsvp" && steps.invite.state === "done" && (
-            <p className="text-xs text-ink-2 text-center">فتح الدعوة وللحين ما رد.</p>
-          )}
-        </>
-      ) : cur.state === "sent" ? (
-        <>
-          <p className="text-sm font-semibold" style={{ color: "#9a6a0a" }}>
-            {STEP_NAME[current]}: انرسلت — ننتظر الضيف يفتحها
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={busy}
-              onClick={() => onTap(guest, current)}
-              className="pill-btn-outline flex-1"
-              style={{ borderColor: STEP_COLOR[current], color: STEP_COLOR[current] }}
-            >
-              فتح واتساب مرة ثانية
-            </button>
-            <button disabled={busy} onClick={() => onUndo(guest, current)} className="pill-btn-ghost pill-btn-sm">
-              ما انرسلت
-            </button>
-          </div>
-        </>
-      ) : (
+      {guest.stage === "todo" && (
         <button
           disabled={busy}
-          onClick={() => onTap(guest, current)}
+          onClick={() => onTap(guest)}
           className="pill-btn w-full"
-          style={{ background: STEP_COLOR[current], borderColor: STEP_COLOR[current], minHeight: "3rem" }}
+          style={{ background: stage.color, borderColor: stage.color, minHeight: "3rem" }}
         >
-          {STEP_LABEL[current]}
+          إرسال الدعوة
         </button>
+      )}
+      {guest.stage === "sent" && (
+        <div className="flex gap-2">
+          <button disabled={busy} onClick={() => onTap(guest)} className="pill-btn-outline flex-1" style={{ borderColor: stage.color, color: stage.color }}>
+            فتح واتساب مرة ثانية
+          </button>
+          <button disabled={busy} onClick={() => onUndo(guest)} className="pill-btn-ghost pill-btn-sm">
+            ما انرسلت
+          </button>
+        </div>
+      )}
+
+      {/* After the wedding: the thank-you, whenever they like. */}
+      {guest.thanks === "todo" && (
+        <button
+          disabled={busy}
+          onClick={() => onTap(guest, undefined, "thanks")}
+          className="pill-btn w-full"
+          style={{ background: thanksColor, borderColor: thanksColor, minHeight: "3rem" }}
+        >
+          إرسال الشكر
+        </button>
+      )}
+      {guest.thanks === "sent" && (
+        <div className="flex gap-2 items-center">
+          <span className="text-xs font-semibold flex-1" style={{ color: "#9a6a0a" }}>انرسل الشكر — ننتظر يفتحه</span>
+          <button disabled={busy} onClick={() => onTap(guest, undefined, "thanks")} className="pill-btn-outline pill-btn-sm" style={{ borderColor: thanksColor, color: thanksColor }}>
+            فتح واتساب مرة ثانية
+          </button>
+          <button disabled={busy} onClick={() => onUndo(guest, "thanks")} className="pill-btn-ghost pill-btn-sm">
+            ما انرسل
+          </button>
+        </div>
+      )}
+      {guest.thanks === "done" && (
+        <p className="text-xs font-semibold flex items-center gap-1" style={{ color: thanksColor }}>
+          <CheckCircleIcon size={14} /> وصله الشكر
+        </p>
       )}
     </div>
   );
@@ -291,14 +250,14 @@ export default function SendApp() {
     };
   }, [authed, load]);
 
-  async function tap(guest, step, pref = waPref) {
+  async function tap(guest, pref = waPref, step = "invite") {
     if (canPickApp && !WA_PACKAGES[pref]) {
       setPicker({ guest, step });
       return;
     }
     // Opened first, inside the tap: a window opened after an await has lost
     // the gesture that allows it, and the phone blocks it.
-    openWhatsApp(guest.links[step], pref);
+    openWhatsApp(step === "thanks" ? guest.thanksLink : guest.link, pref);
     setBusy(true);
     await fetch("/api/send/tap", {
       method: "POST",
@@ -309,7 +268,7 @@ export default function SendApp() {
     setBusy(false);
   }
 
-  async function undo(guest, step) {
+  async function undo(guest, step = "invite") {
     setBusy(true);
     await fetch("/api/send/tap", {
       method: "POST",
@@ -321,13 +280,11 @@ export default function SendApp() {
   }
 
   const counts = useMemo(() => {
-    const c = { all: 0, invite: 0, reminder: 0, thanks: 0, waiting: 0, done: 0 };
+    const c = { all: 0, todo: 0, sent: 0, opened: 0, confirmed: 0, declined: 0, thanks: 0 };
     for (const g of data?.guests || []) {
       c.all += 1;
-      const cur = g.steps.current;
-      if (!cur || g.status === "declined") c.done += 1;
-      else if (g.steps[cur].state === "todo") c[cur] += 1;
-      else c.waiting += 1;
+      c[g.stage] += 1;
+      if (g.thanks === "todo") c.thanks += 1;
     }
     return c;
   }, [data]);
@@ -336,11 +293,8 @@ export default function SendApp() {
     const q = query.trim();
     return (data?.guests || []).filter((g) => {
       if (q && !g.name.includes(q) && !g.phone.includes(q)) return false;
-      const cur = g.steps.current;
-      if (filter === "all") return true;
-      if (filter === "done") return !cur || g.status === "declined";
-      if (filter === "waiting") return cur && g.status !== "declined" && g.steps[cur].state !== "todo";
-      return cur === filter && g.steps[cur].state === "todo";
+      if (filter === "thanks") return g.thanks === "todo";
+      return filter === "all" || g.stage === filter;
     });
   }, [data, filter, query]);
 
@@ -356,11 +310,12 @@ export default function SendApp() {
   const sideLabel = data.side === "bride" ? "ضيوف العروس" : "ضيوف العريس";
   const tabs = [
     ["all", "الكل"],
-    ["invite", "الدعوة"],
-    ["reminder", "التذكير"],
-    ["thanks", "الشكر"],
-    ["waiting", "ننتظر الضيف"],
-    ["done", "خلصوا"],
+    ["todo", "ما انرسلت"],
+    ["sent", "ننتظر يفتحون"],
+    ["opened", "فتحوا وما ردوا"],
+    ["confirmed", "أكدوا"],
+    ["declined", "اعتذروا"],
+    ...(data.thanksOpen ? [["thanks", "باقي الشكر"]] : []),
   ];
 
   return (
@@ -373,7 +328,7 @@ export default function SendApp() {
             setWaPref(choice);
             const pending = picker;
             setPicker(null);
-            tap(pending.guest, pending.step, choice);
+            tap(pending.guest, choice, pending.step);
           }}
         />
       )}
@@ -413,9 +368,9 @@ export default function SendApp() {
       )}
 
       <div className="card-flat p-3 text-xs leading-relaxed text-ink-2">
-        اضغط الزر، بيفتح واتساب والرسالة جاهزة — اضغط إرسال وارجع هني. السطر يتلوّن أخضر لما الضيف يفتح
-        الرابط. ما في رسالة ثانية للباركود: أول ما الضيف يأكد، نفس رابط الدعوة يصير بطاقة دخوله.
-        {data.reminderFrom && <> التذكير يفتح {dayLabel(data.reminderFrom)}، والشكر {dayLabel(data.thanksFrom)}.</>}
+        اضغط «إرسال الدعوة»، بيفتح واتساب والرسالة جاهزة — اضغط إرسال وارجع هني. هذي الرسالة الوحيدة: أول ما
+        الضيف يأكد، نفس الرابط يصير بطاقة دخوله، وفيه موقع القاعة وزر يضيف الموعد لتقويمه. وبعد العرس يطلع لكم
+        زر «إرسال الشكر» للي حضروا، ترسلونه وقت ما تبون.
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
@@ -426,7 +381,7 @@ export default function SendApp() {
             className="chip shrink-0"
             style={
               filter === key
-                ? { background: STEP_COLOR[key] || "#1d5c47", color: "#fff", borderColor: "transparent" }
+                ? { background: STAGE[key]?.color || "#1d5c47", color: "#fff", borderColor: "transparent" }
                 : undefined
             }
           >

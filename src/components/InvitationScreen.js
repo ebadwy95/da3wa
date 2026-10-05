@@ -211,7 +211,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
           if (!res.ok) throw new Error(data.error || "خطأ");
           return data;
         })
-        .then(({ guest, event, language }) => {
+        .then(({ guest, event, language, thanksCard }) => {
           // Switching language replaces the content without going back through
           // the loading state, which would put the envelope up a second time.
           // Only the first load decides: switching language reloads the
@@ -221,7 +221,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             setOpened(true);
           }
           loadedOnce.current = true;
-          setState({ loading: false, error: null, guest, event, language: language === "en" ? "en" : "ar" });
+          setState({ loading: false, error: null, guest, event, thanksCard, language: language === "en" ? "en" : "ar" });
           setCompanions(guest.confirmedCompanions || 0);
           setWishText(guest.wishMessage || "");
         })
@@ -573,10 +573,27 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             "inv invite-card w-full " + (opened ? "da3wa-fade-in" : "invisible")
           }
         >
-          {returning && guest.status === "confirmed" && (
-            <div className="inv-sec pad">
-              <EntryPass guest={guest} event={event} token={token} ui={ui} language={language} />
+          {/* After the wedding: the thank-you card first. Before it: the
+              entry pass, for a guest coming back to find it. */}
+          {state.thanksCard ? (
+            <div className="inv-sec pad flex flex-col items-center gap-3">
+              <p className="inv-eyebrow">{ui.thanksTitle}</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={state.thanksCard}
+                alt={ui.thanksTitle}
+                width={1080}
+                height={1350}
+                style={{ width: "100%", maxWidth: "26rem", height: "auto", borderRadius: "1rem" }}
+              />
             </div>
+          ) : (
+            returning &&
+            guest.status === "confirmed" && (
+              <div className="inv-sec pad">
+                <EntryPass guest={guest} event={event} token={token} ui={ui} language={language} />
+              </div>
+            )
           )}
 
           {/* The order Eslam specified: the opening line, the date, the names
@@ -838,7 +855,9 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
                 {ui.confirmed(guest.confirmedCompanions || 0)}
               </p>
 
-              {returning ? (
+              {/* Pointing up only when the pass really is up there — after the
+                  wedding the thank-you card takes the top. */}
+              {returning && !state.thanksCard ? (
                 <p className="meta">{ui.passAbove} ↑</p>
               ) : (
                 <EntryPass guest={guest} event={event} token={token} ui={ui} language={language} />

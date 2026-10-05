@@ -1105,20 +1105,15 @@ function SecurityTeamCard({ event }) {
   );
 }
 
-// The sending app (/send): the groom and the bride each send every message
-// from their own WhatsApp. Here the admin creates their logins and decides
-// when the reminder and the thank-you open in it.
+// The sending app (/send): the groom and the bride each send the invitation
+// from their own WhatsApp. Here the admin creates their logins.
 function SendAppCard({ event }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(null);
-  const [dates, setDates] = useState({ reminderFrom: "", thanksFrom: "" });
 
-  const apply = useCallback((json) => {
-    setData(json);
-    setDates({ reminderFrom: json.reminderFrom || "", thanksFrom: json.thanksFrom || "" });
-  }, []);
+  const apply = useCallback((json) => setData(json), []);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/events/${event.id}/senders`, { cache: "no-store" });
@@ -1162,8 +1157,8 @@ function SendAppCard({ event }) {
         <SendIcon size={18} /> تطبيق الإرسال للعرسان
       </h2>
       <p className="text-xs text-ink-2 leading-relaxed">
-        العريس والعروس يرسلون كل الرسائل من واتساب حقهم: الدعوة، ثم بطاقة الـ QR، ثم التذكير، ثم الشكر. كل واحد
-        يدخل بحسابه ويشوف ضيوفه بس (حسب عمود «الطرف»)، والضيف اللي ما له طرف يطلع عند الاثنين.
+        العريس والعروس يرسلون الدعوة من واتساب حقهم — رسالة وحدة بس لكل ضيف، ورابطها يصير بطاقة الدخول أول ما
+        الضيف يأكد. كل واحد يدخل بحسابه ويشوف ضيوفه بس (حسب عمود «الطرف»)، والضيف اللي ما له طرف يطلع عند الاثنين.
       </p>
       <div className="flex flex-wrap gap-2 items-center">
         <div className="field flex-1 min-w-[160px]" dir="ltr">{data.link}</div>
@@ -1223,24 +1218,6 @@ function SendAppCard({ event }) {
         </p>
       )}
 
-      <div className="flex flex-wrap gap-3 items-end pt-2 border-t" style={{ borderColor: "var(--line-soft)" }}>
-        <div>
-          <label className="label">التذكير يفتح من</label>
-          <input type="date" value={dates.reminderFrom} onChange={(e) => setDates((d) => ({ ...d, reminderFrom: e.target.value }))} className="field" />
-        </div>
-        <div>
-          <label className="label">الشكر يفتح من</label>
-          <input type="date" value={dates.thanksFrom} onChange={(e) => setDates((d) => ({ ...d, thanksFrom: e.target.value }))} className="field" />
-        </div>
-        <button onClick={() => call("PUT", dates, "تم حفظ التواريخ ✓")} className="pill-btn pill-btn-sm">
-          حفظ
-        </button>
-        {(data.customReminderFrom || data.customThanksFrom) && (
-          <button onClick={() => call("PUT", { reminderFrom: null, thanksFrom: null }, "رجعت للتواريخ الافتراضية")} className="pill-btn-ghost pill-btn-sm">
-            الافتراضي (قبل الفرح بيومين / بعده بيوم)
-          </button>
-        )}
-      </div>
       {notice && <p className="hint">{notice}</p>}
       {error && <p className="text-danger text-sm">{error}</p>}
     </div>

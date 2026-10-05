@@ -1,99 +1,42 @@
-// The sending app (/send): the groom and the bride sending every message from
-// their own WhatsApp, one guest at a time, when the business number can't.
+// The sending app (/send): the groom and the bride sending the invitation
+// from their own WhatsApp, one guest at a time, when the business number
+// can't.
 //
-// Each guest goes through three messages in order — the invitation, the
-// reminder, the thank-you — and the app shows one button per guest: whichever
-// message is due next. There is no separate entry-pass message: the moment a
-// guest confirms, their invitation link becomes their pass. A message has
-// three states:
+// One message per guest before the wedding. Everything else lives on the
+// link it carries: the guest confirms there, the same link becomes their entry
+// pass, the venue's map is on it, and "add to calendar" on the pass has the
+// phone remind them — so nothing needs sending a second time. After the
+// wedding there is one optional thank-you, pointing at the same link (below).
+//
+// The invitation has three states:
 //
 //   todo  — not sent yet; the button opens WhatsApp with it written out.
 //   sent  — the button was pressed. WhatsApp tells nobody whether the send
 //           button was then pressed, so this is "probably sent".
-//   done  — the guest opened the link inside it. This is the proof, and it is
-//           the only thing that turns the row green.
+//   done  — the guest opened the link. This is the proof, and the only thing
+//           that turns the row green.
 //
-// The texts are the approved WhatsApp templates word for word, so a guest
-// gets the same message whichever route it came by; only "attached above"
-// becomes a link, because a hand-sent message carries no attachment.
+// The text is the approved WhatsApp template word for word, so a guest gets
+// the same message whichever route it came by.
 
-import {
-  makeInviteToken,
-  makeGuestPageToken,
-} from "@/lib/token";
+import { makeInviteToken } from "@/lib/token";
 import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
-import {
-  formatEventDateArabic,
-  formatEventDateEnglish,
-  formatEventTimeArabic,
-  formatEventTimeEnglish,
-  isIsoDate,
-} from "@/lib/date";
 import { siteOrigin } from "@/lib/seo";
 
-export const STEPS = ["invite", "reminder", "thanks"];
+export const STEPS = ["invite", "thanks"];
 
-// Weddings are in Kuwait; the server runs on UTC. "Is the reminder open yet"
-// is a question about the date on the couple's phone, not on the server.
-const KUWAIT_OFFSET_MS = 3 * 60 * 60 * 1000;
-export function kuwaitToday(now = new Date()) {
-  return new Date(now.getTime() + KUWAIT_OFFSET_MS).toISOString().slice(0, 10);
+export function inviteLink(guestId) {
+  return `${siteOrigin()}/invite/${guestId}?t=${makeInviteToken(guestId)}`;
 }
 
-function shiftDate(isoDate, days) {
-  const d = new Date(`${isoDate}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-/**
- * When the reminder and the thank-you open in the app. The reminder opens two
- * days before the wedding and the thank-you the day after, unless the admin
- * set another date — "ask the admin" is the way to send either one early.
- */
-export function unlockDates(event) {
-  const date = isIsoDate(event?.eventDate) ? event.eventDate : null;
-  return {
-    reminderFrom: event?.handSendReminderFrom || (date ? shiftDate(date, -2) : null),
-    thanksFrom: event?.handSendThanksFrom || (date ? shiftDate(date, 1) : null),
-  };
-}
-
-export function guestLinks(guestId) {
-  const base = siteOrigin();
-  return {
-    invite: `${base}/invite/${guestId}?t=${makeInviteToken(guestId)}`,
-    pass: `${base}/pass/${guestId}?t=${makeGuestPageToken(guestId, "pass")}`,
-    map: `${base}/go/${guestId}?t=${makeGuestPageToken(guestId, "map")}`,
-    thanks: `${base}/thanks/${guestId}?t=${makeGuestPageToken(guestId, "thanks")}`,
-  };
-}
-
-/** The text each message sends, in the guest's language. */
-export function messageFor(step, guest, event) {
+/** The invitation text, in the guest's language. */
+export function inviteMessage(guest, event) {
   const en = guest.language === "en";
   const { groomName, brideName } = resolveCoupleParts(event);
-  const couple = coupleNamesIn(event, en ? "en" : "ar");
-  const links = guestLinks(guest.id);
-
-  if (step === "invite") {
-    return en
-      ? `Hello ${guest.name}, ${couple} are delighted to invite you to celebrate their wedding with them. To confirm your attendance or send your apologies, please open your personal invitation:\n${links.invite}\nWe look forward to your reply.`
-      : `مرحباً ${guest.name} 🌸، يتشرف ${groomName} و${brideName} بدعوتكم لمشاركتهما فرحة الزفاف. للتأكيد أو الاعتذار، يرجى الضغط على الرابط التالي:\n${links.invite}\nبانتظار ردكم بكل سرور 💍`;
-  }
-  if (step === "reminder") {
-    const date = en ? formatEventDateEnglish(event.eventDate) : formatEventDateArabic(event.eventDate);
-    const time = en ? formatEventTimeEnglish(event.eventTime) : formatEventTimeArabic(event.eventTime);
-    const venue = (en && event.venueNameEn) || event.venueName || event.venueAddress || "";
-    return en
-      ? `Hello ${guest.name}, this is a kind reminder of the wedding celebration of ${couple}, which will take place on ${date} at ${time} at ${venue}. You can find the venue on the map using this link:\n${links.map}\nYour entry pass is on your invitation — please show it at the venue entrance:\n${links.invite}\nWe look forward to seeing you.`
-      : `مرحبًا ${guest.name}، نودّ أن نذكّركم بموعد حفل زفاف ${groomName} و${brideName}، والذي سيُقام بإذن الله يوم ${date} في تمام الساعة ${time}، وذلك في ${venue}. يمكنكم الاطلاع على موقع القاعة على الخريطة من خلال الرابط التالي:\n${links.map}\nوبطاقة الدخول على رابط دعوتكم، نرجو التكرم بإبرازها عند باب القاعة:\n${links.invite}\nونتشرف بحضوركم.`;
-  }
-  // The template says "yesterday"; a hand-sent thank-you can go out any day
-  // after, so the day is left out rather than risk being wrong.
+  const link = inviteLink(guest.id);
   return en
-    ? `Hello ${guest.name}, ${couple} thank you for attending their wedding. Your thank-you card is at the link below:\n${links.thanks}`
-    : `مرحبًا ${guest.name}، يشكركم ${groomName} و${brideName} على حضوركم حفل زفافهما. بطاقة الشكر على الرابط التالي:\n${links.thanks}`;
+    ? `Hello ${guest.name}, ${coupleNamesIn(event, "en")} are delighted to invite you to celebrate their wedding with them. To confirm your attendance or send your apologies, please open your personal invitation:\n${link}\nWe look forward to your reply.`
+    : `مرحباً ${guest.name} 🌸، يتشرف ${groomName} و${brideName} بدعوتكم لمشاركتهما فرحة الزفاف. للتأكيد أو الاعتذار، يرجى الضغط على الرابط التالي:\n${link}\nبانتظار ردكم بكل سرور 💍`;
 }
 
 export function whatsappLink(phone, text) {
@@ -101,65 +44,61 @@ export function whatsappLink(phone, text) {
 }
 
 /**
- * Where each of the guest's three messages stands. Returns
- * { invite, reminder, thanks } each { state, at, until }, with state one
- * of todo / sent / done / locked / skip, plus `current`: the step the guest's
- * button is for.
+ * Where the guest stands, as one word the app can colour:
+ * todo, sent, opened (no answer yet), confirmed or declined.
  */
-export function guestSteps(guest, event, today = kuwaitToday()) {
-  const tapped = guest.handSend || {};
-  const declined = guest.status === "declined";
-  const confirmed = guest.status === "confirmed";
-  const { reminderFrom, thanksFrom } = unlockDates(event);
+export function guestStage(guest) {
+  if (guest.status === "confirmed") return "confirmed";
+  if (guest.status === "declined") return "declined";
+  if (guest.openedAt) return "opened";
+  if (guest.handSend?.invite) return "sent";
+  return "todo";
+}
 
-  const progress = (step, doneAt) => {
-    if (doneAt) return { state: "done", at: doneAt };
-    if (tapped[step]) return { state: "sent", at: tapped[step] };
-    return { state: "todo" };
-  };
+// ---- The thank-you, the one message after the wedding ----
+//
+// Optional, and sent whenever the couple likes once the wedding is over. It
+// points at the same invitation link, which shows the thank-you card on top
+// from the day after the wedding — still one link per guest, for everything.
 
-  // Answering means they opened it, even if the visit predates open tracking.
-  const answered = confirmed || declined;
-  const steps = {
-    invite: progress("invite", guest.openedAt || (answered ? guest.respondedAt || guest.createdAt : null)),
-  };
+// Weddings are in Kuwait; the server runs on UTC.
+const KUWAIT_OFFSET_MS = 3 * 60 * 60 * 1000;
 
-  // The reminder carries two links — the map and the invitation (the pass);
-  // either one opened after it was sent means it arrived.
-  const reminderOpened =
-    guest.reminderOpenedAt ||
-    (tapped.reminder && guest.lastOpenedAt && guest.lastOpenedAt > tapped.reminder ? guest.lastOpenedAt : null);
+// Weddings run past midnight, and a guest arriving at half past twelve still
+// needs their entry pass on top — so the thank-you takes over the link at six
+// in the morning after the wedding, not at midnight.
+const THANKS_FROM_HOUR = "06:00";
 
-  if (declined) {
-    steps.reminder = steps.thanks = { state: "skip" };
-  } else if (!confirmed) {
-    steps.reminder = { state: "locked", reason: "waiting_rsvp" };
-    steps.thanks = { state: "locked", reason: "waiting_rsvp" };
-  } else {
-    steps.reminder =
-      reminderFrom && today < reminderFrom
-        ? { state: "locked", reason: "date", until: reminderFrom }
-        : progress("reminder", reminderOpened);
-    steps.thanks =
-      thanksFrom && today < thanksFrom
-        ? { state: "locked", reason: "date", until: thanksFrom }
-        : progress("thanks", guest.thanksViewedAt);
-  }
+function nextDay(isoDate) {
+  const d = new Date(`${isoDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
 
-  // The button belongs to the first message still to do. A message sent but
-  // not yet opened doesn't hold the guest back once the next one is due — the
-  // row keeps showing it as waiting, alongside the next button.
-  let current = null;
-  for (let i = 0; i < STEPS.length; i += 1) {
-    const step = STEPS[i];
-    const { state } = steps[step];
-    if (state === "done" || state === "skip") continue;
-    if (state === "sent") {
-      const nextState = steps[STEPS[i + 1]]?.state;
-      if (nextState === "todo" || nextState === "sent" || nextState === "done") continue;
-    }
-    current = step;
-    break;
-  }
-  return { ...steps, current };
+/** True from 6am (Kuwait) the morning after the wedding. */
+export function thanksOpen(event, now = new Date()) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(event?.eventDate || "")) return false;
+  const kuwaitNow = new Date(now.getTime() + KUWAIT_OFFSET_MS).toISOString().slice(0, 16);
+  return kuwaitNow >= `${nextDay(event.eventDate)}T${THANKS_FROM_HOUR}`;
+}
+
+export function thanksMessage(guest, event) {
+  const en = guest.language === "en";
+  const { groomName, brideName } = resolveCoupleParts(event);
+  const link = inviteLink(guest.id);
+  return en
+    ? `Hello ${guest.name}, ${coupleNamesIn(event, "en")} thank you for attending their wedding. Your thank-you card is on your invitation:\n${link}`
+    : `مرحبًا ${guest.name}، يشكركم ${groomName} و${brideName} على حضوركم حفل زفافهما. بطاقة الشكر على رابط دعوتكم:\n${link}`;
+}
+
+/**
+ * The thank-you for this guest: null when it doesn't apply (not confirmed,
+ * or the wedding isn't over), otherwise todo / sent / done — done once the
+ * guest opened their link after it was sent.
+ */
+export function thanksState(guest, event, now = new Date()) {
+  if (guest.status !== "confirmed" || !thanksOpen(event, now)) return null;
+  const sentAt = guest.handSend?.thanks;
+  if (!sentAt) return "todo";
+  return guest.lastOpenedAt && guest.lastOpenedAt > sentAt ? "done" : "sent";
 }

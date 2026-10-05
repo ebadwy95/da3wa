@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getDb, withDb } from "@/lib/db";
 import { recordInviteOpen } from "@/lib/inviteOpens";
-import { verifyInviteToken } from "@/lib/token";
+import { verifyInviteToken, makeCardToken } from "@/lib/token";
+import { thanksOpen } from "@/lib/handSend";
 import { normaliseInviteLanguage } from "@/lib/inviteCopy";
 import { buildInviteEvent } from "@/lib/inviteEvent";
 import { isAdminAuthed } from "@/lib/auth";
@@ -41,7 +42,14 @@ export async function GET(request, { params }) {
   // the card would otherwise look like the guest reading their invitation.
   const opened = admin ? null : await recordInviteOpen(id);
 
-  return NextResponse.json({ guest: opened || guest, event, language });
+  // From the day after the wedding, a guest who came gets the thank-you card
+  // at the top of the same link — what a hand-sent thank-you points to.
+  const thanksCard =
+    guest.status === "confirmed" && fullEvent && thanksOpen(fullEvent)
+      ? `/api/cards/thanks/${fullEvent.id}/card.png?lang=${language}&t=${makeCardToken(fullEvent.id)}`
+      : null;
+
+  return NextResponse.json({ guest: opened || guest, event, language, thanksCard });
 }
 
 // The couple or admin choosing which card a guest receives, before sending,
