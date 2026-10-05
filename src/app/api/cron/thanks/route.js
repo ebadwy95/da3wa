@@ -54,8 +54,9 @@ export async function GET(request) {
   const db = await getDb();
   // Yesterday's weddings. Deleted ones are left alone — an event that was
   // cancelled should not thank anybody.
+  // Weddings sending by hand (autoMessagesOff) thank their guests themselves.
   const dueEvents = db.events.filter(
-    (e) => e.status !== "deleted" && daysSince(e.eventDate) === 1
+    (e) => e.status !== "deleted" && !e.autoMessagesOff && daysSince(e.eventDate) === 1
   );
 
   const report = { checkedAt: new Date().toISOString(), events: [] };

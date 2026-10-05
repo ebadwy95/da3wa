@@ -71,9 +71,12 @@ export async function GET(request) {
 
   const db = await getDb();
 
+  // A wedding sending by hand from the couple's WhatsApp has its automatic
+  // messages turned off (event.autoMessagesOff) and is left alone here.
   const dueEvents = db.events.filter(
     (e) =>
       computeDisplayStatus(e) === "active" &&
+      !e.autoMessagesOff &&
       daysUntil(e.eventDate) === REMINDER_DAYS_BEFORE
   );
 

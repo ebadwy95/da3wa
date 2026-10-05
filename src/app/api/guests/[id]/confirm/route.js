@@ -56,6 +56,7 @@ export async function POST(request, { params }) {
       coupleParts: resolveCoupleParts(event),
       // The names as this guest's own language writes them, for the message.
       coupleNames: coupleNamesIn(event, guestLanguage(guest)),
+      autoMessagesOff: Boolean(event?.autoMessagesOff),
     };
   });
 
@@ -63,7 +64,7 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: outcome.error }, { status: outcome.status || 400 });
   }
 
-  const { guest, coupleParts, coupleNames } = outcome;
+  const { guest, coupleParts, coupleNames, autoMessagesOff } = outcome;
   const lang = guestLanguage(guest);
 
   // 2. Send the QR over WhatsApp — outside any transaction, so a retry can
@@ -76,7 +77,11 @@ export async function POST(request, { params }) {
   //    the admin feed says exactly why.
   const qrTemplateName = templateNameFor("QR");
   let waResult = null;
-  if (attending && messagingIsConfigured() && !isUsableTemplateName(qrTemplateName)) {
+  if (autoMessagesOff) {
+    // The wedding sends by hand from the couple's own WhatsApp, and the
+    // guest's pass is on their invitation link — no message from Da3wa's
+    // number, which the guest wouldn't recognise.
+  } else if (attending && messagingIsConfigured() && !isUsableTemplateName(qrTemplateName)) {
     waResult = {
       error:
         "لم يُرسَل رمز QR على واتساب: WHATSAPP_QR_TEMPLATE_NAME غير مضبوط على قالب معتمد (اضبطه على da3wa_qr_delivery بعد اعتماده من Meta)",
@@ -127,11 +132,13 @@ export async function POST(request, { params }) {
       guestId: guest.id,
       guestName: guest.name,
       phone: guest.phoneDisplay || guest.phone,
-      type: attending ? "qr_delivery" : "decline_notice",
+      type: attending ? (autoMessagesOff ? "rsvp_confirmed" : "qr_delivery") : "decline_notice",
       status: waResult ? (waResult.simulated ? "simulated" : waResult.error ? "failed" : "sent") : "logged",
       waMessageId: waResult?.messageId || null,
       content: attending
-        ? `تم إرسال كود QR للدخول إلى ${guest.name} (${guest.phoneDisplay || guest.phone})`
+        ? autoMessagesOff
+          ? `${guest.name} أكّد الحضور — بطاقة الدخول على رابط دعوته`
+          : `تم إرسال كود QR للدخول إلى ${guest.name} (${guest.phoneDisplay || guest.phone})`
         : `${guest.name} اعتذر عن الحضور`,
       error: waResult?.error || null,
       createdAt: new Date().toISOString(),

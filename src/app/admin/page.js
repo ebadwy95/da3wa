@@ -1224,6 +1224,127 @@ function SendAppCard({ event }) {
   );
 }
 
+// Whether Da3wa's own WhatsApp number sends this wedding's automatic
+// messages: the entry pass when a guest confirms, the reminder two days
+// before, the thank-you the day after. Off for a wedding sending by hand from
+// the couple's WhatsApp — the pass is on the invitation link, and a message
+// from a number the guest doesn't know only confuses them.
+function AutoMessagesCard({ event, onUpdated }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const on = !event.autoMessagesOff;
+
+  async function toggle() {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/events/${event.id}/auto-messages`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ on: !on }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "تعذّر الحفظ");
+      onUpdated({ autoMessagesOff: json.autoMessagesOff });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="card p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="font-bold">الإرسال التلقائي من رقم دعوة</h2>
+        <button
+          onClick={toggle}
+          disabled={saving}
+          className={on ? "pill-btn pill-btn-sm" : "pill-btn-outline pill-btn-sm"}
+          style={on ? { background: "var(--ok)", borderColor: "var(--ok)" } : undefined}
+        >
+          {saving ? "..." : on ? "مفتوح — اضغط للقفل" : "مقفول — اضغط للفتح"}
+        </button>
+      </div>
+      <p className="text-xs text-ink-2 leading-relaxed">
+        {on
+          ? "رقم دعوة يرسل للضيوف لحاله: بطاقة الدخول أول ما يأكدون، والتذكير قبل العرس بيومين، والشكر بعده بيوم."
+          : "مقفول: ما يطلع للضيوف أي رسالة من رقم دعوة. العرسان يرسلون الدعوة من تطبيق الإرسال، وبطاقة الدخول على رابط الدعوة نفسه."}
+      </p>
+      {error && <p className="text-danger text-sm">{error}</p>}
+    </div>
+  );
+}
+
+// Starting a wedding's guest list again — after testing, before the real
+// list goes in. Wipes the guests and everything recorded about them; keeps
+// the wedding and all its settings. Permanent, so the word has to be typed.
+function ResetEventCard({ event, onReset }) {
+  const [open, setOpen] = useState(false);
+  const [word, setWord] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState("");
+  const [error, setError] = useState("");
+
+  async function reset() {
+    setBusy(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/events/${event.id}/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: word }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error || "تعذّر المسح");
+      const r = json.removed;
+      setResult(`انمسح: ${r.guests} ضيف، ${r.messages} رسالة من السجل، ${r.checkins} من سجل الباب، ${r.alerts} تنبيه أمن.`);
+      setOpen(false);
+      setWord("");
+      onReset();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="card p-4 flex flex-col gap-2" style={{ borderColor: "var(--danger-bg)" }}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="font-bold" style={{ color: "var(--danger)" }}>مسح بيانات العرس والبدء من جديد</h2>
+        {!open && (
+          <button onClick={() => { setOpen(true); setResult(""); }} className="pill-btn-danger pill-btn-sm">
+            مسح البيانات
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-ink-2 leading-relaxed">
+        يمسح كل الضيوف، وسجل الرسائل، وسجل الدخول عند الباب، وتنبيهات الأمن لهذا العرس بس. يبقى العرس نفسه بكل
+        إعداداته: التصميم والكلام، رموز السكانر، فريق الأمن، ودخول العرسان وتطبيق الإرسال.
+      </p>
+      {open && (
+        <div className="flex flex-col gap-2 rounded-lg p-3" style={{ background: "var(--danger-bg)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--danger)" }}>
+            ⚠️ المسح نهائي وما له رجعة. اكتب كلمة «مسح» للتأكيد:
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <input value={word} onChange={(e) => setWord(e.target.value)} className="field flex-1 min-w-[120px]" placeholder="مسح" />
+            <button onClick={reset} disabled={busy || word.trim() !== "مسح"} className="pill-btn-danger pill-btn-sm">
+              {busy ? "..." : "امسح نهائيًا"}
+            </button>
+            <button onClick={() => { setOpen(false); setWord(""); }} className="pill-btn-ghost pill-btn-sm">
+              إلغاء
+            </button>
+          </div>
+        </div>
+      )}
+      {result && <p className="text-sm" style={{ color: "var(--ok)" }}>{result}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
+    </div>
+  );
+}
+
 function CoupleCredentialsCard({ event, onUpdated }) {
   const [copied, setCopied] = useState(null);
   const [resetting, setResetting] = useState(false);
@@ -1456,6 +1577,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       <ScannerAccessCard event={eventForDisplay} onUpdated={(scanners) => setOverrides((prev) => ({ ...prev, scanners }))} />
       <SecurityTeamCard event={eventForDisplay} />
       <SendAppCard event={eventForDisplay} />
+      <AutoMessagesCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
       <CoupleCredentialsCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
 
       <GuestBreakdown stats={stats} guests={guests} />
@@ -1520,6 +1642,8 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
           <WishWall guests={guests} />
         </div>
       </div>
+
+      <ResetEventCard event={eventForDisplay} onReset={refresh} />
     </div>
   );
 }
