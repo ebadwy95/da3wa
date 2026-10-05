@@ -250,6 +250,138 @@ function BreakdownSheet({ item, guests, onClose }) {
   );
 }
 
+// The same guest list read down the two sides of the family: how many
+// invitations each of them sent, how many people that is, who has answered,
+// and — the number the couple actually want — where the headcount lands if
+// everyone still silent says yes.
+const SIDE_ROWS = [
+  { key: "groom", label: "ضيوف العريس" },
+  { key: "bride", label: "ضيوف العروس" },
+  { key: "none", label: "بدون طرف" },
+];
+
+function sideTotals(guests) {
+  const blank = () => ({
+    invites: 0,
+    people: 0,
+    sent: 0,
+    confirmed: 0,
+    confirmedPeople: 0,
+    declined: 0,
+    pending: 0,
+    pendingPeople: 0,
+    family: 0,
+    familyPeople: 0,
+    share: 0,
+  });
+  const totals = { groom: blank(), bride: blank(), none: blank(), all: blank() };
+
+  for (const g of guests) {
+    const row = totals[g.side === "groom" || g.side === "bride" ? g.side : "none"];
+    const kind = guestKind(g);
+    const allowed = 1 + (g.maxCompanions || 0);
+    for (const t of [row, totals.all]) {
+      if (kind === "family") {
+        t.family += 1;
+        t.familyPeople += allowed;
+        continue;
+      }
+      if (kind === "share") {
+        t.share += 1;
+        continue;
+      }
+      t.invites += 1;
+      t.people += allowed;
+      if (g.invitedAt) t.sent += 1;
+      if (g.status === "confirmed") {
+        t.confirmed += 1;
+        t.confirmedPeople += 1 + (g.confirmedCompanions || 0);
+      } else if (g.status === "declined") {
+        t.declined += 1;
+      } else {
+        t.pending += 1;
+        t.pendingPeople += allowed;
+      }
+    }
+  }
+  return totals;
+}
+
+export function SidesTable({ guests }) {
+  const totals = useMemo(() => sideTotals(guests || []), [guests]);
+  if (!guests?.length) return null;
+  const rows = SIDE_ROWS.filter(
+    (r) => totals[r.key].invites || totals[r.key].family || totals[r.key].share
+  );
+
+  const cell = (t) => [
+    t.invites,
+    t.people,
+    t.sent,
+    t.confirmed,
+    t.confirmedPeople,
+    t.declined,
+    t.pending,
+    // Where the night lands if everyone still silent says yes, at the full
+    // allowance they were each given.
+    t.confirmedPeople + t.pendingPeople,
+    t.family ? `${t.family} (${t.familyPeople})` : "—",
+    t.share || "—",
+  ];
+  const headers = [
+    "",
+    "الدعوات",
+    "الأفراد المسموحين",
+    "انرسلت",
+    "أكدوا",
+    "أفراد مؤكدين",
+    "اعتذروا",
+    "ما ردوا",
+    "لو الكل أكد",
+    "أهل الفرح (أفراد)",
+    "مشاركة الفرحة",
+  ];
+
+  return (
+    <div className="card p-4 space-y-2">
+      <h2 className="font-bold">التقسيم حسب الطرف</h2>
+      <p className="text-xs text-ink-2 leading-relaxed">
+        «لو الكل أكد» = الأفراد المؤكدين الآن + كل اللي ما ردوا بكامل العدد المسموح لهم — أعلى رقم ممكن توصله
+        القاعة. أهل الفرح يجون بدون تأكيد، فيُحسبون بعددهم المسموح.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr className="text-ink-2" style={{ fontSize: "var(--text-xs)" }}>
+              {headers.map((h, i) => (
+                <th key={i} className="py-2 px-2 text-center whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.key} className="border-t" style={{ borderColor: "var(--line-soft)" }}>
+                <td className="py-2 px-2 font-semibold whitespace-nowrap">{r.label}</td>
+                {cell(totals[r.key]).map((v, i) => (
+                  <td key={i} className="py-2 px-2 text-center tnum">{v}</td>
+                ))}
+              </tr>
+            ))}
+            <tr className="border-t-2 font-bold" style={{ borderColor: "var(--line)" }}>
+              <td className="py-2 px-2 whitespace-nowrap">الإجمالي</td>
+              {cell(totals.all).map((v, i) => (
+                <td key={i} className="py-2 px-2 text-center tnum" style={i === 7 ? { color: "var(--gold-600)" } : undefined}>
+                  {v}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function GuestBreakdown({ stats, guests }) {
   const [open, setOpen] = useState(null);
   if (!stats) return null;
