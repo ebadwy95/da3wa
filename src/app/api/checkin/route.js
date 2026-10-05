@@ -34,7 +34,12 @@ const PER_EVENT_LOG_LIMIT = 500;
 //      declined, etc.) there's nothing to confirm, so that's logged and
 //      returned as a normal rejection immediately.
 //
-//   2. mode "confirm": the door staff has explicitly entered how many
+//   2. mode "out": some of the party are stepping outside — to the car, for
+//      some air. The staff picks how many are leaving, and those people come
+//      off the headcount, so the same code lets them back in instead of
+//      sounding the alarm at a guest who only walked out for a minute.
+//
+//   3. mode "confirm": the door staff has explicitly entered how many
 //      people are entering right now (1..remaining) and pressed confirm.
 //      This is the only path that actually increments checkedInCount, and
 //      the code is re-verified from scratch here too — the client's earlier
@@ -139,6 +144,82 @@ export async function POST(request) {
     const partySize = 1 + (guest.confirmedCompanions || 0);
     const checkedInCount = guest.checkedInCount || 0;
     const remaining = partySize - checkedInCount;
+
+    const steppedOut = guest.steppedOutCount || 0;
+
+    // Stepping outside — to the car, for some air. Those people come off the
+    // headcount so the code opens again when they come back, and nobody is
+    // turned away at the door for having walked out. Checked before the code
+    // is called full, since a party that is all inside is exactly the one
+    // that can step out.
+    if (mode === "out") {
+      if (checkedInCount <= 0) {
+        return logAndReturn({
+          ok: false,
+          reason: "not_inside",
+          message: `${guest.name} ما دخل القاعة أصلًا — ما في أحد يطلع`,
+          eventId: guest.eventId,
+          guestId: guest.id,
+          guestName: guest.name,
+        });
+      }
+      const leaving = Math.min(checkedInCount, Math.max(1, parseInt(count, 10) || 1));
+      guest.checkedInCount = checkedInCount - leaving;
+      guest.checkedIn = false;
+      guest.steppedOutCount = steppedOut + leaving;
+      return logAndReturn({
+        ok: true,
+        pending: false,
+        steppedOut: guest.steppedOutCount,
+        message: `طلع ${leaving} من ضيوف ${guest.name} — امسح نفس الرمز لما يرجعون`,
+        eventId: guest.eventId,
+        guestId: guest.id,
+        guestName: guest.name,
+        partySize,
+        checkedInCount: guest.checkedInCount,
+        remaining: partySize - guest.checkedInCount,
+      });
+    }
+
+    // Some of this party are outside — the staff recorded them stepping out.
+    // This is them coming back, not a second family on one code, so it is a
+    // welcome rather than an alarm. The alarm stays for the real case.
+    if (steppedOut > 0) {
+      const returning = Math.min(steppedOut, Math.max(1, parseInt(count, 10) || steppedOut));
+      if (!isConfirm) {
+        return {
+          ok: true,
+          pending: true,
+          returning: true,
+          eventId: guest.eventId,
+          guestId: guest.id,
+          guestName: guest.name,
+          partySize,
+          checkedInCount,
+          steppedOut,
+          remaining: steppedOut,
+        };
+      }
+      guest.steppedOutCount = steppedOut - returning;
+      guest.checkedInCount = checkedInCount + returning;
+      guest.checkedIn = guest.checkedInCount >= partySize;
+      guest.lastCheckedInAt = new Date().toISOString();
+      return logAndReturn({
+        ok: true,
+        pending: false,
+        returning: true,
+        message: `أهلًا بعودتكم — رجع ${returning} من ضيوف ${guest.name}${
+          guest.steppedOutCount ? ` (باقي برّه ${guest.steppedOutCount})` : ""
+        }`,
+        eventId: guest.eventId,
+        guestId: guest.id,
+        guestName: guest.name,
+        partySize,
+        checkedInCount: guest.checkedInCount,
+        steppedOut: guest.steppedOutCount,
+        remaining: 0,
+      });
+    }
 
     if (remaining <= 0) {
       return logAndReturn({

@@ -318,21 +318,23 @@ export default function ScanPage() {
         return;
       }
       setResult(null);
-      setPendingCount(Math.min(1, data.remaining) || 1);
+      // Coming back: the whole group that stepped out, usually together.
+      setPendingCount(data.returning ? data.steppedOut || 1 : Math.min(1, data.remaining) || 1);
       setPending({ code, ...data });
     } catch {
       reject("خطأ في الاتصال بالخادم");
     }
   }
 
-  async function confirmEntry() {
+  // mode: "confirm" for coming in or back, "out" for stepping outside.
+  async function confirmEntry(mode = "confirm") {
     if (!pending) return;
     setConfirming(true);
     try {
       const res = await fetch("/api/checkin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: pending.code, mode: "confirm", count: pendingCount }),
+        body: JSON.stringify({ code: pending.code, mode, count: pendingCount }),
       });
       const data = await res.json();
       if (!data.ok) {
@@ -583,11 +585,16 @@ export default function ScanPage() {
       {pending && (
         <section
           className="card p-5 text-center flex flex-col gap-4 da3wa-fade-in"
-          style={{ border: "2px solid var(--gold-400)" }}
+          style={{ border: pending.returning ? "2px solid #2f5f9e" : "2px solid var(--gold-400)" }}
           aria-live="polite"
         >
           <div className="flex flex-col gap-1">
-            <p className="title-lg" style={{ color: "var(--gold-600)" }}>
+            {pending.returning && (
+              <p className="chip self-center" style={{ background: "#e8eef7", color: "#2f5f9e", fontWeight: 700 }}>
+                🔵 رجوع — طلعوا وراجعين
+              </p>
+            )}
+            <p className="title-lg" style={{ color: pending.returning ? "#2f5f9e" : "var(--gold-600)" }}>
               {pending.guestName}
             </p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -595,14 +602,20 @@ export default function ScanPage() {
                 <UsersIcon size={13} />
                 المسموح {pending.partySize}
               </span>
-              <span className="chip chip-info tnum">دخل {pending.checkedInCount}</span>
-              <span className="chip chip-gold tnum">المتبقّي {pending.remaining}</span>
+              <span className="chip chip-info tnum">داخل {pending.checkedInCount}</span>
+              {pending.returning ? (
+                <span className="chip tnum" style={{ background: "#e8eef7", color: "#2f5f9e" }}>
+                  برّه {pending.steppedOut}
+                </span>
+              ) : (
+                <span className="chip chip-gold tnum">المتبقّي {pending.remaining}</span>
+              )}
             </div>
           </div>
 
           <div className="flex flex-col gap-3">
             <p style={{ fontSize: "var(--text-base)", fontWeight: 700 }} id="count-question">
-              كم شخصًا من هذه الدعوة يدخل الآن؟
+              {pending.returning ? "كم واحد راجع الآن؟" : "كم شخصًا من هذه الدعوة يدخل الآن؟"}
             </p>
             <div
               className="flex flex-wrap justify-center gap-2"
@@ -637,13 +650,21 @@ export default function ScanPage() {
 
           <div className="flex gap-2">
             <button
-              onClick={confirmEntry}
+              onClick={() => confirmEntry("confirm")}
               disabled={confirming}
               className="pill-btn flex-1"
-              style={{ minHeight: "3.25rem", fontSize: "var(--text-base)" }}
+              style={{
+                minHeight: "3.25rem",
+                fontSize: "var(--text-base)",
+                ...(pending.returning ? { background: "#2f5f9e", borderColor: "#2f5f9e" } : {}),
+              }}
             >
               <CheckCircleIcon size={20} />
-              {confirming ? "جارٍ التأكيد..." : `تأكيد دخول ${pendingCount}`}
+              {confirming
+                ? "جارٍ التأكيد..."
+                : pending.returning
+                  ? `أهلًا برجوع ${pendingCount}`
+                  : `تأكيد دخول ${pendingCount}`}
             </button>
             <button
               onClick={() => setPending(null)}
@@ -653,6 +674,19 @@ export default function ScanPage() {
               إلغاء
             </button>
           </div>
+
+          {/* Stepping outside — to the car, for some air. Recorded so the
+              same code welcomes them back instead of sounding the alarm. */}
+          {!pending.returning && pending.checkedInCount > 0 && (
+            <button
+              onClick={() => confirmEntry("out")}
+              disabled={confirming}
+              className="pill-btn-outline"
+              style={{ borderColor: "#2f5f9e", color: "#2f5f9e" }}
+            >
+              🚪 تسجيل خروج {pendingCount} — راجعين بعدين
+            </button>
+          )}
         </section>
       )}
 
