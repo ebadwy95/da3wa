@@ -98,6 +98,18 @@ export function EyeIcon(props) {
   );
 }
 
+// The same eye, struck through: a message taken off the wall the guests read.
+export function EyeOffIcon(props) {
+  return (
+    <Icon {...props}>
+      <path d="M10.6 6A9.9 9.9 0 0 1 12 5.9c6 0 9.5 6.1 9.5 6.1a17 17 0 0 1-3.3 3.9" />
+      <path d="M6.3 7.3A16.8 16.8 0 0 0 2.5 12S6 18.1 12 18.1a9.6 9.6 0 0 0 4.1-.9" />
+      <path d="M10 10a3 3 0 0 0 4.2 4.2" />
+      <path d="M3.6 3.6 20.4 20.4" />
+    </Icon>
+  );
+}
+
 /* ---------- Status ---------- */
 
 export function CheckIcon(props) {

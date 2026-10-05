@@ -93,6 +93,15 @@ export async function PATCH(request, { params }) {
     details.maxCompanions = Math.max(1, parseInt(body.maxGuests, 10) || 1) - 1;
   }
 
+  // Taking a message off the wall, or putting it back. Admin only: the
+  // dashboard still shows it, so nothing a guest wrote is lost.
+  if ("wishHidden" in body) {
+    if (!(await isAdminAuthed())) {
+      return NextResponse.json({ error: "إخفاء المباركات للإدارة فقط" }, { status: 403 });
+    }
+    changes.wishHidden = Boolean(body.wishHidden);
+  }
+
   // What the link is: an invitation, the family's card, or sharing the joy.
   if ("kind" in body) {
     if (!GUEST_KINDS.includes(body.kind)) {

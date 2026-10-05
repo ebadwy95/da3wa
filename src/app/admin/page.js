@@ -1656,7 +1656,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
               await refresh();
             }}
           />
-          <WishWall guests={guests} />
+          <WishWall guests={guests} onChanged={refresh} />
         </div>
       </div>
 

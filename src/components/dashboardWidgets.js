@@ -6,7 +6,7 @@
 // each one is allowed to touch (enforced server-side, not here).
 
 import { useMemo, useRef, useState } from "react";
-import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon, PhoneIcon, MessageIcon, XIcon, SearchIcon, PencilIcon, LockIcon } from "@/components/icons";
+import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon, EyeOffIcon, PhoneIcon, MessageIcon, XIcon, SearchIcon, PencilIcon, LockIcon } from "@/components/icons";
 import { formatDateTimeArabic } from "@/lib/date";
 import { guestKind, KIND_LABEL } from "@/lib/guestKind";
 
@@ -1068,24 +1068,65 @@ export function WhatsappFeed({ messages, watiConfigured, onClear }) {
 // A wall of the short well-wish / congratulation messages guests leave from
 // their own invite page (see src/app/invite/[id]/page.js) — regardless of
 // whether they confirmed or declined attendance. Newest first.
-export function WishWall({ guests }) {
+export function WishWall({ guests, onChanged }) {
+  const [busy, setBusy] = useState(null);
   const wishes = guests
     .filter((g) => g.wishMessage)
     .slice()
     .sort((a, b) => new Date(b.wishMessageAt || 0) - new Date(a.wishMessageAt || 0));
 
+  // Hiding keeps the message here and takes it off the wall the guests read.
+  async function toggleHidden(g) {
+    setBusy(g.id);
+    await fetch(`/api/guests/${g.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wishHidden: !g.wishHidden }),
+    }).catch(() => {});
+    await onChanged?.();
+    setBusy(null);
+  }
+
+  const hiddenCount = wishes.filter((g) => g.wishHidden).length;
+
   return (
     <div className="card p-4">
-      <h2 className="font-bold mb-3">رسائل التهنئة من الضيوف</h2>
+      <h2 className="font-bold mb-1">رسائل التهنئة من الضيوف</h2>
+      <p className="text-xs text-ink-2 mb-3">
+        اضغط العين لإخفاء أي مباركة عن الضيوف — تبقى هنا عندك، وتختفي من حائط التهاني في الدعوة.
+        {hiddenCount > 0 && <> حاليًا {hiddenCount} مخفية.</>}
+      </p>
       <div className="log-scroll">
         {wishes.length === 0 && <p className="text-sm text-ink-3 text-center py-6">لم تصل رسائل تهنئة بعد</p>}
         {wishes.map((g) => (
-          <div key={g.id} className="log-row">
-            <p className="text-ink leading-relaxed">{g.wishMessage}</p>
-            <p className="text-ink-3 text-xs mt-1">
-              — {g.name}
-              {g.wishMessageAt && <> · {formatDateTimeArabic(g.wishMessageAt)}</>}
-            </p>
+          <div
+            key={g.id}
+            className="log-row flex items-start justify-between gap-2"
+            style={g.wishHidden ? { opacity: 0.55, background: "var(--surface-2)" } : undefined}
+          >
+            <div className="min-w-0">
+              <p className="text-ink leading-relaxed">{g.wishMessage}</p>
+              <p className="text-ink-3 text-xs mt-1">
+                — {g.name}
+                {g.wishMessageAt && <> · {formatDateTimeArabic(g.wishMessageAt)}</>}
+                {g.wishHidden && (
+                  <span className="mr-2" style={{ color: "var(--danger)", fontWeight: 600 }}>
+                    · مخفية عن الضيوف
+                  </span>
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={busy === g.id}
+              onClick={() => toggleHidden(g)}
+              className="pill-btn-ghost pill-btn-sm shrink-0"
+              style={{ color: g.wishHidden ? "var(--danger)" : "var(--ink-3)" }}
+              title={g.wishHidden ? "إظهارها للضيوف" : "إخفاؤها عن الضيوف"}
+              aria-label={`${g.wishHidden ? "إظهار" : "إخفاء"} مباركة ${g.name}`}
+            >
+              {g.wishHidden ? <EyeOffIcon size={17} /> : <EyeIcon size={17} />}
+            </button>
           </div>
         ))}
       </div>

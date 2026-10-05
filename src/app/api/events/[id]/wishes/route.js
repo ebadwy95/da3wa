@@ -25,8 +25,11 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: "رابط الدعوة غير صالح" }, { status: 403 });
   }
 
+  // A message the admin has hidden stays in the dashboard but leaves the
+  // wall: the couple shouldn't have to delete a guest's words to take
+  // something unkind, or a duplicate, off the page everyone reads.
   const wishes = db.guests
-    .filter((g) => g.eventId === eventId && g.wishMessage)
+    .filter((g) => g.eventId === eventId && g.wishMessage && !g.wishHidden)
     .map((g) => ({ name: g.name, wishMessage: g.wishMessage, wishMessageAt: g.wishMessageAt }))
     .sort((a, b) => new Date(b.wishMessageAt || 0) - new Date(a.wishMessageAt || 0));
 
