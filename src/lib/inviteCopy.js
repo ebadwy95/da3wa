@@ -151,9 +151,9 @@ export const INVITE_COPY_FIELDS = [
     multiline: true,
     rows: 3,
     default:
-      "ما الفرح إلا بكم، وما تكتمل ليلتنا إلا بوجودكم. أنتم أصحاب الفرحة قبلنا، ومكانكم في الصدارة دائمًا 🤍",
+      "ما الفرح إلا بكم، وما تكتمل ليلتنا إلا بوجودكم. ولأنكم أصحاب الفرحة ومكانكم في الصدارة دائمًا، لم تصلكم دعوة كسائر الضيوف… فالبيت بيتكم والفرح فرحكم 🤍",
     defaultEn:
-      "There is no joy without you, and our night is not complete until you are there. It is your celebration before it is ours, and your place is always at its heart 🤍",
+      "There is no joy without you. Because this is your celebration and your place is always at its heart, you haven't received an invitation like our guests — this is your home and your joy 🤍",
   },
   {
     key: "shareTitle",
