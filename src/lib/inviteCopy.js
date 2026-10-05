@@ -136,6 +136,42 @@ export const INVITE_COPY_FIELDS = [
     defaultEn:
       "Having you with us on our night was the best gift of all, and your kind words reached our hearts. Thank you, from both of us.",
   },
+  // The two cards that aren't invitations: one for the couple's own family,
+  // who come without a pass, and one for loved ones who can't come at all.
+  {
+    key: "familyTitle",
+    label: "بطاقة أهل الفرح — العنوان",
+    hint: "للأهل اللي جايين بدون بطاقة دخول: كارت خاص بدل تفاصيل الدعوة.",
+    default: "إلى أهلنا وأحبّتنا",
+    defaultEn: "To our family, our dearest",
+  },
+  {
+    key: "familyBody",
+    label: "بطاقة أهل الفرح — الكلام",
+    multiline: true,
+    rows: 3,
+    default:
+      "ما الفرح إلا بكم، وما تكتمل ليلتنا إلا بوجودكم. أنتم أصحاب الفرحة قبلنا، ومكانكم في الصدارة دائمًا 🤍",
+    defaultEn:
+      "There is no joy without you, and our night is not complete until you are there. It is your celebration before it is ours, and your place is always at its heart 🤍",
+  },
+  {
+    key: "shareTitle",
+    label: "بطاقة مشاركة الفرحة — العنوان",
+    hint: "للأحبّة اللي برّه وما يقدرون يحضرون: يشاركون الفرحة بالمباركة.",
+    default: "إلى من سكنوا القلب",
+    defaultEn: "To those who live in our hearts",
+  },
+  {
+    key: "shareBody",
+    label: "بطاقة مشاركة الفرحة — الكلام",
+    multiline: true,
+    rows: 3,
+    default:
+      "حتى لو فرّقتنا المسافات، فرحتنا ما تكتمل إلا بكم ومكانكم محفوظ بيننا. شاركونا الفرحة بدعواتكم ومباركتكم 🤍",
+    defaultEn:
+      "However far apart we are, our joy is not complete without you, and your place among us is kept. Share our happiness with your prayers and wishes 🤍",
+  },
 ];
 
 export const INVITE_LANGUAGES = ["ar", "en"];

@@ -5,6 +5,7 @@ import { verifyInviteToken, makeCardToken } from "@/lib/token";
 import { thanksOpen } from "@/lib/handSend";
 import { normaliseInviteLanguage } from "@/lib/inviteCopy";
 import { normalizePhone } from "@/lib/phone";
+import { GUEST_KINDS } from "@/lib/guestKind";
 import { buildInviteEvent } from "@/lib/inviteEvent";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
@@ -90,6 +91,14 @@ export async function PATCH(request, { params }) {
   }
   if ("maxGuests" in body) {
     details.maxCompanions = Math.max(1, parseInt(body.maxGuests, 10) || 1) - 1;
+  }
+
+  // What the link is: an invitation, the family's card, or sharing the joy.
+  if ("kind" in body) {
+    if (!GUEST_KINDS.includes(body.kind)) {
+      return NextResponse.json({ error: "نوع الدعوة غير معروف" }, { status: 400 });
+    }
+    changes.kind = body.kind;
   }
 
   if (Object.keys(changes).length === 0 && Object.keys(details).length === 0) {

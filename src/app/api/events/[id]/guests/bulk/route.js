@@ -5,6 +5,7 @@ import { withDb } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { normaliseInviteLanguage } from "@/lib/inviteCopy";
+import { normaliseKind } from "@/lib/guestKind";
 
 // The accepted column header row, in this exact order. We deliberately do NOT
 // try to be clever about reordered/renamed columns — a strict template avoids
@@ -16,6 +17,7 @@ export const TEMPLATE_HEADERS = [
   "إجمالي عدد الحضور (شامل الضيف نفسه)",
   "لغة الدعوة (AR أو ENG)",
   "الطرف (العريس أو العروس)",
+  "نوع الدعوة (دعوة أو أهل أو مشاركة)",
 ];
 
 // The language column came later. A sheet downloaded before it existed has the
@@ -26,6 +28,8 @@ const LANGUAGE_HEADER = TEMPLATE_HEADERS[3];
 // The side column came after that, for the sending app. Optional the same
 // way: a sheet without it leaves every guest with no side, shown to both.
 const SIDE_HEADER = TEMPLATE_HEADERS[4];
+// And the kind after it — an ordinary invitation unless it says otherwise.
+const KIND_HEADER = TEMPLATE_HEADERS[5];
 
 // What people actually type in the side column.
 function readSide(cell) {
@@ -74,12 +78,15 @@ export async function POST(request, { params }) {
   const headerRow = rows[0].map(normalizeHeaderCell);
   const fourth = headerRow[3] || "";
   const fifth = headerRow[4] || "";
+  const sixth = headerRow[5] || "";
   const hasLanguageColumn = fourth === LANGUAGE_HEADER;
   const hasSideColumn = hasLanguageColumn && fifth === SIDE_HEADER;
+  const hasKindColumn = hasSideColumn && sixth === KIND_HEADER;
   const headerMatches =
     REQUIRED_HEADERS.every((h, i) => headerRow[i] === h) &&
     (hasLanguageColumn || fourth === "") &&
-    (hasSideColumn || fifth === "");
+    (hasSideColumn || fifth === "") &&
+    (hasKindColumn || sixth === "");
 
   if (!headerMatches) {
     return NextResponse.json(
@@ -100,7 +107,7 @@ export async function POST(request, { params }) {
 
   dataRows.forEach((row, idx) => {
     const rowNumber = idx + 2; // +1 for header, +1 for 1-indexing
-    const [rawName, rawPhone, rawTotalGuests, rawLanguage, rawSide] = row;
+    const [rawName, rawPhone, rawTotalGuests, rawLanguage, rawSide, rawKind] = row;
     const name = String(rawName ?? "").trim();
     if (!name) {
       errors.push({ row: rowNumber, reason: "الاسم فارغ" });
@@ -135,12 +142,20 @@ export async function POST(request, { params }) {
       });
       return;
     }
+    const kind = hasKindColumn ? normaliseKind(rawKind) : "invite";
+    if (!kind) {
+      errors.push({
+        row: rowNumber,
+        reason: `نوع دعوة "${name}" غير مفهوم ("${String(rawKind).trim()}") — اكتب دعوة أو أهل أو مشاركة`,
+      });
+      return;
+    }
     // The sheet's number is the TOTAL party size including the guest
     // themself (e.g. 3 = هو + مرافقين اتنين) — stored internally as
     // companions beyond the guest, same as the single-add form.
     const maxTotalGuests = Math.max(1, parseInt(rawTotalGuests, 10) || 1);
     const maxCompanions = maxTotalGuests - 1;
-    candidates.push({ name, phone, maxCompanions, language, side: sideCell.side, rowNumber });
+    candidates.push({ name, phone, maxCompanions, language, side: sideCell.side, kind, rowNumber });
   });
 
   const result = await withDb((db) => {
@@ -163,6 +178,7 @@ export async function POST(request, { params }) {
         maxCompanions: c.maxCompanions,
         language: c.language,
         side: c.side,
+        kind: c.kind,
         status: "pending",
         confirmedCompanions: null,
         checkedIn: false,

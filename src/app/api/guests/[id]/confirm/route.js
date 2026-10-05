@@ -13,6 +13,7 @@ import {
 } from "@/lib/messaging";
 import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
 import { guestLanguage } from "@/lib/inviteCopy";
+import { isInvite } from "@/lib/guestKind";
 
 // Public endpoint: the guest confirms or declines from their invite page.
 // Body: { token, attending: boolean, companions?: number }
@@ -39,6 +40,8 @@ export async function POST(request, { params }) {
   const outcome = await withDb((db) => {
     const guest = db.guests.find((g) => g.id === id);
     if (!guest) return { error: "الضيف غير موجود", status: 404 };
+    // The family's card and the sharing card have nothing to answer.
+    if (!isInvite(guest)) return { error: "هذي البطاقة ما تحتاج تأكيد", status: 409 };
     const event = db.events.find((e) => e.id === guest.eventId);
 
     const clampedCompanions = Math.max(

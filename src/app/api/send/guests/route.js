@@ -9,6 +9,7 @@ import {
   thanksOpen,
   whatsappLink,
 } from "@/lib/handSend";
+import { guestKind } from "@/lib/guestKind";
 
 // The sending app's list: this side's guests (and anyone not yet given a
 // side, so nobody falls between the two lists), each with where they stand
@@ -32,11 +33,12 @@ export async function GET() {
       phone: g.phoneDisplay || g.phone,
       language: g.language || "ar",
       side: g.side || null,
+      kind: guestKind(g),
       stage: guestStage(g),
       seats: g.status === "confirmed" ? 1 + (g.confirmedCompanions || 0) : null,
       maxGuests: 1 + (g.maxCompanions || 0),
       // The count can change until the invitation goes out.
-      sizeEditable: !g.handSend?.invite && !g.invitedAt && !g.openedAt && g.status === "pending",
+      sizeEditable: guestKind(g) === "invite" && !g.handSend?.invite && !g.invitedAt && !g.openedAt && g.status === "pending",
       link: whatsappLink(g.phoneDisplay || g.phone, inviteMessage(g, event)),
       thanks: thanksState(g, event, now),
       thanksLink: whatsappLink(g.phoneDisplay || g.phone, thanksMessage(g, event)),

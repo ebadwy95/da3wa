@@ -407,6 +407,10 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   }
 
   const { guest, event } = state;
+  // The family's card and the card sharing the joy replace the invitation's
+  // details and its answer with words of their own; the wishes stay.
+  const kind = guest?.kind === "family" || guest?.kind === "share" ? guest.kind : "invite";
+  const special = kind !== "invite";
   const language = state.language;
   const english = language === "en";
   const ui = inviteUi(language);
@@ -435,6 +439,15 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
   // sends the merged copy, but an older cached response or a direct call would
   // otherwise render a card with holes in it.
   const copy = resolveInviteCopy(event.inviteCopy, language);
+  // The cover says "card", not "invitation", on the family's and the sharing
+  // cards — they aren't being invited to anything.
+  const coverCopy = special
+    ? {
+        ...copy,
+        coverLabel: english ? "A special card for" : "بطاقة خاصة لـ",
+        openCta: english ? "Tap to open your card" : "اضغط لفتح بطاقتك",
+      }
+    : copy;
   // The couple's names under the invitation line, with the same ampersand
   // treatment as the Latin ones above so the two settings rhyme. On the Arabic
   // card they are the Arabic names split on a free-standing waw; on the English
@@ -570,7 +583,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
           audioUrl={event.inviteAudioUrl}
           coupleNames={coverNames}
           guestName={guest.name}
-          copy={copy}
+          copy={coverCopy}
           ui={ui}
           onOpened={() => setOpened(true)}
         />
@@ -579,7 +592,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
           audioUrl={event.inviteAudioUrl || "/samples/music.mp3"}
           eyebrow={ui.envelopeEyebrow(guest.name)}
           title={coverNames}
-          cta={ui.envelopeCta}
+          cta={special ? coverCopy.openCta : ui.envelopeCta}
           hint={ui.envelopeHint}
           onOpened={() => setOpened(true)}
         />
@@ -650,6 +663,36 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             )
           )}
 
+          {special && (
+            <Reveal className="inv-sec pad">
+              <div className="ornament-divider" aria-hidden="true">
+                <StarOrnamentIcon size={14} />
+              </div>
+              <p className="inv-eyebrow" style={{ marginTop: "1.4rem" }}>
+                {kind === "family" ? copy.familyTitle : copy.shareTitle}
+              </p>
+              <p className="font-display" style={{ fontSize: "var(--text-2xl)", color: "var(--ink)", marginTop: "0.6rem" }}>
+                {guest.name}
+              </p>
+              <p className="body" style={{ lineHeight: 2.2, marginTop: "1.4rem" }}>
+                {kind === "family" ? copy.familyBody : copy.shareBody}
+              </p>
+              <h1 className="inv-names-ar" style={{ marginTop: "1.8rem" }}>
+                {namesPair ? (
+                  <>
+                    <span className="n">{namesPair[0]}</span>
+                    <span className="inv-amp inv-script">&amp;</span>
+                    <span className="n">{namesPair[1]}</span>
+                  </>
+                ) : (
+                  <span className="n">{namesWhole}</span>
+                )}
+              </h1>
+            </Reveal>
+          )}
+
+          {!special && (
+          <>
           {/* The order Eslam specified: the opening line, the date, the names
               in Latin, the two families, the names again, save the date, the
               time, then the venue. The English card keeps the same order. */}
@@ -936,6 +979,8 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             </p>
           )}
           </Reveal>
+          </>
+          )}
 
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={60}>
@@ -997,7 +1042,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
               for. */}
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={80}>
-            <p className="inv-eyebrow">{copy.guestLabel}</p>
+            <p className="inv-eyebrow">{special ? (english ? "This card is especially for" : "بطاقة خاصة بـ") : copy.guestLabel}</p>
             <p
               className="font-display"
               style={{ color: "var(--ink)", fontSize: "var(--text-2xl)", lineHeight: 1.7 }}

@@ -8,6 +8,7 @@
 import { useMemo, useRef, useState } from "react";
 import { CheckCircleIcon, SendIcon, UploadIcon, UsersIcon, InboxIcon, ClockIcon, AlertIcon, EyeIcon, PhoneIcon, MessageIcon, XIcon, SearchIcon, PencilIcon, LockIcon } from "@/components/icons";
 import { formatDateTimeArabic } from "@/lib/date";
+import { guestKind, KIND_LABEL } from "@/lib/guestKind";
 
 // The invitation as a guest will see it, one tab each for the two cards. Opens
 // the preview page, which uses a made-up guest, so looking never answers an
@@ -61,6 +62,8 @@ export function StatCard({ label, value, accent }) {
 // and see who is behind it, with a call and a WhatsApp button on every name —
 // so the couple can follow up personally, from their own phone, with the
 // people who haven't answered (or ask gently why someone declined).
+// Each card looks at one kind of guest: the invitation numbers at
+// invitations, the family and sharing cards at their own.
 const BREAKDOWNS = [
   {
     key: "invited",
@@ -110,6 +113,23 @@ const BREAKDOWNS = [
       ];
     },
   },
+  {
+    key: "familyPeople",
+    label: "أهل الفرح (أفراد)",
+    accent: "#8a5a2b",
+    scope: "family",
+    sections: (g) => [{ title: null, list: g }],
+  },
+  {
+    key: "share",
+    label: "مشاركة الفرحة",
+    accent: "#2f5f9e",
+    scope: "share",
+    sections: (g) => [
+      { title: "فتحوا البطاقة", list: g.filter((x) => x.openedAt) },
+      { title: "ما فتحوها", list: g.filter((x) => !x.openedAt) },
+    ],
+  },
 ];
 
 function partyLabel(n) {
@@ -119,6 +139,9 @@ function partyLabel(n) {
 }
 
 function guestDetail(g) {
+  const kind = guestKind(g);
+  if (kind === "family") return `أهل الفرح — ${partyLabel(1 + (g.maxCompanions || 0))}${g.openedAt ? " — فتح البطاقة" : ""}`;
+  if (kind === "share") return g.openedAt ? "فتح البطاقة" : g.invitedAt ? "انرسلت له" : "ما انرسلت له";
   const party = 1 + (g.confirmedCompanions || 0);
   if (g.status === "confirmed") {
     const inside = g.checkedInCount || 0;
@@ -134,7 +157,8 @@ function BreakdownSheet({ item, guests, onClose }) {
   const sections = useMemo(() => {
     const q = query.trim();
     const match = (g) => !q || g.name.includes(q) || String(g.phoneDisplay || g.phone).includes(q);
-    return item.sections(guests).map((sec) => ({ ...sec, list: sec.list.filter(match) }));
+    const scoped = guests.filter((g) => guestKind(g) === (item.scope || "invite"));
+    return item.sections(scoped).map((sec) => ({ ...sec, list: sec.list.filter(match) }));
   }, [item, guests, query]);
   const total = sections.reduce((n, sec) => n + sec.list.length, 0);
 
@@ -231,7 +255,7 @@ export function GuestBreakdown({ stats, guests }) {
   if (!stats) return null;
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {BREAKDOWNS.map((item) => (
           <button
             key={item.key}
@@ -242,7 +266,7 @@ export function GuestBreakdown({ stats, guests }) {
             aria-label={`${item.label}: ${stats[item.key]} — اعرض الأسماء`}
           >
             <div className="text-3xl font-bold" style={{ color: item.accent || "var(--gold-600)" }}>
-              {stats[item.key]}
+              {stats[item.key] ?? 0}
             </div>
             <div className="text-xs text-ink-2 mt-1">{item.label}</div>
             <div className="mt-1" style={{ fontSize: "0.65rem", color: "var(--ink-3)" }}>
@@ -406,13 +430,57 @@ function EditGuestDialog({ guest, onClose, onSaved }) {
   );
 }
 
+// What the guest's link is: an invitation, the family's card, or the card
+// sharing the joy with someone who can't come.
+export function GuestKindSelect({ guest, onChanged }) {
+  const [kind, setKind] = useState(guestKind(guest));
+  const [saving, setSaving] = useState(false);
+
+  async function choose(next) {
+    const previous = kind;
+    setKind(next);
+    setSaving(true);
+    const res = await fetch(`/api/guests/${guest.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: next }),
+    }).catch(() => null);
+    if (!res?.ok) setKind(previous);
+    else onChanged?.();
+    setSaving(false);
+  }
+
+  return (
+    <select
+      value={kind}
+      disabled={saving}
+      onChange={(e) => choose(e.target.value)}
+      className="field"
+      style={{ padding: "0.2rem 0.5rem", fontSize: "var(--text-xs)", marginTop: "0.35rem", width: "auto" }}
+      aria-label={`نوع دعوة ${guest.name}`}
+    >
+      <option value="invite">{KIND_LABEL.invite}</option>
+      <option value="family">{KIND_LABEL.family}</option>
+      <option value="share">{KIND_LABEL.share}</option>
+    </select>
+  );
+}
+
 export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
   const [editing, setEditing] = useState(false);
   // Open (or answered) means the guest has seen their card: no more edits.
   const locked = Boolean(guest.openedAt) || guest.status !== "pending";
   const [copied, setCopied] = useState(false);
-  const statusLabel = { pending: "لم يردّ بعد", confirmed: "أكّد الحضور", declined: "اعتذر" }[guest.status];
-  const statusColor = { pending: "var(--gold-600)", confirmed: "var(--ok)", declined: "var(--danger)" }[guest.status];
+  // The family's and the sharing cards have nothing to answer.
+  const kind = guestKind(guest);
+  const statusLabel =
+    kind === "invite"
+      ? { pending: "لم يردّ بعد", confirmed: "أكّد الحضور", declined: "اعتذر" }[guest.status]
+      : `${KIND_LABEL[kind]}${guest.openedAt ? " — فتح البطاقة" : ""}`;
+  const statusColor =
+    kind === "invite"
+      ? { pending: "var(--gold-600)", confirmed: "var(--ok)", declined: "var(--danger)" }[guest.status]
+      : kind === "family" ? "#8a5a2b" : "#2f5f9e";
 
   // maxCompanions is stored internally as "companions beyond the guest" —
   // the total party size shown to the admin/couple (what they actually set)
@@ -458,6 +526,9 @@ export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
       </td>
       <td className="py-3 px-2 text-center">
         <GuestSideToggle guest={guest} onChanged={onChanged} />
+        <div>
+          <GuestKindSelect guest={guest} onChanged={onChanged} />
+        </div>
       </td>
       <td className="py-3 px-2 text-ink-2" dir="ltr">{guest.phoneDisplay || guest.phone}</td>
       <td className="py-3 px-2 text-center">{maxTotalGuests}</td>
@@ -563,6 +634,7 @@ export function AddGuestForm({ eventId, onAdded }) {
   const [language, setLanguage] = useState("ar");
   // The groom's guest or the bride's — who sends to them from /send.
   const [side, setSide] = useState("");
+  const [kind, setKind] = useState("invite");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [limitInfo, setLimitInfo] = useState(null);
@@ -574,7 +646,7 @@ export function AddGuestForm({ eventId, onAdded }) {
       const res = await fetch(`/api/events/${eventId}/guests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, maxGuests, language, side: side || null, force }),
+        body: JSON.stringify({ name, phone, maxGuests, language, side: side || null, kind, force }),
       });
       const data = await res.json();
       if (res.status === 409 && data.limitReached) {
@@ -588,6 +660,7 @@ export function AddGuestForm({ eventId, onAdded }) {
       setMaxGuests(1);
       setLanguage("ar");
       setSide("");
+      setKind("invite");
       setLimitInfo(null);
     } catch (err) {
       setError(err.message);
@@ -634,6 +707,14 @@ export function AddGuestForm({ eventId, onAdded }) {
             <option value="">—</option>
             <option value="groom">العريس</option>
             <option value="bride">العروس</option>
+          </select>
+        </div>
+        <div className="w-40">
+          <label className="label">نوع الدعوة</label>
+          <select value={kind} onChange={(e) => setKind(e.target.value)} className="field">
+            <option value="invite">{KIND_LABEL.invite}</option>
+            <option value="family">{KIND_LABEL.family}</option>
+            <option value="share">{KIND_LABEL.share}</option>
           </select>
         </div>
         <button disabled={saving} className="pill-btn px-6">{saving ? "جارٍ الإضافة..." : "إضافة"}</button>
@@ -688,7 +769,8 @@ export function BulkUpload({ eventId, onDone }) {
         يجب أن يكون الملف بنفس أعمدة النموذج وبنفس الترتيب تمامًا: الاسم، رقم الواتساب بكود الدولة من غير +
         (مثلًا 96550012345 للكويت أو 966512345678 للسعودية)، إجمالي عدد الحضور (شامل الضيف نفسه — أي لو سيأتي مع
         مرافقَين، يُكتب 3 وليس 2)، ولغة الدعوة: AR للعربي أو ENG للإنجليزي (لو الخانة فاضية تبقى عربي)، والطرف:
-        العريس أو العروس — يحدد مين يرسل للضيف من تطبيق الإرسال (لو فاضية يظهر عند الاثنين). أي ملف بترتيب
+        العريس أو العروس — يحدد مين يرسل للضيف من تطبيق الإرسال (لو فاضية يظهر عند الاثنين)، ونوع الدعوة: دعوة،
+        أو أهل (أهل الفرح — يجون بدون بطاقة دخول)، أو مشاركة (للي برّه وما يقدرون يحضرون) — لو فاضية تبقى دعوة. أي ملف بترتيب
         مختلف سيُرفض.
       </p>
       <div className="flex gap-2 items-center flex-wrap">

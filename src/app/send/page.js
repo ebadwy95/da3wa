@@ -19,6 +19,13 @@ const STAGE = {
   opened: { label: "فتح الدعوة وللحين ما رد", color: "#2f5f9e", tint: "#e8eef7" },
   confirmed: { label: "أكد الحضور", color: "var(--ok)", tint: "var(--ok-bg)" },
   declined: { label: "اعتذر عن الحضور", color: "var(--ink-3)", tint: "#f1eeea" },
+  // A family or sharing card: nothing to answer, done once it's opened.
+  seen: { label: "فتح البطاقة", color: "var(--ok)", tint: "var(--ok-bg)" },
+};
+
+const KIND_CHIP = {
+  family: { label: "أهل الفرح", color: "#8a5a2b" },
+  share: { label: "مشاركة الفرحة", color: "#2f5f9e" },
 };
 
 function seatsLabel(n) {
@@ -203,9 +210,14 @@ function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
           <p className="font-bold truncate">
             {guest.name}
             {guest.language === "en" && <span className="chip chip-info mr-2" style={{ fontSize: "0.7rem" }}>English</span>}
+            {KIND_CHIP[guest.kind] && (
+              <span className="chip mr-2" style={{ fontSize: "0.7rem", color: KIND_CHIP[guest.kind].color }}>
+                {KIND_CHIP[guest.kind].label}
+              </span>
+            )}
           </p>
           <p className="meta tnum" dir="ltr" style={{ textAlign: "right" }}>{guest.phone}</p>
-          {guest.stage !== "confirmed" && guest.stage !== "declined" && (
+          {guest.kind === "invite" && guest.stage !== "confirmed" && guest.stage !== "declined" && (
             <PartySize guest={guest} onResize={onResize} busy={busy} />
           )}
         </div>
@@ -225,7 +237,7 @@ function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
           className="pill-btn w-full"
           style={{ background: stage.color, borderColor: stage.color, minHeight: "3rem" }}
         >
-          إرسال الدعوة
+          {guest.kind === "family" || guest.kind === "share" ? "إرسال البطاقة" : "إرسال الدعوة"}
         </button>
       )}
       {guest.stage === "sent" && (
@@ -362,11 +374,11 @@ export default function SendApp() {
   }
 
   const counts = useMemo(() => {
-    const c = { all: 0, todo: 0, sent: 0, opened: 0, noreply: 0, confirmed: 0, declined: 0, thanks: 0 };
+    const c = { all: 0, todo: 0, sent: 0, opened: 0, noreply: 0, confirmed: 0, declined: 0, seen: 0, thanks: 0 };
     for (const g of data?.guests || []) {
       c.all += 1;
       c[g.stage] += 1;
-      if (g.stage === "sent" || g.stage === "opened") c.noreply += 1;
+      if (g.kind === "invite" && (g.stage === "sent" || g.stage === "opened")) c.noreply += 1;
       if (g.thanks === "todo") c.thanks += 1;
     }
     return c;
@@ -377,7 +389,7 @@ export default function SendApp() {
     return (data?.guests || []).filter((g) => {
       if (q && !g.name.includes(q) && !g.phone.includes(q)) return false;
       if (filter === "thanks") return g.thanks === "todo";
-      if (filter === "noreply") return g.stage === "sent" || g.stage === "opened";
+      if (filter === "noreply") return g.kind === "invite" && (g.stage === "sent" || g.stage === "opened");
       return filter === "all" || g.stage === filter;
     });
   }, [data, filter, query]);

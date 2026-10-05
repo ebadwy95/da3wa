@@ -22,6 +22,7 @@
 import { makeInviteToken } from "@/lib/token";
 import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
 import { siteOrigin } from "@/lib/seo";
+import { guestKind } from "@/lib/guestKind";
 
 export const STEPS = ["invite", "thanks"];
 
@@ -34,6 +35,17 @@ export function inviteMessage(guest, event) {
   const en = guest.language === "en";
   const { groomName, brideName } = resolveCoupleParts(event);
   const link = inviteLink(guest.id);
+  const kind = guestKind(guest);
+  if (kind === "family") {
+    return en
+      ? `Hello ${guest.name} 🤍, our joy is not complete without you. ${coupleNamesIn(event, "en")} have a card especially for you:\n${link}`
+      : `مرحباً ${guest.name} 🤍، فرحتنا ما تكتمل إلا بكم. يسعد ${groomName} و${brideName} أن يهدوكم هذه البطاقة الخاصة:\n${link}`;
+  }
+  if (kind === "share") {
+    return en
+      ? `Hello ${guest.name} 🤍, however far apart we are, ${coupleNamesIn(event, "en")} want to share their wedding joy with you:\n${link}`
+      : `مرحباً ${guest.name} 🤍، حتى لو فرّقتنا المسافات، يسعد ${groomName} و${brideName} مشاركتكم فرحة زفافهما:\n${link}`;
+  }
   return en
     ? `Hello ${guest.name}, ${coupleNamesIn(event, "en")} are delighted to invite you to celebrate their wedding with them. To confirm your attendance or send your apologies, please open your personal invitation:\n${link}\nWe look forward to your reply.`
     : `مرحباً ${guest.name} 🌸، يتشرف ${groomName} و${brideName} بدعوتكم لمشاركتهما فرحة الزفاف. للتأكيد أو الاعتذار، يرجى الضغط على الرابط التالي:\n${link}\nبانتظار ردكم بكل سرور 💍`;
@@ -48,6 +60,11 @@ export function whatsappLink(phone, text) {
  * todo, sent, opened (no answer yet), confirmed or declined.
  */
 export function guestStage(guest) {
+  // A card with nothing to answer is done once it has been opened.
+  if (guestKind(guest) !== "invite") {
+    if (guest.openedAt) return "seen";
+    return guest.handSend?.invite ? "sent" : "todo";
+  }
   if (guest.status === "confirmed") return "confirmed";
   if (guest.status === "declined") return "declined";
   if (guest.openedAt) return "opened";

@@ -5,6 +5,7 @@ import { makeInviteToken } from "@/lib/token";
 import { normalizePhone } from "@/lib/phone";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { normaliseInviteLanguage } from "@/lib/inviteCopy";
+import { normaliseKind } from "@/lib/guestKind";
 
 function guestWithLink(guest) {
   const base = (process.env.NEXT_PUBLIC_BASE_URL || "").replace(/\/$/, "");
@@ -46,6 +47,7 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "لغة الدعوة لازم تكون عربي أو English" }, { status: 400 });
   }
   const side = ["groom", "bride"].includes(body.side) ? body.side : null;
+  const kind = normaliseKind(body.kind) || "invite";
   const parsedPhone = normalizePhone(phone);
   if (!parsedPhone.valid) {
     return NextResponse.json({ error: parsedPhone.error }, { status: 400 });
@@ -83,6 +85,7 @@ export async function POST(request, { params }) {
       maxCompanions: parsedMaxGuests - 1,
       language,
       side,
+      kind,
       status: "pending",
       confirmedCompanions: null,
       checkedIn: false,
