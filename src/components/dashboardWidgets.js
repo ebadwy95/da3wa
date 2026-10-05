@@ -327,6 +327,10 @@ export function SidesTable({ guests }) {
     t.confirmedPeople + t.pendingPeople,
     t.family ? `${t.family} (${t.familyPeople})` : "—",
     t.share || "—",
+    // What the hall has to seat and feed: everyone who could sit down —
+    // confirmed, still silent at their full allowance, and the family.
+    // Apologies and the cards sent from afar are not here.
+    t.confirmedPeople + t.pendingPeople + t.familyPeople,
   ];
   const headers = [
     "",
@@ -340,14 +344,16 @@ export function SidesTable({ guests }) {
     "لو الكل أكد",
     "أهل الفرح (أفراد)",
     "مشاركة الفرحة",
+    "أقصى عدد للكراسي",
   ];
 
   return (
     <div className="card p-4 space-y-2">
       <h2 className="font-bold">التقسيم حسب الطرف</h2>
       <p className="text-xs text-ink-2 leading-relaxed">
-        «لو الكل أكد» = الأفراد المؤكدين الآن + كل اللي ما ردوا بكامل العدد المسموح لهم — أعلى رقم ممكن توصله
-        القاعة. أهل الفرح يجون بدون تأكيد، فيُحسبون بعددهم المسموح.
+        «لو الكل أكد» = الأفراد المؤكدين الآن + كل اللي ما ردوا بكامل العدد المسموح لهم. و«أقصى عدد للكراسي» =
+        هذا الرقم + أهل الفرح — يعني كل اللي ممكن يقعدون ويتعشون، على أساسه تحسبون الكراسي والبوفيه. المعتذرين
+        وبطاقات مشاركة الفرحة ما يدخلون في الحساب.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
@@ -370,7 +376,7 @@ export function SidesTable({ guests }) {
             <tr className="border-t-2 font-bold" style={{ borderColor: "var(--line)" }}>
               <td className="py-2 px-2 whitespace-nowrap">الإجمالي</td>
               {cell(totals.all).map((v, i) => (
-                <td key={i} className="py-2 px-2 text-center tnum" style={i === 7 ? { color: "var(--gold-600)" } : undefined}>
+                <td key={i} className="py-2 px-2 text-center tnum" style={i === 9 ? { color: "var(--gold-600)", fontSize: "var(--text-base)" } : undefined}>
                   {v}
                 </td>
               ))}
