@@ -24,6 +24,8 @@ import {
   StarOrnamentIcon,
   QrIcon,
   InboxIcon,
+  SoundOnIcon,
+  SoundOffIcon,
 } from "@/components/icons";
 
 // The two families, one either side of the join.
@@ -93,6 +95,54 @@ export function LoadingCard({ lang }) {
  * and admin (previewEventId). A preview gets a made-up guest from the
  * dashboard-only preview endpoint, and its buttons record nothing.
  */
+// The music, for a guest who comes back after confirming. The envelope that
+// normally starts it is skipped for them, and a phone won't play sound
+// before a tap — so it starts on their first touch anywhere on the page, with
+// the usual button to turn it off.
+function ReturningMusic({ audioUrl, ui }) {
+  const audioRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    const start = (e) => {
+      if (e.target.closest?.(".sound-toggle")) return;
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.volume = 0.32;
+      audio.play().then(() => setPlaying(true)).catch(() => {});
+      window.removeEventListener("pointerdown", start);
+    };
+    window.addEventListener("pointerdown", start);
+    return () => window.removeEventListener("pointerdown", start);
+  }, []);
+
+  function toggle() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      audio.volume = 0.32;
+      audio.play().then(() => setPlaying(true)).catch(() => {});
+    } else {
+      audio.pause();
+      setPlaying(false);
+    }
+  }
+
+  return (
+    <>
+      <audio ref={audioRef} src={audioUrl} preload="none" loop />
+      <button
+        type="button"
+        onClick={toggle}
+        className="sound-toggle"
+        aria-label={playing ? ui.soundOff : ui.soundOn}
+      >
+        {playing ? <SoundOnIcon size={20} /> : <SoundOffIcon size={20} />}
+      </button>
+    </>
+  );
+}
+
 // The entry pass, on the invitation itself: once the guest confirms, the link
 // they were sent is the pass they show at the door. The code is drawn from
 // the guest record (instant); the designed card is one tap away to save.
@@ -509,6 +559,10 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
         </div>
       )}
 
+      {returning && (
+        <ReturningMusic audioUrl={event.inviteAudioUrl || "/samples/music.mp3"} ui={ui} />
+      )}
+
       {returning ? null : hasFilm ? (
         <InviteOpener
           videoUrl={event.inviteVideoUrl}
@@ -828,9 +882,19 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
                   disabled={submitting}
                   onClick={startConfirm}
                   className="pill-btn w-full whitespace-nowrap"
+                  aria-label={submitting ? ui.confirming : undefined}
                 >
-                  <CheckCircleIcon size={18} />
-                  {submitting ? ui.confirming : ui.confirm}
+                  {submitting ? (
+                    // The Da3wa star, turning, in place of "confirming…".
+                    <span className="star-spin" aria-hidden="true">
+                      <StarOrnamentIcon size={22} />
+                    </span>
+                  ) : (
+                    <>
+                      <CheckCircleIcon size={18} />
+                      {ui.confirm}
+                    </>
+                  )}
                 </button>
                 <button
                   disabled={submitting}

@@ -1,5 +1,6 @@
 // "Add to calendar" for a guest who has confirmed: the phone itself reminds
-// them the day before and three hours before, whatever happens to messages.
+// them two days before, the day before and six hours before, whatever happens
+// to messages.
 //
 // Pure functions, used by the .ics endpoint (iPhone) and by the invitation
 // page for Google Calendar's link (Android).
@@ -46,8 +47,11 @@ function icsEscape(text) {
 }
 
 export function icsFile({ uid, title, start, end, location, details, url, lang }) {
-  const dayBefore = lang === "en" ? `Tomorrow: ${title}` : `بكرة: ${title}`;
-  const soon = lang === "en" ? `In 3 hours: ${title}` : `بعد ٣ ساعات: ${title}`;
+  const alarms = [
+    ["-P2D", lang === "en" ? `In two days: ${title}` : `بعد يومين: ${title}`],
+    ["-P1D", lang === "en" ? `Tomorrow: ${title}` : `بكرة: ${title}`],
+    ["-PT6H", lang === "en" ? `In 6 hours: ${title}` : `بعد ٦ ساعات: ${title}`],
+  ];
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -63,16 +67,13 @@ export function icsFile({ uid, title, start, end, location, details, url, lang }
     `LOCATION:${icsEscape(location)}`,
     `DESCRIPTION:${icsEscape(details)}`,
     url ? `URL:${url}` : null,
-    "BEGIN:VALARM",
-    "TRIGGER:-P1D",
-    "ACTION:DISPLAY",
-    `DESCRIPTION:${icsEscape(dayBefore)}`,
-    "END:VALARM",
-    "BEGIN:VALARM",
-    "TRIGGER:-PT3H",
-    "ACTION:DISPLAY",
-    `DESCRIPTION:${icsEscape(soon)}`,
-    "END:VALARM",
+    ...alarms.flatMap(([trigger, text]) => [
+      "BEGIN:VALARM",
+      `TRIGGER:${trigger}`,
+      "ACTION:DISPLAY",
+      `DESCRIPTION:${icsEscape(text)}`,
+      "END:VALARM",
+    ]),
     "END:VEVENT",
     "END:VCALENDAR",
   ]

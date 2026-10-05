@@ -5,8 +5,8 @@ import { siteOrigin } from "@/lib/seo";
 import { eventWindow, calendarTitle, icsFile } from "@/lib/calendar";
 
 // The wedding as a calendar file, for a confirmed guest's "add to calendar".
-// An iPhone opens it straight into "Add Event"; the two reminders inside it
-// (the day before, three hours before) are the phone's own.
+// An iPhone opens it straight into "Add Event"; the three reminders inside
+// it (two days, one day and six hours before) are the phone's own.
 export async function GET(request, { params }) {
   const { id } = await params;
   const token = new URL(request.url).searchParams.get("t");
