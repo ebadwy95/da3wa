@@ -134,7 +134,44 @@ function LoginForm({ onDone }) {
   );
 }
 
-function GuestCard({ guest, onTap, onUndo, busy }) {
+// How many people the invitation is for. Changeable here until it is sent —
+// after that the guest may already be reading a card with the old number.
+function PartySize({ guest, onResize, busy }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(guest.maxGuests);
+  const [error, setError] = useState("");
+
+  async function save(next) {
+    setError("");
+    const ok = await onResize(guest, next);
+    if (ok === true) setEditing(false);
+    else setError(ok || "ما قدرنا نحفظ");
+  }
+
+  if (!guest.sizeEditable) {
+    return <span className="text-xs text-ink-2">العدد: {seatsLabel(guest.maxGuests)}</span>;
+  }
+  if (!editing) {
+    return (
+      <button type="button" onClick={() => { setValue(guest.maxGuests); setEditing(true); }} className="text-xs text-ink-2 underline self-start" aria-label={`تعديل عدد ${guest.name}`}>
+        العدد: {seatsLabel(guest.maxGuests)} ✏️
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="text-xs text-ink-2">العدد:</span>
+      <button type="button" disabled={busy || value <= 1} onClick={() => setValue((v) => Math.max(1, v - 1))} className="pill-btn-outline pill-btn-sm" style={{ minWidth: "2.2rem" }} aria-label="أقل">−</button>
+      <span className="font-bold tnum" style={{ minWidth: "1.5rem", textAlign: "center" }}>{value}</span>
+      <button type="button" disabled={busy || value >= 30} onClick={() => setValue((v) => Math.min(30, v + 1))} className="pill-btn-outline pill-btn-sm" style={{ minWidth: "2.2rem" }} aria-label="أكثر">+</button>
+      <button type="button" disabled={busy} onClick={() => save(value)} className="pill-btn pill-btn-sm" style={{ background: "#1d5c47", borderColor: "#1d5c47" }}>حفظ</button>
+      <button type="button" onClick={() => setEditing(false)} className="pill-btn-ghost pill-btn-sm">إلغاء</button>
+      {error && <span className="text-danger text-xs w-full">{error}</span>}
+    </div>
+  );
+}
+
+function GuestCard({ guest, onTap, onUndo, onResize, busy }) {
   const stage = STAGE[guest.stage];
   const thanksColor = "#1d5c47";
   return (
@@ -146,6 +183,9 @@ function GuestCard({ guest, onTap, onUndo, busy }) {
             {guest.language === "en" && <span className="chip chip-info mr-2" style={{ fontSize: "0.7rem" }}>English</span>}
           </p>
           <p className="meta tnum" dir="ltr" style={{ textAlign: "right" }}>{guest.phone}</p>
+          {guest.stage !== "confirmed" && guest.stage !== "declined" && (
+            <PartySize guest={guest} onResize={onResize} busy={busy} />
+          )}
         </div>
         {guest.stage !== "todo" && (
           <span className="text-xs font-semibold shrink-0 flex items-center gap-1" style={{ color: stage.color }}>
@@ -266,6 +306,25 @@ export default function SendApp() {
     }).catch(() => {});
     await load();
     setBusy(false);
+  }
+
+  // Returns true when saved, or the reason it was refused.
+  async function resize(guest, maxGuests) {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/send/size", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guestId: guest.id, maxGuests }),
+      });
+      const json = await res.json().catch(() => ({}));
+      await load();
+      return res.ok ? true : json.error;
+    } catch {
+      return "ما قدرنا نوصل للسيرفر";
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function undo(guest, step = "invite") {
@@ -406,7 +465,7 @@ export default function SendApp() {
       {visible.length === 0 ? (
         <p className="meta text-center py-8">ما في أحد هني.</p>
       ) : (
-        visible.map((g) => <GuestCard key={g.id} guest={g} onTap={tap} onUndo={undo} busy={busy} />)
+        visible.map((g) => <GuestCard key={g.id} guest={g} onTap={tap} onUndo={undo} onResize={resize} busy={busy} />)
       )}
     </main>
   );

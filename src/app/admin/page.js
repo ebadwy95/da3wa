@@ -1423,13 +1423,28 @@ function CoupleCredentialsCard({ event, onUpdated }) {
           </span>
         )}
       </div>
-      <button
-        onClick={resetPassword}
-        disabled={resetting}
-        className="pill-btn-danger pill-btn-sm"
-      >
-        {resetting ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        {/* Everything the couple needs, as one message ready to paste. */}
+        <button
+          onClick={() =>
+            copy(
+              `لوحة العروسين — دعوة\n${coupleLink}\nاسم المستخدم: ${event.coupleUsername}\nكلمة المرور: ${event.couplePassword}`,
+              "all"
+            )
+          }
+          disabled={!event.coupleUsername || !event.couplePassword}
+          className="pill-btn pill-btn-sm"
+        >
+          {copied === "all" ? "تم النسخ ✓" : "نسخ بيانات الدخول كاملة"}
+        </button>
+        <button
+          onClick={resetPassword}
+          disabled={resetting}
+          className="pill-btn-danger pill-btn-sm"
+        >
+          {resetting ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
+        </button>
+      </div>
       {error && <p className="text-danger text-sm">{error}</p>}
     </div>
   );

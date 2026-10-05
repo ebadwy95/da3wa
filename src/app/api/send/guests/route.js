@@ -34,6 +34,9 @@ export async function GET() {
       side: g.side || null,
       stage: guestStage(g),
       seats: g.status === "confirmed" ? 1 + (g.confirmedCompanions || 0) : null,
+      maxGuests: 1 + (g.maxCompanions || 0),
+      // The count can change until the invitation goes out.
+      sizeEditable: !g.handSend?.invite && !g.invitedAt && !g.openedAt && g.status === "pending",
       link: whatsappLink(g.phoneDisplay || g.phone, inviteMessage(g, event)),
       thanks: thanksState(g, event, now),
       thanksLink: whatsappLink(g.phoneDisplay || g.phone, thanksMessage(g, event)),
