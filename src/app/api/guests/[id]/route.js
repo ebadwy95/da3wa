@@ -74,23 +74,24 @@ export async function PATCH(request, { params }) {
     }
     changes.side = body.side;
   }
-  // Correcting the guest themself — the name, the number, how many the
-  // invitation is for. Only until they open it: after that the guest has seen
-  // the card, and a name or allowance that changes under them is worse than
-  // one with a typo.
-  const details = {};
+  // Correcting the guest themself. A misspelled name is worth fixing at any
+  // time — their entry pass is then printed right — so it goes in with the
+  // rest. The number and the allowance are locked once the guest has opened
+  // their invitation: those change what they were promised, and they have
+  // already seen it.
+  const locked = {};
   if ("name" in body) {
-    details.name = String(body.name || "").trim();
-    if (!details.name) return NextResponse.json({ error: "الاسم مطلوب" }, { status: 400 });
+    changes.name = String(body.name || "").trim();
+    if (!changes.name) return NextResponse.json({ error: "الاسم مطلوب" }, { status: 400 });
   }
   if ("phone" in body) {
     const parsed = normalizePhone(body.phone);
     if (!parsed.valid) return NextResponse.json({ error: parsed.error }, { status: 400 });
-    details.phone = parsed.digits;
-    details.phoneDisplay = parsed.e164;
+    locked.phone = parsed.digits;
+    locked.phoneDisplay = parsed.e164;
   }
   if ("maxGuests" in body) {
-    details.maxCompanions = Math.max(1, parseInt(body.maxGuests, 10) || 1) - 1;
+    locked.maxCompanions = Math.max(1, parseInt(body.maxGuests, 10) || 1) - 1;
   }
 
   // Taking a message off the wall, or putting it back. Admin only: the
@@ -110,7 +111,7 @@ export async function PATCH(request, { params }) {
     changes.kind = body.kind;
   }
 
-  if (Object.keys(changes).length === 0 && Object.keys(details).length === 0) {
+  if (Object.keys(changes).length === 0 && Object.keys(locked).length === 0) {
     return NextResponse.json({ error: "لا يوجد تعديل" }, { status: 400 });
   }
 
@@ -126,16 +127,16 @@ export async function PATCH(request, { params }) {
   const guest = await withDb((freshDb) => {
     const g = freshDb.guests.find((x) => x.id === id);
     if (!g) return { missing: true };
-    if (Object.keys(details).length && (g.openedAt || g.status !== "pending")) return { locked: true };
-    Object.assign(g, changes, details);
+    if (Object.keys(locked).length && (g.openedAt || g.status !== "pending")) return { blocked: true };
+    Object.assign(g, changes, locked);
     return g;
   });
   if (guest.missing) {
     return NextResponse.json({ error: "الضيف غير موجود" }, { status: 404 });
   }
-  if (guest.locked) {
+  if (guest.blocked) {
     return NextResponse.json(
-      { error: "الضيف فتح الدعوة — ما يصير تعديل الاسم أو الرقم أو العدد بعد ما شافها" },
+      { error: "الضيف فتح الدعوة — ما يصير تغيير الرقم أو العدد بعدها. الاسم يتعدّل عادي." },
       { status: 409 }
     );
   }
