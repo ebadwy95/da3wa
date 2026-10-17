@@ -645,6 +645,24 @@ export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
     });
   }
 
+  // "I sent this one myself."
+  //
+  // The bulk send messages everyone with no send recorded, which is right for
+  // a guest nobody has got to and wrong for one whose link was handed over
+  // another way — by hand, from the couple's own WhatsApp, or straight from
+  // the provider. Without this they get the invitation twice.
+  const [marking, setMarking] = useState(false);
+  async function markInvited(invited) {
+    setMarking(true);
+    const res = await fetch(`/api/guests/${guest.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invited }),
+    }).catch(() => null);
+    setMarking(false);
+    if (res?.ok) onChanged?.();
+  }
+
   return (
     <tr className="border-b last:border-0" style={{ borderColor: "var(--line-soft)" }}>
       <td className="py-3 px-2 font-medium">
@@ -705,7 +723,34 @@ export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
         )}
       </td>
       <td className="py-3 px-2 text-center">
-        {guest.invitedAt ? <span className="text-sm text-ok">تم الإرسال</span> : <span className="text-sm text-ink-3">لم تُرسل بعد</span>}
+        {guest.invitedAt ? (
+          <span className="text-sm text-ok">تم الإرسال{guest.invitedByHand ? " يدويًا" : ""}</span>
+        ) : (
+          <span className="text-sm text-ink-3">لم تُرسل بعد</span>
+        )}
+        {!guest.invitedAt && (
+          <button
+            type="button"
+            disabled={marking}
+            onClick={() => markInvited(true)}
+            className="text-xs underline mt-0.5 block mx-auto"
+            style={{ color: "var(--ink-2)" }}
+            title="سجّلها كمُرسلة حتى لا يرسلها زر «إرسال الدعوات» مرة ثانية"
+          >
+            أرسلتها بنفسي
+          </button>
+        )}
+        {guest.invitedByHand && (
+          <button
+            type="button"
+            disabled={marking}
+            onClick={() => markInvited(false)}
+            className="text-xs underline mt-0.5 block mx-auto"
+            style={{ color: "var(--ink-3)" }}
+          >
+            تراجع
+          </button>
+        )}
         {/* Whether they actually looked at it. WhatsApp's own read receipt
             needs a webhook the cheaper provider plans don't include, and this
             says more anyway: a guest who opened the card and still hasn't

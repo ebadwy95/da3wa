@@ -103,6 +103,18 @@ export async function PATCH(request, { params }) {
     changes.wishHidden = Boolean(body.wishHidden);
   }
 
+  // "This one already has their invitation — I sent it myself."
+  //
+  // The bulk send deliberately messages everyone with no invitedAt, which is
+  // right for a guest nobody has got to and wrong for one who was sent their
+  // link by hand: they would receive it a second time, from a number they've
+  // already heard from. Marking it here takes them out of that batch.
+  //
+  // Stamped separately from invitedAt so the row can say it was logged rather
+  // than sent, and so the undo below can only ever take back a hand mark —
+  // never make the system forget a message it really sent.
+  const markInvited = "invited" in body ? Boolean(body.invited) : null;
+
   // What the link is: an invitation, the family's card, or sharing the joy.
   if ("kind" in body) {
     if (!GUEST_KINDS.includes(body.kind)) {
@@ -111,7 +123,7 @@ export async function PATCH(request, { params }) {
     changes.kind = body.kind;
   }
 
-  if (Object.keys(changes).length === 0 && Object.keys(locked).length === 0) {
+  if (Object.keys(changes).length === 0 && Object.keys(locked).length === 0 && markInvited === null) {
     return NextResponse.json({ error: "لا يوجد تعديل" }, { status: 400 });
   }
 
@@ -129,6 +141,13 @@ export async function PATCH(request, { params }) {
     if (!g) return { missing: true };
     if (Object.keys(locked).length && (g.openedAt || g.status !== "pending")) return { blocked: true };
     Object.assign(g, changes, locked);
+    if (markInvited === true && !g.invitedAt) {
+      g.invitedAt = new Date().toISOString();
+      g.invitedByHand = g.invitedAt;
+    } else if (markInvited === false && g.invitedByHand) {
+      g.invitedAt = null;
+      g.invitedByHand = null;
+    }
     return g;
   });
   if (guest.missing) {
