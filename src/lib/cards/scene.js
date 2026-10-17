@@ -77,19 +77,24 @@ const QR_CSS = `
 /* the plate: the code keeps a real white quiet zone, because at the door this
    is read by a phone camera at arm's length and a decorated code is a code
    that has to be tried twice */
-#plate{margin-top:34px;position:relative;width:520px;height:520px;background:#fff;border:2px solid var(--gold-l);
+#plate{margin-top:28px;position:relative;width:510px;height:510px;background:#fff;border:2px solid var(--gold-l);
  border-radius:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 18px 44px rgba(129,101,57,.14)}
 #plate .tick{position:absolute;width:46px;height:46px;border:3px solid var(--gold);opacity:.9}
 .t1{top:-3px;right:-3px;border-left:0;border-bottom:0;border-radius:0 26px 0 0}
 .t2{top:-3px;left:-3px;border-right:0;border-bottom:0;border-radius:26px 0 0 0}
 .t3{bottom:-3px;right:-3px;border-left:0;border-top:0;border-radius:0 0 26px 0}
 .t4{bottom:-3px;left:-3px;border-right:0;border-top:0;border-radius:0 0 0 26px}
-#qr{width:430px;height:430px;image-rendering:pixelated}
-.guest-k{margin-top:34px;font-size:24px;letter-spacing:.2em;color:var(--ink-2)}
-.guest{margin-top:10px;font-family:"Aref Ruqaa",serif;font-size:56px;color:var(--ink);line-height:1.45}
-.seats{margin-top:14px;font-size:32px;font-weight:700;color:var(--gold-d)}
-.seats-note{margin-top:4px;font-size:23px;color:var(--ink-2)}
-.meta{margin-top:22px;font-size:27px;line-height:1.8;color:var(--ink-2)}
+#qr{width:425px;height:425px;image-rendering:pixelated}
+/* The card is a fixed 1080×1350 with the footer pinned to the bottom, so the
+   stack above has a budget rather than room to grow. Adding the admission
+   line spent what slack there was and the venue ran into the footer, so the
+   gaps below the code are tightened to pay for it — the code itself gives up
+   5px, the rest comes from spacing. */
+.guest-k{margin-top:24px;font-size:24px;letter-spacing:.2em;color:var(--ink-2)}
+.guest{margin-top:8px;font-family:"Aref Ruqaa",serif;font-size:56px;color:var(--ink);line-height:1.45}
+.seats{margin-top:12px;font-size:30px;font-weight:700;color:var(--gold-d)}
+.seats-note{margin-top:4px;font-size:22px;color:var(--ink-2)}
+.meta{margin-top:16px;font-size:26px;line-height:1.6;color:var(--ink-2)}
 body.en .couple{font-family:"Great Vibes",cursive;font-size:64px}
 body.en .guest{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:52px}
 body.en .kick,body.en .guest-k{text-transform:uppercase;letter-spacing:.3em;font-size:25px}
