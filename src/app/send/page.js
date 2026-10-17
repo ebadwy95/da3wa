@@ -225,6 +225,12 @@ function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
           <p className="font-bold truncate">
             {guest.name}
             {guest.language === "en" && <span className="chip chip-info mr-2" style={{ fontSize: "0.7rem" }}>English</span>}
+            {/* رقم دعوة already sent this one a reminder. Beside the name,
+                because "hasn't answered" and "hasn't answered after being
+                reminded" are two different jobs. */}
+            {guest.nudgedAt && (
+              <span className="chip chip-gold mr-2" style={{ fontSize: "0.7rem" }}>ذُكِّر</span>
+            )}
             {KIND_CHIP[guest.kind] && (
               <span className="chip mr-2" style={{ fontSize: "0.7rem", color: KIND_CHIP[guest.kind].color }}>
                 {KIND_CHIP[guest.kind].label}

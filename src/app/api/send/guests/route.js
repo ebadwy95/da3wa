@@ -47,6 +47,10 @@ export async function GET() {
       maxGuests: 1 + (g.maxCompanions || 0),
       // The count can change until the invitation goes out.
       sizeEditable: guestKind(g) === "invite" && !g.handSend?.invite && !g.invitedAt && !g.openedAt && g.status === "pending",
+      // When رقم دعوة sent them the "you haven't answered yet" reminder. The
+      // couple need to tell apart a guest nobody has chased from one who has
+      // been reminded and still said nothing — only the second needs a call.
+      nudgedAt: g.nudgeSentAt || null,
       // Set when WhatsApp refused a message to this guest and they haven't
       // opened their link since — the business number can't reach them, so
       // this app is the only way they get their invitation.

@@ -668,6 +668,19 @@ export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
       <td className="py-3 px-2 font-medium">
         <span className="inline-flex items-center gap-1.5">
           {guest.name}
+          {/* Beside the name, because that is where the eye goes when the
+              couple are reading down the list deciding who to chase. "Hasn't
+              answered" and "hasn't answered despite being reminded" are two
+              different jobs, and only the second one needs a phone call. */}
+          {guest.nudgeSentAt && (
+            <span
+              className="chip chip-gold"
+              style={{ fontSize: "0.68rem" }}
+              title={`أُرسل له تذكير بالردّ — ${formatDateTimeArabic(guest.nudgeSentAt)}`}
+            >
+              ذُكِّر
+            </span>
+          )}
           {editable && (
             <button
               type="button"
