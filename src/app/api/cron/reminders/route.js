@@ -6,6 +6,7 @@ import {
   messagingIsConfigured,
   isUsableTemplateName,
   templateNameFor,
+  describeTemplateProblem,
 } from "@/lib/messaging";
 import {
   computeDisplayStatus,
@@ -221,25 +222,45 @@ export async function GET(request) {
 
     // ---- the nudge, to everyone who hasn't answered ----
     if (days !== null && days >= NUDGE_UNTIL_DAYS && days <= NUDGE_FROM_DAYS) {
-      // Its own template when one is approved — the same invitation, worded
+      // Its own template when one is configured — the same invitation, worded
       // as a reminder — and the invitation itself until then, so a missing
-      // approval delays nothing.
-      const inviteTemplate = templateNameFor("NUDGE") || templateNameFor("INVITE");
+      // template delays nothing.
+      const useNudge = isUsableTemplateName(templateNameFor("NUDGE"));
+      const templateFor = (lang) =>
+        useNudge ? templateNameFor("NUDGE", lang) : templateNameFor("INVITE", lang);
       const waiting = db.guests.filter(
         (g) => g.eventId === event.id && isInvite(g) && g.status === "pending" && !g.nudgeSentAt
       );
-      if (!isUsableTemplateName(inviteTemplate)) {
+      if (!isUsableTemplateName(templateFor("ar"))) {
         entry.nudge = { skipped: true, reason: "قالب التذكير بالردّ غير مضبوط" };
       } else if (waiting.length) {
+        // A template submitted the same week it is wanted may still be in
+        // review, and Meta rejects an unapproved one once per guest. Asking
+        // the account first, once per template, is the difference between
+        // waiting a day for the approval and spending every guest's single
+        // nudge on a 400 — nobody here gets a second one.
+        const problems = new Map();
+        for (const name of new Set(waiting.map((g) => templateFor(guestLanguage(g))))) {
+          problems.set(name, await describeTemplateProblem(name));
+        }
+        const waitingOn = [...new Set(problems.values())].filter(Boolean);
+
         let sent = 0;
         let failed = 0;
+        let held = 0;
         const base = siteOrigin();
         for (const guest of waiting) {
           const lang = guestLanguage(guest);
+          const templateName = templateFor(lang);
+          // Left untouched for the next run, not stamped and lost.
+          if (problems.get(templateName)) {
+            held++;
+            continue;
+          }
           const link = `${base}/invite/${guest.id}?t=${makeInviteToken(guest.id)}`;
           const waResult = await sendTemplateMessage({
             phone: guest.phoneDisplay || guest.phone,
-            templateName: templateNameFor("NUDGE", lang) || templateNameFor("INVITE", lang) || inviteTemplate,
+            templateName,
             broadcastName: "da3wa_rsvp_nudge",
             params: [
               { name: "name", value: guest.name },
@@ -254,7 +275,12 @@ export async function GET(request) {
 
           await withDb((freshDb) => {
             const g = freshDb.guests.find((x) => x.id === guest.id);
-            if (g) {
+            // Stamped only when the message actually went out. The reminder
+            // stamps either way, because a template rejection there would
+            // repeat for everyone; here the template is known to be approved
+            // before the loop starts, so a failure is this one number's
+            // problem and worth trying again tomorrow.
+            if (g && !waResult.error) {
               g.nudgeSentAt = new Date().toISOString();
               // The nudge is the invitation, so a guest who was never sent
               // one has now had it.
@@ -265,7 +291,8 @@ export async function GET(request) {
             );
           });
         }
-        entry.nudge = { recipients: waiting.length, sent, failed };
+        entry.nudge = { recipients: waiting.length, sent, failed, held };
+        if (waitingOn.length) entry.nudge.waitingOn = waitingOn;
       }
     }
 
