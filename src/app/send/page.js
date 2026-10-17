@@ -28,6 +28,15 @@ const KIND_CHIP = {
   share: { label: "مشاركة الفرحة", color: "#2f5f9e" },
 };
 
+// A guest the business number was refused for. Meta holds marketing messages
+// back from some numbers on purpose, so no resend from رقم دعوة will ever
+// arrive — but a message from your own WhatsApp will. These guests are the
+// whole point of this app, so they get their own tab and their own colour.
+const UNDELIVERED = "#a3382a";
+
+// Tabs that aren't one of the stages above.
+const TAB_COLOR = { undelivered: UNDELIVERED };
+
 function seatsLabel(n) {
   if (n === 1) return "شخص واحد";
   if (n === 2) return "شخصين";
@@ -204,7 +213,13 @@ function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
   const stage = STAGE[guest.stage];
   const thanksColor = "#1d5c47";
   return (
-    <div className="rounded-2xl p-3 flex flex-col gap-2" style={{ background: stage.tint, border: "1px solid var(--line-soft)" }}>
+    <div
+      className="rounded-2xl p-3 flex flex-col gap-2"
+      style={{
+        background: stage.tint,
+        border: `1px solid ${guest.undelivered ? UNDELIVERED : "var(--line-soft)"}`,
+      }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-bold truncate">
@@ -229,6 +244,33 @@ function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
           </span>
         )}
       </div>
+
+      {guest.undelivered && (
+        <div className="rounded-xl p-2 text-xs leading-relaxed" style={{ background: "#fbeae7", color: UNDELIVERED }}>
+          <b>ما وصلته رسالة رقم دعوة</b> — واتساب رفضها، وأي إرسال ثاني من الرقم بيرجع يُرفض. أرسلها له من
+          واتسابك من هني.
+          {guest.undelivered.reason && (
+            <div className="mt-1" dir="ltr" style={{ textAlign: "right", opacity: 0.75 }}>
+              {guest.undelivered.reason}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* The stages below have no send button of their own, and a guest the
+          number couldn't reach needs one wherever they stand — a confirmed
+          guest whose entry pass bounced included, since the invitation link
+          is the pass. */}
+      {guest.undelivered && guest.stage !== "todo" && guest.stage !== "sent" && (
+        <button
+          disabled={busy}
+          onClick={() => onTap(guest)}
+          className="pill-btn w-full"
+          style={{ background: UNDELIVERED, borderColor: UNDELIVERED, minHeight: "3rem" }}
+        >
+          أرسل له الرابط من واتسابك
+        </button>
+      )}
 
       {guest.stage === "todo" && (
         <button
@@ -374,12 +416,13 @@ export default function SendApp() {
   }
 
   const counts = useMemo(() => {
-    const c = { all: 0, todo: 0, sent: 0, opened: 0, noreply: 0, confirmed: 0, declined: 0, seen: 0, thanks: 0 };
+    const c = { all: 0, todo: 0, sent: 0, opened: 0, noreply: 0, confirmed: 0, declined: 0, seen: 0, thanks: 0, undelivered: 0 };
     for (const g of data?.guests || []) {
       c.all += 1;
       c[g.stage] += 1;
       if (g.kind === "invite" && (g.stage === "sent" || g.stage === "opened")) c.noreply += 1;
       if (g.thanks === "todo") c.thanks += 1;
+      if (g.undelivered) c.undelivered += 1;
     }
     return c;
   }, [data]);
@@ -389,6 +432,7 @@ export default function SendApp() {
     return (data?.guests || []).filter((g) => {
       if (q && !g.name.includes(q) && !g.phone.includes(q)) return false;
       if (filter === "thanks") return g.thanks === "todo";
+      if (filter === "undelivered") return Boolean(g.undelivered);
       if (filter === "noreply") return g.kind === "invite" && (g.stage === "sent" || g.stage === "opened");
       return filter === "all" || g.stage === filter;
     });
@@ -406,6 +450,8 @@ export default function SendApp() {
   const sideLabel = data.side === "bride" ? "ضيوف العروس" : "ضيوف العريس";
   const tabs = [
     ["all", "الكل"],
+    // Only when there are any — an empty tab here would just worry them.
+    ...(counts.undelivered ? [["undelivered", "ما وصلتهم"]] : []),
     ["todo", "ما انرسلت"],
     ["noreply", "ما ردّوا"],
     ["sent", "ننتظر يفتحون"],
@@ -478,7 +524,7 @@ export default function SendApp() {
             className="chip shrink-0"
             style={
               filter === key
-                ? { background: STAGE[key]?.color || "#1d5c47", color: "#fff", borderColor: "transparent" }
+                ? { background: STAGE[key]?.color || TAB_COLOR[key] || "#1d5c47", color: "#fff", borderColor: "transparent" }
                 : undefined
             }
           >

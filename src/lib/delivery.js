@@ -172,3 +172,42 @@ export async function syncEventDeliveries(eventId) {
   }
   return { checked: pending.length, updated: updates.length };
 }
+
+// ---------------------------------------------------------------------------
+// The guests the business number could not reach.
+//
+// A refusal is not always the account's fault and not always fixable. Meta
+// withholds marketing templates from a slice of numbers on purpose — error
+// 131049, which Wati shows as "User's number is part of an experiment" — and
+// no amount of resending from the business number will ever reach them. One
+// of the wedding's own guests turned out to be in that slice.
+//
+// A message from the couple's own WhatsApp does reach them, because it isn't
+// a template and never passes through Meta's business rules. So the sending
+// app needs to tell these guests apart from everyone else who simply hasn't
+// been got to yet: left in the ordinary "not sent" pile they look like work
+// that can wait, when they are the one group that will never be reached any
+// other way.
+
+/**
+ * Who a message was refused for, as a Map of guest id -> { at, reason, type }.
+ *
+ * A guest who opened their link after the refusal is left out: whatever
+ * bounced, they are holding their invitation and need no rescue.
+ */
+export function undeliveredGuests(db, eventId) {
+  const refused = new Map();
+  for (const m of db.messages || []) {
+    if (m.eventId !== eventId || m.status !== "failed" || !m.guestId) continue;
+    const seen = refused.get(m.guestId);
+    if (!seen || m.createdAt > seen.at) {
+      refused.set(m.guestId, { at: m.createdAt, reason: m.error || null, type: m.type || null });
+    }
+  }
+  for (const g of db.guests || []) {
+    const hit = refused.get(g.id);
+    const opened = g.lastOpenedAt || g.openedAt;
+    if (hit && opened && opened > hit.at) refused.delete(g.id);
+  }
+  return refused;
+}
