@@ -34,6 +34,12 @@ const nextConfig = {
       "./node_modules/playwright-core/**",
       "./node_modules/@sparticuz/chromium/bin/**",
     ],
+    // The reminder sends each confirmed guest their entry pass alongside it,
+    // so this route draws cards too.
+    "/api/cron/reminders": [
+      "./node_modules/playwright-core/**",
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
   },
 };
 
