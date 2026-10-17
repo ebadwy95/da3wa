@@ -221,12 +221,15 @@ export async function GET(request) {
 
     // ---- the nudge, to everyone who hasn't answered ----
     if (days !== null && days >= NUDGE_UNTIL_DAYS && days <= NUDGE_FROM_DAYS) {
-      const inviteTemplate = templateNameFor("INVITE");
+      // Its own template when one is approved — the same invitation, worded
+      // as a reminder — and the invitation itself until then, so a missing
+      // approval delays nothing.
+      const inviteTemplate = templateNameFor("NUDGE") || templateNameFor("INVITE");
       const waiting = db.guests.filter(
         (g) => g.eventId === event.id && isInvite(g) && g.status === "pending" && !g.nudgeSentAt
       );
       if (!isUsableTemplateName(inviteTemplate)) {
-        entry.nudge = { skipped: true, reason: "قالب الدعوة غير مضبوط" };
+        entry.nudge = { skipped: true, reason: "قالب التذكير بالردّ غير مضبوط" };
       } else if (waiting.length) {
         let sent = 0;
         let failed = 0;
@@ -236,7 +239,7 @@ export async function GET(request) {
           const link = `${base}/invite/${guest.id}?t=${makeInviteToken(guest.id)}`;
           const waResult = await sendTemplateMessage({
             phone: guest.phoneDisplay || guest.phone,
-            templateName: templateNameFor("INVITE", lang) || inviteTemplate,
+            templateName: templateNameFor("NUDGE", lang) || templateNameFor("INVITE", lang) || inviteTemplate,
             broadcastName: "da3wa_rsvp_nudge",
             params: [
               { name: "name", value: guest.name },
