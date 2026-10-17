@@ -87,7 +87,8 @@ const QR_CSS = `
 #qr{width:430px;height:430px;image-rendering:pixelated}
 .guest-k{margin-top:34px;font-size:24px;letter-spacing:.2em;color:var(--ink-2)}
 .guest{margin-top:10px;font-family:"Aref Ruqaa",serif;font-size:56px;color:var(--ink);line-height:1.45}
-.seats{margin-top:10px;font-size:28px;color:var(--gold-d)}
+.seats{margin-top:14px;font-size:32px;font-weight:700;color:var(--gold-d)}
+.seats-note{margin-top:4px;font-size:23px;color:var(--ink-2)}
 .meta{margin-top:22px;font-size:27px;line-height:1.8;color:var(--ink-2)}
 body.en .couple{font-family:"Great Vibes",cursive;font-size:64px}
 body.en .guest{font-family:"Cormorant Garamond",serif;font-weight:400;font-size:52px}
@@ -138,6 +139,7 @@ export function qrCardHtml({
   coupleNames,
   guestName,
   seats,
+  seatsNote,
   dateLine,
   venueLine,
   kicker,
@@ -159,6 +161,7 @@ export function qrCardHtml({
     <div class="guest-k">${en ? "Guest" : "الضيف"}</div>
     <div class="guest">${esc(guestName)}</div>
     ${seats ? `<div class="seats">${esc(seats)}</div>` : ""}
+    ${seats && seatsNote ? `<div class="seats-note">${esc(seatsNote)}</div>` : ""}
     <div class="meta">${lines([dateLine, venueLine])}</div>
   </div>
   <div id="foot">

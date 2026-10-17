@@ -64,18 +64,30 @@ function dateLineFor(event, lang) {
   return [date, time].filter(Boolean).join(" — ");
 }
 
+// What the door will actually admit: the guest plus the companions they
+// confirmed. Never the allowance — a guest invited for four who confirms two
+// must not walk in holding a card that says four.
+//
+// Said as a rule rather than a description ("admits 3 only", not "3 people"),
+// with the figure in brackets as well. The person reading this is a steward
+// at a door with a queue behind it, deciding in a second whether the four
+// people in front of them may all come in; a card that merely mentions a
+// number leaves that argument to them.
 function seatsLine(guest, lang) {
-  // What the door will actually admit: the guest plus the companions they
-  // confirmed. Never the allowance — a guest invited for four who confirms two
-  // must not walk in holding a card that says four.
   const total = 1 + (Number(guest.confirmedCompanions) || 0);
-  if (lang === "en") return `Admits ${total}`;
+  if (lang === "en") return `Admits (${total}) only`;
   // Arabic counts its nouns: one and two have their own forms, three to ten
   // take the plural, and eleven upwards go back to the singular.
-  if (total <= 1) return "لشخص واحد";
-  if (total === 2) return "لشخصين";
-  if (total <= 10) return `يشمل ${total} أشخاص`;
-  return `يشمل ${total} شخصًا`;
+  if (total <= 1) return "يُسمح بدخول شخص واحد فقط";
+  if (total === 2) return "يُسمح بدخول شخصين فقط";
+  if (total <= 10) return `يُسمح بدخول (${total}) أشخاص فقط`;
+  return `يُسمح بدخول (${total}) شخصًا فقط`;
+}
+
+// Why that is the number, under it in smaller type: it is the guest's own
+// answer, not a limit anyone set for them. Saves the door the conversation.
+function seatsNote(lang) {
+  return lang === "en" ? "as confirmed in your reply" : "حسب ما أكّدتموه عند الرد";
 }
 
 /**
@@ -110,6 +122,7 @@ export async function buildQrCard(guestId, langOverride) {
     coupleNames: coupleNamesIn(event, lang),
     guestName: guest.name,
     seats: seatsLine(guest, lang),
+    seatsNote: seatsNote(lang),
     dateLine: dateLineFor(event, lang),
     venueLine: venueFor(event, lang),
     note: copy.qrCardNote,
