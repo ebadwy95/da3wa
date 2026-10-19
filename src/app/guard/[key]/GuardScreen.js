@@ -30,6 +30,67 @@ function describe(alert) {
   return "تنبيه";
 }
 
+// Add one teammate, and دعوة sends them their link in the same press. Two
+// fields, because this is being filled in standing up.
+function AddGuard({ eventId, guardKey }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState(null);
+
+  async function add() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await fetch(`/api/events/${eventId}/security/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: guardKey, name, phone }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) return setNote({ ok: false, text: json.error || "ما قدرنا نضيفه" });
+
+      const sent = await fetch(`/api/events/${eventId}/staff-invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: guardKey, kind: "guard", personId: json.contact.id }),
+      });
+      const sentJson = await sent.json().catch(() => ({}));
+      setName("");
+      setPhone("");
+      setNote(
+        sent.ok
+          ? { ok: true, text: `انضاف ${json.contact.name} ووصله رابطه من رقم دعوة ✓` }
+          : {
+              ok: false,
+              text: `انضاف ${json.contact.name}، بس ما قدرنا نرسل له: ${sentJson.error || "خطأ"}`,
+            }
+      );
+    } catch {
+      setNote({ ok: false, text: "ما قدرنا نوصل للسيرفر" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2 mt-3">
+      <p className="text-xs text-ink-2 leading-relaxed">
+        يوصله رابطه الخاص على واتساب من رقم دعوة على طول. يفتحه ويضغط «تفعيل التنبيهات» — وعلى
+        الآيفون لازم يضيفه للشاشة الرئيسية أول.
+      </p>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم" className="field w-full" />
+      <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+965…" dir="ltr" className="field w-full" />
+      {note && (
+        <p className="text-sm" style={{ color: note.ok ? "var(--ok)" : "var(--danger)" }}>{note.text}</p>
+      )}
+      <button onClick={add} disabled={busy || !name.trim() || !phone.trim()} className="pill-btn">
+        {busy ? "..." : "أضفه وأرسل له الرابط"}
+      </button>
+    </div>
+  );
+}
+
 export default function GuardScreen({ guardKey, eventId, contactName, coupleNames, eventDate, venueName, vapidKey }) {
   const [env, setEnv] = useState(null); // { supported, ios, standalone, permission }
   const [subscribed, setSubscribed] = useState(false);
@@ -329,6 +390,17 @@ export default function GuardScreen({ guardKey, eventId, contactName, coupleName
           <div className="mt-3">
             <TrainingCodes eventId={eventId} guardKey={guardKey} />
           </div>
+        </details>
+      )}
+
+      {/* A man short at nine in the evening. The head of security can add
+          one and دعوة sends them their link straight away — their own key is
+          what authorises it. Adding only: taking a key away stays with the
+          admin, where it cannot be done by whoever is holding this phone. */}
+      {eventId && (
+        <details className="card p-4">
+          <summary className="font-bold cursor-pointer">إضافة فرد أمن جديد</summary>
+          <AddGuard eventId={eventId} guardKey={guardKey} />
         </details>
       )}
     </main>

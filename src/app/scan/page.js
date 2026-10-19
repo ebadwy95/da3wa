@@ -40,6 +40,15 @@ function playAlertSound() {
 function LoginGate({ onLoggedIn }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+  // The link دعوة sends a door staff member carries their code (?c=). They
+  // tap once and the only thing left to type is their own name — a code read
+  // off a screenshot at a gate is a typo waiting to happen.
+  useEffect(() => {
+    try {
+      const fromLink = new URLSearchParams(window.location.search).get("c");
+      if (fromLink) setCode(fromLink.trim().toUpperCase());
+    } catch {}
+  }, []);
   const [showAdmin, setShowAdmin] = useState(false);
   const [password, setPassword] = useState("");
 

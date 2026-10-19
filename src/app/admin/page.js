@@ -853,6 +853,7 @@ function ScannerAccessCard({ event, onUpdated }) {
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState("");
   const scanners = event.scanners || [];
+  const invite = useStaffInvite(event.id);
 
   const scanLink =
     typeof window !== "undefined" ? `${window.location.origin}/scan` : "/scan";
@@ -887,6 +888,18 @@ function ScannerAccessCard({ event, onUpdated }) {
     });
     const data = await res.json();
     if (res.ok) onUpdated(data.scanners);
+  }
+
+  async function setScannerPhone(scannerId, phone) {
+    setError("");
+    const res = await fetch(`/api/events/${event.id}/scanners/${scannerId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) onUpdated(data.scanners);
+    else setError(data.error || "تعذّر حفظ الرقم");
   }
 
   async function removeScanner(scannerId) {
@@ -929,6 +942,23 @@ function ScannerAccessCard({ event, onUpdated }) {
               onBlur={(e) => renameScanner(s.id, e.target.value)}
               className="field flex-1 min-w-[140px]"
             />
+            {/* Only so دعوة can send them their own link — the code rides in
+                it, so they tap once and type nothing but their name. */}
+            <input
+              defaultValue={s.phone || ""}
+              placeholder="+965… (اختياري، للإرسال)"
+              dir="ltr"
+              onBlur={(e) => setScannerPhone(s.id, e.target.value)}
+              className="field flex-1 min-w-[150px]"
+            />
+            <button
+              onClick={() => invite.send("scanner", s.id)}
+              disabled={invite.sending === s.id || !s.phone || !s.name}
+              className="pill-btn pill-btn-sm"
+              title={!s.phone || !s.name ? "اكتب الاسم والرقم أولًا" : "يرسل له رابط السكانر من رقم دعوة"}
+            >
+              {invite.sending === s.id ? "..." : "إرسال من رقم دعوة"}
+            </button>
             {!s.name && (
               <span className="text-xs px-2 py-1 rounded-full font-semibold" style={{ background: "var(--danger-bg)", color: "var(--danger)" }}>
                 بلا اسم — لن يعمل حتى تُدخل اسمًا
@@ -939,6 +969,7 @@ function ScannerAccessCard({ event, onUpdated }) {
         ))}
       </div>
       {error && <p className="text-danger text-sm">{error}</p>}
+      {invite.banner}
       <button onClick={addScanner} disabled={adding} className="pill-btn-outline text-sm">
         {adding ? "..." : "+ إضافة سكانر"}
       </button>
@@ -950,6 +981,42 @@ function ScannerAccessCard({ event, onUpdated }) {
 // scanner, or an entry code that was already used. Each gets a personal link
 // that installs as an app and rings their phone — not a WhatsApp message,
 // which can sit in a queue or be refused exactly when it matters.
+// Sending one staff member their own way in, from رقم دعوة rather than from
+// the admin's personal phone. The wa.me link beside it stays: it needs no
+// template and no approval, which is what you want at nine on the night.
+function useStaffInvite(eventId) {
+  const [sending, setSending] = useState(null);
+  const [result, setResult] = useState(null);
+
+  async function send(kind, personId) {
+    setSending(personId);
+    setResult(null);
+    try {
+      const res = await fetch(`/api/events/${eventId}/staff-invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, personId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      setResult(
+        res.ok
+          ? { ok: true, text: `انرسل لـ${json.sentTo} من رقم دعوة ✓` }
+          : { ok: false, text: json.error || "تعذّر الإرسال" }
+      );
+    } catch {
+      setResult({ ok: false, text: "ما قدرنا نوصل للسيرفر" });
+    } finally {
+      setSending(null);
+    }
+  }
+
+  const banner = result ? (
+    <p className="text-sm" style={{ color: result.ok ? "var(--ok)" : "var(--danger)" }}>{result.text}</p>
+  ) : null;
+
+  return { send, sending, banner };
+}
+
 function SecurityTeamCard({ event }) {
   const [data, setData] = useState(null);
   const [rows, setRows] = useState([]);
@@ -957,6 +1024,7 @@ function SecurityTeamCard({ event }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [copied, setCopied] = useState(null);
+  const invite = useStaffInvite(event.id);
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/events/${event.id}/security`, { cache: "no-store" });
@@ -1037,6 +1105,8 @@ function SecurityTeamCard({ event }) {
         </p>
       )}
 
+      {invite.banner}
+
       <div className="space-y-2">
         {rows.map((r, i) => {
           const c = r.id ? saved.get(r.id) : null;
@@ -1058,6 +1128,13 @@ function SecurityTeamCard({ event }) {
                   <button onClick={() => copy(c.link, c.id)} className="pill-btn-outline pill-btn-sm">
                     {copied === c.id ? "تم النسخ ✓" : "نسخ رابطه"}
                   </button>
+                  <button
+                    onClick={() => invite.send("guard", c.id)}
+                    disabled={invite.sending === c.id}
+                    className="pill-btn pill-btn-sm"
+                  >
+                    {invite.sending === c.id ? "..." : "إرسال من رقم دعوة"}
+                  </button>
                   <a
                     href={`https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`هلا ${c.name}، هذا رابط تنبيهات الأمن لعرس ${event.coupleNames}. افتحه واضغط «تفعيل التنبيهات» (على الآيفون: من Safari ← مشاركة ← إضافة إلى الشاشة الرئيسية، وافتحه من الأيقونة):\n${c.link}`)}`}
                     target="_blank"
@@ -1065,7 +1142,7 @@ function SecurityTeamCard({ event }) {
                     className="pill-btn-ghost pill-btn-sm"
                     style={{ color: "var(--gold-600)" }}
                   >
-                    أرسله واتساب
+                    أو من واتسابك
                   </a>
                 </div>
               )}
