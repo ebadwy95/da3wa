@@ -59,6 +59,7 @@ export async function GET(request, { params }) {
 export async function PATCH(request, { params }) {
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
+  const admin = await isAdminAuthed();
 
   const changes = {};
   if ("language" in body) {
@@ -77,7 +78,8 @@ export async function PATCH(request, { params }) {
   // Correcting the guest themself. A misspelled name is worth fixing at any
   // time — their entry pass is then printed right — so it goes in with the
   // rest. The phone number is locked once the guest has opened their
-  // invitation: changing it hands their invitation to somebody else.
+  // invitation: changing it hands their invitation to somebody else. The
+  // platform admin can still correct one — see the lock below for why.
   const locked = {};
   if ("name" in body) {
     changes.name = String(body.name || "").trim();
@@ -110,7 +112,7 @@ export async function PATCH(request, { params }) {
   // Taking a message off the wall, or putting it back. Admin only: the
   // dashboard still shows it, so nothing a guest wrote is lost.
   if ("wishHidden" in body) {
-    if (!(await isAdminAuthed())) {
+    if (!admin) {
       return NextResponse.json({ error: "إخفاء المباركات للإدارة فقط" }, { status: 403 });
     }
     changes.wishHidden = Boolean(body.wishHidden);
@@ -163,7 +165,12 @@ export async function PATCH(request, { params }) {
     const g = freshDb.guests.find((x) => x.id === id);
     if (!g) return { missing: true };
     const seen = g.openedAt || g.status !== "pending";
-    if (Object.keys(locked).length && seen) return { blocked: true };
+    // The platform admin is the exception. Four of this wedding's guests were
+    // entered on one number — a household that answered on one phone — and a
+    // campaign keyed on the number can only ever reach one of them. Correcting
+    // that is not handing an invitation away: the link belongs to the guest id
+    // and does not move, only where we send it to does.
+    if (Object.keys(locked).length && seen && !admin) return { blocked: true };
     // Lowering the allowance. The rule is about promises, not about the
     // number: a guest still deciding was shown an allowance and may answer
     // with all of it, so taking it back is a promise broken. A guest who has
