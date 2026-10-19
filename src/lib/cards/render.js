@@ -39,7 +39,16 @@ async function launch() {
   if (isServerless()) {
     const { default: chromium } = await import("@sparticuz/chromium");
     return playwright.launch({
-      args: chromium.args,
+      // Everything @sparticuz/chromium recommends, except --single-process.
+      //
+      // In single-process mode the page is rendered inside the browser process
+      // itself, and when that one process trips over something heavy — a page
+      // waiting on web fonts, in our case — it takes the whole browser down
+      // and Playwright reports it as "Target page, context or browser has been
+      // closed". It cost this wedding half its entry passes. A separate
+      // renderer process costs a little more memory and simply does not do
+      // that.
+      args: chromium.args.filter((flag) => flag !== "--single-process"),
       executablePath: await chromium.executablePath(),
       headless: true,
     });
