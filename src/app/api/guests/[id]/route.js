@@ -115,6 +115,10 @@ export async function PATCH(request, { params }) {
   // never make the system forget a message it really sent.
   const markInvited = "invited" in body ? Boolean(body.invited) : null;
 
+  // "لن يحضر" — off the roll, without deleting them. See src/lib/roll.js for
+  // why this is a stamp of its own and not a fourth status.
+  const markWithdrawn = "withdrawn" in body ? Boolean(body.withdrawn) : null;
+
   // What the link is: an invitation, the family's card, or sharing the joy.
   if ("kind" in body) {
     if (!GUEST_KINDS.includes(body.kind)) {
@@ -123,7 +127,12 @@ export async function PATCH(request, { params }) {
     changes.kind = body.kind;
   }
 
-  if (Object.keys(changes).length === 0 && Object.keys(locked).length === 0 && markInvited === null) {
+  if (
+    Object.keys(changes).length === 0 &&
+    Object.keys(locked).length === 0 &&
+    markInvited === null &&
+    markWithdrawn === null
+  ) {
     return NextResponse.json({ error: "لا يوجد تعديل" }, { status: 400 });
   }
 
@@ -148,6 +157,8 @@ export async function PATCH(request, { params }) {
       g.invitedAt = null;
       g.invitedByHand = null;
     }
+    if (markWithdrawn === true) g.withdrawnAt = g.withdrawnAt || new Date().toISOString();
+    else if (markWithdrawn === false) g.withdrawnAt = null;
     return g;
   });
   if (guest.missing) {

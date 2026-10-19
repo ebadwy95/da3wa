@@ -19,6 +19,7 @@ import {
 import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
 import { guestLanguage } from "@/lib/inviteCopy";
 import { isInvite } from "@/lib/guestKind";
+import { isWithdrawn } from "@/lib/roll";
 import { buildQrCard, cardUrls } from "@/lib/cards";
 import { makeInviteToken } from "@/lib/token";
 import { siteOrigin } from "@/lib/seo";
@@ -128,7 +129,8 @@ export async function GET(request) {
         entry.reminder = { skipped: true, reason: `بيانات ناقصة: ${missing.join("، ")}` };
       } else {
         const recipients = db.guests.filter(
-          (g) => g.eventId === event.id && g.status === "confirmed" && !g.reminderSentAt
+          (g) =>
+            g.eventId === event.id && !isWithdrawn(g) && g.status === "confirmed" && !g.reminderSentAt
         );
         let sent = 0;
         let failed = 0;
@@ -229,7 +231,12 @@ export async function GET(request) {
       const templateFor = (lang) =>
         useNudge ? templateNameFor("NUDGE", lang) : templateNameFor("INVITE", lang);
       const waiting = db.guests.filter(
-        (g) => g.eventId === event.id && isInvite(g) && g.status === "pending" && !g.nudgeSentAt
+        (g) =>
+          g.eventId === event.id &&
+          !isWithdrawn(g) &&
+          isInvite(g) &&
+          g.status === "pending" &&
+          !g.nudgeSentAt
       );
       if (!isUsableTemplateName(templateFor("ar"))) {
         entry.nudge = { skipped: true, reason: "قالب التذكير بالردّ غير مضبوط" };

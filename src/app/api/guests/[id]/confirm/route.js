@@ -14,6 +14,7 @@ import {
 import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
 import { guestLanguage } from "@/lib/inviteCopy";
 import { isInvite } from "@/lib/guestKind";
+import { isWithdrawn } from "@/lib/roll";
 
 // Public endpoint: the guest confirms or declines from their invite page.
 // Body: { token, attending: boolean, companions?: number }
@@ -42,6 +43,10 @@ export async function POST(request, { params }) {
     if (!guest) return { error: "الضيف غير موجود", status: 404 };
     // The family's card and the sharing card have nothing to answer.
     if (!isInvite(guest)) return { error: "هذي البطاقة ما تحتاج تأكيد", status: 409 };
+    // Taken off the roll. The link still opens — the invitation is on their
+    // phone and a dead page would be worse — but there is nothing left to
+    // answer, and the page says so before they ever get here.
+    if (isWithdrawn(guest)) return { error: "انتهت صلاحية هذه الدعوة", status: 410 };
     const event = db.events.find((e) => e.id === guest.eventId);
 
     const clampedCompanions = Math.max(

@@ -8,6 +8,7 @@ import {
   templateNameFor,
 } from "@/lib/messaging";
 import { daysSince } from "@/lib/date";
+import { isWithdrawn } from "@/lib/roll";
 import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
 import { buildThanksCard, cardUrls } from "@/lib/cards";
 import { guestLanguage } from "@/lib/inviteCopy";
@@ -64,7 +65,8 @@ export async function GET(request) {
   for (const event of dueEvents) {
     const coupleParts = resolveCoupleParts(event);
     const recipients = db.guests.filter(
-      (g) => g.eventId === event.id && g.status === "confirmed" && !g.thanksSentAt
+      (g) =>
+        g.eventId === event.id && !isWithdrawn(g) && g.status === "confirmed" && !g.thanksSentAt
     );
     if (recipients.length === 0) continue;
 

@@ -15,6 +15,7 @@ import {
   CheckinLogFeed,
   WishWall,
 } from "@/components/dashboardWidgets";
+import { onRoll } from "@/lib/roll";
 import { formatEventDateArabic } from "@/lib/date";
 import { HandSendPanel } from "@/components/HandSendPanel";
 import { LoginScreen, DashboardHeader } from "@/components/dashboardChrome";
@@ -207,8 +208,8 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
 
       <div className="wrap p-5 flex flex-col gap-6" style={{ maxWidth: "80rem" }}>
 
-      <GuestBreakdown stats={stats} guests={guests} />
-      <SidesTable guests={guests} />
+      <GuestBreakdown stats={stats} guests={onRoll(guests)} />
+      <SidesTable guests={onRoll(guests)} />
       <p className="text-xs text-ink-3 -mt-3">
         &quot;إجمالي الدعوات&quot; = عدد الضيوف المضافين، بصرف النظر عن حالتهم. &quot;إجمالي الحضور المتوقع&quot; = مجموع
         كل ضيف مؤكَّد زائد عدد مرافقيه الذين أكّدهم فعليًا. &quot;دخلوا فعلًا&quot; = عدد الأفراد الذين دخلوا فعليًا عند

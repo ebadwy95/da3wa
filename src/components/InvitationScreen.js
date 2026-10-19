@@ -266,7 +266,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
           // the loading state, which would put the envelope up a second time.
           // Only the first load decides: switching language reloads the
           // guest, and a guest who confirms on this visit isn't "returning".
-          if (!loadedOnce.current && guest.status === "confirmed" && !preview) {
+          if (!loadedOnce.current && guest.status === "confirmed" && !guest.withdrawnAt && !preview) {
             setReturning(true);
             setOpened(true);
           }
@@ -665,7 +665,8 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             </div>
           ) : (
             returning &&
-            guest.status === "confirmed" && (
+            guest.status === "confirmed" &&
+            !guest.withdrawnAt && (
               <div className="inv-sec pad">
                 <EntryPass guest={guest} event={event} token={token} ui={ui} language={language} />
               </div>
@@ -881,11 +882,23 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
 
           <div className="inv-rule" aria-hidden="true" />
           <Reveal className="inv-sec pad" delay={60}>
-            {guest.status === "pending" && (
+            {guest.status === "pending" && !guest.withdrawnAt && (
               <p className="inv-eyebrow">{copy.rsvpLabel}</p>
             )}
 
-          {guest.status === "pending" && (
+          {/* Taken off the roll after the invitation was already sent. The
+              link still opens — it is on their phone and a dead page would
+              be worse — but the answer is closed, and saying so here is the
+              difference between a guest who knows and one who thinks the
+              site is broken. */}
+          {guest.withdrawnAt && (
+            <div className="text-center">
+              <p className="inv-eyebrow">{ui.closedTitle}</p>
+              <p className="body" style={{ marginTop: "0.9rem" }}>{ui.closedBody}</p>
+            </div>
+          )}
+
+          {guest.status === "pending" && !guest.withdrawnAt && (
             <div className="flex flex-col gap-4">
               {guest.maxCompanions > 0 && (
                 <div>
@@ -961,7 +974,7 @@ export function InvitationScreen({ guestId, token, previewEventId, initialLang }
             </div>
           )}
 
-          {guest.status === "confirmed" && (
+          {guest.status === "confirmed" && !guest.withdrawnAt && (
             <div className="flex flex-col gap-4" aria-live="polite">
               <p
                 className="chip chip-ok self-center"

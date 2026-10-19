@@ -32,6 +32,12 @@ const AR = {
   partyQuestion: "كم فردًا سيحضر؟",
   partyAria: "عدد الحاضرين",
   onlyYou: "أنت فقط",
+  // Shown in place of the answer buttons once the couple have taken this
+  // guest off the roll. Said without blame, and pointing at a person rather
+  // than at us, because the guest cannot fix this and we are not sorry on
+  // the couple's behalf.
+  closedTitle: "انتهت صلاحية هذه الدعوة",
+  closedBody: "لم يعد بالإمكان تأكيد الحضور من هنا. للاستفسار، يرجى التواصل مع أهل العروسين.",
   confirm: "أكّد الحضور",
   confirming: "جارٍ التأكيد...",
   decline: "أعتذر عن الحضور",
@@ -99,6 +105,8 @@ const EN = {
   partyQuestion: "How many will attend?",
   partyAria: "Number of guests attending",
   onlyYou: "Just you",
+  closedTitle: "This invitation is no longer open",
+  closedBody: "Attendance can no longer be confirmed here. Please get in touch with the couple's families.",
   confirm: "Confirm attendance",
   confirming: "Confirming...",
   decline: "Regretfully decline",

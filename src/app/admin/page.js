@@ -20,6 +20,7 @@ import {
   CheckinLogFeed,
   WishWall,
 } from "@/components/dashboardWidgets";
+import { onRoll } from "@/lib/roll";
 import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon, ShieldIcon, SendIcon } from "@/components/icons";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { joinCoupleNames, resolveCoupleParts } from "@/lib/couple";
@@ -1596,8 +1597,10 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       <AutoMessagesCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
       <CoupleCredentialsCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />
 
-      <GuestBreakdown stats={stats} guests={guests} />
-      <SidesTable guests={guests} />
+      {/* Counted from the roll: a guest marked "لن يحضر" is still in the
+          table below, with a way back, but out of every number here. */}
+      <GuestBreakdown stats={stats} guests={onRoll(guests)} />
+      <SidesTable guests={onRoll(guests)} />
       <p className="text-xs text-ink-3 -mt-3">
         &quot;إجمالي الدعوات&quot; = عدد الضيوف المضافين، بصرف النظر عن حالتهم. &quot;إجمالي الحضور المتوقع&quot; = مجموع
         كل ضيف مؤكَّد زائد عدد مرافقيه الذين أكّدهم فعليًا. &quot;دخلوا فعلًا&quot; = عدد الأفراد الذين سُجِّل دخولهم فعليًا

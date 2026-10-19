@@ -3,6 +3,7 @@ import { getDb, isUsingRedis } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { guestKind } from "@/lib/guestKind";
+import { onRoll } from "@/lib/roll";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -16,7 +17,9 @@ export async function GET(request) {
   }
 
   const db = await getDb();
-  const everyone = eventId ? db.guests.filter((g) => g.eventId === eventId) : db.guests;
+  // Guests taken off the roll ("لن يحضر") are not counted anywhere: that is
+  // the whole point of taking them off.
+  const everyone = onRoll(eventId ? db.guests.filter((g) => g.eventId === eventId) : db.guests);
   // The family's cards and the sharing cards are counted on their own: they
   // aren't invitations waiting on an answer.
   const guests = everyone.filter((g) => guestKind(g) === "invite");

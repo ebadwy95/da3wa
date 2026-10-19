@@ -209,7 +209,70 @@ function FollowUp({ guest, waPref }) {
   );
 }
 
-function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
+// Two ways to take a guest off the list, and they are not the same thing.
+//
+//   لن يحضر — off every count and off everything we send, but the invitation
+//             on their phone still opens and tells them it is closed.
+//   مسح     — gone for good, and the link they are holding dies with them.
+//
+// Both ask first. On a phone, next to a Send button, these are a thumb's
+// width apart from something the couple press two hundred times.
+function RemoveButtons({ guest, onWithdraw, onDelete, busy }) {
+  const [asking, setAsking] = useState(null); // "withdraw" | "delete"
+
+  if (asking) {
+    const withdrawing = asking === "withdraw";
+    return (
+      <div className="rounded-xl p-2 flex flex-col gap-2" style={{ background: "var(--surface)", border: "1px solid var(--line-soft)" }}>
+        <p className="text-xs leading-relaxed">
+          {withdrawing ? (
+            <>
+              <b>{guest.name}</b> ما راح يُحسب في العدد ولا توصله أي رسالة. دعوته تفضل تفتح وتقول له إنها
+              انتهت. تقدر ترجّعه بعدين من لوحة الزفاف.
+            </>
+          ) : (
+            <>
+              <b>{guest.name}</b> بينمسح نهائيًا، ورابط دعوته ما راح يشتغل بعدها. ما في تراجع.
+            </>
+          )}
+        </p>
+        <div className="flex gap-2">
+          <button
+            disabled={busy}
+            onClick={() => {
+              const act = withdrawing ? onWithdraw : onDelete;
+              setAsking(null);
+              act(guest);
+            }}
+            className={withdrawing ? "pill-btn pill-btn-sm flex-1" : "pill-btn-danger pill-btn-sm flex-1"}
+            style={withdrawing ? { background: "var(--ink-3)", borderColor: "var(--ink-3)" } : undefined}
+          >
+            {withdrawing ? "أكيد، ما راح يحضر" : "أكيد، امسحه"}
+          </button>
+          <button onClick={() => setAsking(null)} className="pill-btn-ghost pill-btn-sm">تراجع</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-2">
+      <button
+        disabled={busy}
+        onClick={() => setAsking("withdraw")}
+        className="pill-btn-outline pill-btn-sm flex-1"
+        style={{ color: "var(--ink-2)" }}
+      >
+        لن يحضر
+      </button>
+      <button disabled={busy} onClick={() => setAsking("delete")} className="pill-btn-ghost pill-btn-sm" style={{ color: "var(--danger)" }}>
+        مسح
+      </button>
+    </div>
+  );
+}
+
+function GuestCard({ guest, onTap, onUndo, onResize, onWithdraw, onDelete, busy, waPref }) {
   const stage = STAGE[guest.stage];
   const thanksColor = "#1d5c47";
   return (
@@ -300,6 +363,12 @@ function GuestCard({ guest, onTap, onUndo, onResize, busy, waPref }) {
       )}
       {(guest.stage === "sent" || guest.stage === "opened") && <FollowUp guest={guest} waPref={waPref} />}
 
+      {/* Only where it belongs: a guest who is still waiting on an answer.
+          Nobody needs it on someone who already said yes or no. */}
+      {guest.kind === "invite" && (guest.stage === "todo" || guest.stage === "sent" || guest.stage === "opened") && (
+        <RemoveButtons guest={guest} onWithdraw={onWithdraw} onDelete={onDelete} busy={busy} />
+      )}
+
       {/* After the wedding: the thank-you, whenever they like. */}
       {guest.thanks === "todo" && (
         <button
@@ -340,6 +409,8 @@ export default function SendApp() {
   // Which WhatsApp to open: "personal", "business", or not chosen yet.
   const [waPref, setWaPref] = useState(null);
   const [picker, setPicker] = useState(null); // { guest, step } waiting on the choice
+  // A refusal from the server, shown once at the top rather than swallowed.
+  const [notice, setNotice] = useState("");
   const [canPickApp, setCanPickApp] = useState(false);
 
   useEffect(() => {
@@ -409,6 +480,24 @@ export default function SendApp() {
       setBusy(false);
     }
   }
+
+  // Both go through the sending app's own endpoint, which is scoped to this
+  // side's guests — the guest routes answer to the admin and the couple.
+  async function removeFromList(guest, action) {
+    setBusy(true);
+    const res = await fetch("/api/send/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guestId: guest.id, action }),
+    }).catch(() => null);
+    const json = await res?.json().catch(() => ({}));
+    await load();
+    setBusy(false);
+    if (res && !res.ok) setNotice(json?.error || "ما قدرنا نسوي هذا");
+  }
+
+  const withdraw = (guest) => removeFromList(guest, "withdraw");
+  const removeGuest = (guest) => removeFromList(guest, "delete");
 
   async function undo(guest, step = "invite") {
     setBusy(true);
@@ -500,6 +589,10 @@ export default function SendApp() {
 
       <InstallHint label="ثبّت التطبيق على الشاشة" appName="إرسال دعوة" />
 
+      {notice && (
+        <p className="error" role="alert" onClick={() => setNotice("")}>{notice}</p>
+      )}
+
       {canPickApp && WA_PACKAGES[waPref] && (
         <p className="text-xs text-ink-2 flex items-center gap-2">
           ترسل من: <b>{waPref === "business" ? "واتساب بزنس" : "واتساب العادي"}</b>
@@ -555,7 +648,19 @@ export default function SendApp() {
       {visible.length === 0 ? (
         <p className="meta text-center py-8">ما في أحد هني.</p>
       ) : (
-        visible.map((g) => <GuestCard key={g.id} guest={g} onTap={tap} onUndo={undo} onResize={resize} busy={busy} waPref={waPref} />)
+        visible.map((g) => (
+          <GuestCard
+            key={g.id}
+            guest={g}
+            onTap={tap}
+            onUndo={undo}
+            onResize={resize}
+            onWithdraw={withdraw}
+            onDelete={removeGuest}
+            busy={busy}
+            waPref={waPref}
+          />
+        ))
       )}
     </main>
   );

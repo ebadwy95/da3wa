@@ -5,6 +5,7 @@ import { verifyCheckinCode } from "@/lib/token";
 import { isAdminAuthed } from "@/lib/auth";
 import { getScannerSession } from "@/lib/scannerAuth";
 import { raiseSecurityAlert, keepRinging } from "@/lib/security";
+import { isWithdrawn } from "@/lib/roll";
 
 // A used entry code keeps ringing the security team after the door has its
 // answer (see keepRinging). A literal, because Next reads it at build time.
@@ -114,6 +115,20 @@ export async function POST(request) {
         ok: false,
         reason: "wrong_event",
         message: "رمز الدخول هذا يخصّ زفافًا آخر — وليس من ضيوف الزفاف الذي سجَّل هذا الماسح الدخول عليه",
+        eventId: guest.eventId,
+        guestId: guest.id,
+        guestName: guest.name,
+      });
+    }
+
+    // Taken off the roll after their pass was sent. The card on their phone
+    // still scans, so the door is the last place this has to be said — and
+    // it has to be said kindly, because they are standing in front of someone.
+    if (isWithdrawn(guest)) {
+      return logAndReturn({
+        ok: false,
+        reason: "withdrawn",
+        message: `${guest.name} — هذه الدعوة لم تعد سارية. يرجى مراجعة أهل العروسين.`,
         eventId: guest.eventId,
         guestId: guest.id,
         guestName: guest.name,

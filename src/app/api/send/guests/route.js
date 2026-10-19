@@ -11,6 +11,7 @@ import {
 } from "@/lib/handSend";
 import { guestKind } from "@/lib/guestKind";
 import { syncEventDeliveries, undeliveredGuests } from "@/lib/delivery";
+import { isWithdrawn } from "@/lib/roll";
 
 // The sending app's list: this side's guests (and anyone not yet given a
 // side, so nobody falls between the two lists), each with where they stand
@@ -33,7 +34,9 @@ export async function GET() {
   const refused = undeliveredGuests(db, event.id);
 
   const guests = db.guests
-    .filter((g) => g.eventId === event.id && (!g.side || g.side === session.side))
+    // Taken off the roll ("لن يحضر") means off this list too: there is
+    // nothing left to send them.
+    .filter((g) => g.eventId === event.id && !isWithdrawn(g) && (!g.side || g.side === session.side))
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     .map((g) => ({
       id: g.id,

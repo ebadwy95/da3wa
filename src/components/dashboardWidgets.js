@@ -663,8 +663,23 @@ export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
     if (res?.ok) onChanged?.();
   }
 
+  // "لن يحضر": off every count and every send, invitation left reachable.
+  async function setWithdrawn(withdrawn) {
+    setMarking(true);
+    const res = await fetch(`/api/guests/${guest.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ withdrawn }),
+    }).catch(() => null);
+    setMarking(false);
+    if (res?.ok) onChanged?.();
+  }
+
   return (
-    <tr className="border-b last:border-0" style={{ borderColor: "var(--line-soft)" }}>
+    <tr
+      className="border-b last:border-0"
+      style={{ borderColor: "var(--line-soft)", opacity: guest.withdrawnAt ? 0.5 : 1 }}
+    >
       <td className="py-3 px-2 font-medium">
         <span className="inline-flex items-center gap-1.5">
           {guest.name}
@@ -672,7 +687,16 @@ export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
               couple are reading down the list deciding who to chase. "Hasn't
               answered" and "hasn't answered despite being reminded" are two
               different jobs, and only the second one needs a phone call. */}
-          {guest.nudgeSentAt && (
+          {guest.withdrawnAt && (
+            <span
+              className="chip chip-neutral"
+              style={{ fontSize: "0.68rem" }}
+              title={`لن يحضر — خارج العدد منذ ${formatDateTimeArabic(guest.withdrawnAt)}`}
+            >
+              لن يحضر
+            </span>
+          )}
+          {guest.nudgeSentAt && !guest.withdrawnAt && (
             <span
               className="chip chip-gold"
               style={{ fontSize: "0.68rem" }}
@@ -795,7 +819,31 @@ export function GuestRow({ guest, onDelete, onChanged, editable = false }) {
           </a>
         ) : null}
       </td>
-      <td className="py-3 px-2 text-center">
+      <td className="py-3 px-2 text-center whitespace-nowrap">
+        {/* Two ways out, and they are not the same thing. "لن يحضر" takes
+            them off every count and stops everything we send, but leaves the
+            invitation on their phone working — it opens and says it is
+            closed. "حذف" removes them for good, and the link they are
+            holding dies with them. */}
+        {guest.withdrawnAt ? (
+          <button
+            onClick={() => setWithdrawn(false)}
+            disabled={marking}
+            className="pill-btn-outline pill-btn-sm ml-2"
+            title="رجّعه للعدد وافتح له الرد من جديد"
+          >
+            إرجاع
+          </button>
+        ) : (
+          <button
+            onClick={() => setWithdrawn(true)}
+            disabled={marking}
+            className="pill-btn-outline pill-btn-sm ml-2"
+            title="لا يُحسب في أي عدد ولا تصله أي رسالة، ودعوته تفتح وتقول إنها انتهت"
+          >
+            لن يحضر
+          </button>
+        )}
         <button onClick={() => onDelete(guest.id)} className="pill-btn-danger pill-btn-sm">حذف</button>
       </td>
     </tr>

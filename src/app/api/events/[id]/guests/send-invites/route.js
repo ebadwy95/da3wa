@@ -12,6 +12,7 @@ import {
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { resolveCoupleParts, coupleNamesIn } from "@/lib/couple";
 import { guestLanguage } from "@/lib/inviteCopy";
+import { isWithdrawn } from "@/lib/roll";
 
 // One-click bulk send: sends the "you're invited, tap to confirm" message
 // (a Meta-approved template with the guest's personal link) to every guest
@@ -85,7 +86,9 @@ export async function POST(request, { params }) {
     );
   }
 
-  const pendingGuests = db.guests.filter((g) => g.eventId === eventId && !g.invitedAt);
+  const pendingGuests = db.guests.filter(
+    (g) => g.eventId === eventId && !isWithdrawn(g) && !g.invitedAt
+  );
 
   if (pendingGuests.length === 0) {
     return NextResponse.json({ sent: 0, failed: 0, message: "تم إرسال الدعوة لجميع الضيوف مسبقًا" });
