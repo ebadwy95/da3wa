@@ -2180,3 +2180,40 @@ html.dark {
   .tilt-3d,
   [dir="rtl"] .tilt-3d { transform: none; }
 }
+
+/* ============================================================================
+   Dashboard: the numbers
+   ----------------------------------------------------------------------------
+   Every tile in the breakdown is a button that opens the names behind the
+   number, and nothing about it said so. A tile that lifts under the cursor
+   and carries a warm wash behind its figure reads as a thing you can open.
+   ========================================================================= */
+
+.stat-tile {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% -20%, var(--gold-50), transparent 70%),
+    var(--surface);
+}
+/* The figure, not the label, is what the eye lands on. */
+.stat-tile > :first-child {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Arriving in sequence rather than all at once: it reads as one set you can
+   scan across, instead of a wall that appeared. 45ms apart — enough to feel
+   ordered, not enough to wait for. */
+.stagger-in > * {
+  animation: tile-in 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@keyframes tile-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger-in > * { animation: none; }
+}

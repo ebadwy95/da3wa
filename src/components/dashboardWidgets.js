@@ -414,14 +414,18 @@ export function GuestBreakdown({ stats, guests }) {
   if (!stats) return null;
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {BREAKDOWNS.map((item) => (
+      {/* Every tile is a button that opens the names behind the number, and
+          it never looked like one. They lift now, and they arrive in
+          sequence rather than all at once, which is what tells you they are
+          a set you can read across. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger-in">
+        {BREAKDOWNS.map((item, i) => (
           <button
             key={item.key}
             type="button"
             onClick={() => setOpen(item)}
-            className="card p-4 text-center"
-            style={{ cursor: "pointer" }}
+            className="card card-lift stat-tile p-4 text-center"
+            style={{ cursor: "pointer", "--i": i }}
             aria-label={`${item.label}: ${stats[item.key]} — اعرض الأسماء`}
           >
             <div className="text-3xl font-bold" style={{ color: item.accent || "var(--gold-600)" }}>

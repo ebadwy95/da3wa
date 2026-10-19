@@ -1,14 +1,22 @@
-import { Rubik, Aref_Ruqaa, Amiri, Great_Vibes } from "next/font/google";
+import { Cairo, Aref_Ruqaa, Amiri, Great_Vibes } from "next/font/google";
 import "./globals.css";
 import { siteOrigin } from "@/lib/seo";
 
-// Rubik: the UI face for dashboards, forms and body text. Chosen over a
-// single-script Arabic face because this app constantly mixes scripts —
-// phone numbers, scanner codes like A1B2C3D4, URLs — and Rubik draws Arabic
-// and Latin as one family, so a code sitting inside an Arabic sentence no
-// longer falls back to whatever the device happens to have. Its 300–900
-// weight range is what lets the type scale actually express hierarchy.
-const rubik = Rubik({
+// Cairo: the UI face for dashboards, forms and body text.
+//
+// This product is read in Arabic first, and Rubik — which carried this before
+// — is a Latin family with Arabic added to it. It sets a clean dashboard, but
+// its Arabic is drawn to match Latin proportions and reads a little flat next
+// to the rest of the brand. Cairo is an Arabic face first, with Latin built
+// to sit beside it: rounder, warmer, with the open counters that keep Arabic
+// legible at the small sizes a door scanner uses.
+//
+// It still draws both scripts as one family, which is what this app needs —
+// phone numbers, scanner codes like A1B2C3D4 and URLs sit inside Arabic
+// sentences constantly, and a mixed-script line must not fall through to
+// whatever the device happens to have. Its weight range is what lets the type
+// scale express hierarchy at all.
+const cairo = Cairo({
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
   variable: "--font-ui",
@@ -115,7 +123,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl" className={`${rubik.variable} ${arefRuqaa.variable} ${amiri.variable} ${greatVibes.variable}`}>
+    <html lang="ar" dir="rtl" className={`${cairo.variable} ${arefRuqaa.variable} ${amiri.variable} ${greatVibes.variable}`}>
       <body className="antialiased">{children}</body>
     </html>
   );
