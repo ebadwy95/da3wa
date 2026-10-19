@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ShieldIcon, AlertIcon, CheckCircleIcon, ClockIcon } from "@/components/icons";
+import NameList from "@/components/NameList";
+import TrainingCodes from "@/components/TrainingCodes";
 import { unlockAudio, startRing, stopAlarm, registerAlertWorker, keepScreenOn } from "@/lib/alarm";
 
 const POLL_MS = 5000;
@@ -28,7 +30,7 @@ function describe(alert) {
   return "تنبيه";
 }
 
-export default function GuardScreen({ guardKey, contactName, coupleNames, eventDate, venueName, vapidKey }) {
+export default function GuardScreen({ guardKey, eventId, contactName, coupleNames, eventDate, venueName, vapidKey }) {
   const [env, setEnv] = useState(null); // { supported, ios, standalone, permission }
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -306,6 +308,29 @@ export default function GuardScreen({ guardKey, contactName, coupleNames, eventD
           ))
         )}
       </section>
+
+      {/* The people with no code to scan. The person holding this phone is
+          the one the door rings when something is wrong — they should be
+          able to settle a name without ringing anyone back. */}
+      {eventId && (
+        <details className="card p-4">
+          <summary className="font-bold cursor-pointer">قائمة الدخول بالاسم</summary>
+          <p className="text-xs text-ink-2 leading-relaxed mt-2 mb-3">
+            هؤلاء يدخلون بأسمائهم بدون رمز.
+          </p>
+          <NameList eventId={eventId} guardKey={guardKey} printable search />
+        </details>
+      )}
+
+      {/* Teaching the door, before the night. */}
+      {eventId && (
+        <details className="card p-4">
+          <summary className="font-bold cursor-pointer">تدريب الأمن — بطاقات تجريبية</summary>
+          <div className="mt-3">
+            <TrainingCodes eventId={eventId} guardKey={guardKey} />
+          </div>
+        </details>
+      )}
     </main>
   );
 }

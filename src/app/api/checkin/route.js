@@ -1,11 +1,40 @@
 import { NextResponse, after } from "next/server";
 import { randomUUID } from "crypto";
 import { withDb } from "@/lib/db";
-import { verifyCheckinCode } from "@/lib/token";
+import { verifyCheckinCode, verifyTrainingCode } from "@/lib/token";
 import { isAdminAuthed } from "@/lib/auth";
 import { getScannerSession } from "@/lib/scannerAuth";
 import { raiseSecurityAlert, keepRinging } from "@/lib/security";
 import { isWithdrawn } from "@/lib/roll";
+
+// What each practice code is meant to teach. Worded like the real thing with
+// "تدريب" in front, so the staff learn the sentence they will actually read
+// on the night and nobody mistakes a drill for an arrival.
+const TRAINING_OUTCOMES = {
+  ok: {
+    ok: true,
+    training: true,
+    guestName: "ضيف تجريبي",
+    partySize: 2,
+    remaining: 2,
+    checkedInCount: 0,
+    message: "تدريب — بطاقة سليمة. اختر العدد الداخل الآن واضغط تأكيد.",
+  },
+  used: {
+    ok: false,
+    training: true,
+    reason: "already_full",
+    guestName: "ضيف تجريبي",
+    message: "تدريب — هذه البطاقة دخلت بالكامل من قبل. لا تسمح بالدخول واتصل بالأمن.",
+  },
+  declined: {
+    ok: false,
+    training: true,
+    reason: "declined",
+    guestName: "ضيف تجريبي",
+    message: "تدريب — هذا الضيف اعتذر عن الحضور. لا تسمح بالدخول.",
+  },
+};
 
 // A used entry code keeps ringing the security team after the door has its
 // answer (see keepRinging). A literal, because Next reads it at build time.
@@ -66,6 +95,23 @@ export async function POST(request) {
   // and how many of them are inside, not whether there is room. mode "out"
   // is the departure itself.
   const isConfirm = mode === "confirm";
+
+  // Practice codes are answered here, before anything is looked up and
+  // before the log is touched. The door staff rehearse on the real scanner
+  // with real phones and the wedding's data does not move a row.
+  const training = verifyTrainingCode(code);
+  if (training) {
+    if (training.eventId !== (scannerEventId || training.eventId)) {
+      return NextResponse.json({
+        ok: false,
+        training: true,
+        reason: "wrong_event",
+        message: "تدريب — هذا الرمز يخصّ زفافًا آخر",
+      });
+    }
+    return NextResponse.json(TRAINING_OUTCOMES[training.variant] || TRAINING_OUTCOMES.ok);
+  }
+
   const { valid, guestId } = verifyCheckinCode(code);
 
   const result = await withDb((db) => {

@@ -39,6 +39,7 @@ export default async function GuardPage({ params }) {
   return (
     <GuardScreen
       guardKey={key}
+      eventId={guard.event.id}
       contactName={guard.contact.name}
       coupleNames={guard.event.coupleNames}
       eventDate={formatEventDateArabic(guard.event.eventDate)}

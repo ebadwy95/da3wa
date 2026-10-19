@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SendIcon, LogOutIcon, CheckCircleIcon, SearchIcon, PhoneIcon, MessageIcon } from "@/components/icons";
 import InstallHint from "@/components/InstallHint";
+import NameList from "@/components/NameList";
 
 // The sending app: the groom or the bride, one list of their guests, and on
 // each guest one button — the invitation, the only message there is. Pressing
@@ -592,6 +593,18 @@ export default function SendApp() {
       {notice && (
         <p className="error" role="alert" onClick={() => setNotice("")}>{notice}</p>
       )}
+
+      {/* Your own people, the ones who come in by name with nothing to scan.
+          Folded away: this app is for sending, and this is a once-a-week
+          job. Your side only — the other half is theirs to keep. */}
+      <details className="card-flat p-3">
+        <summary className="font-bold cursor-pointer">قائمة الدخول بالاسم</summary>
+        <p className="text-xs text-ink-2 leading-relaxed mt-2 mb-3">
+          أسماء تدخل العرس بدون رمز — أهلك والناس اللي ما ينطلب منهم يفتحون رابط. تظهر لموظف الباب
+          وفريق الأمن، وتنطبع في ورقة وحدة مع قائمة الطرف الثاني.
+        </p>
+        <NameList eventId={data.event.id} sides={[data.side]} printable />
+      </details>
 
       {canPickApp && WA_PACKAGES[waPref] && (
         <p className="text-xs text-ink-2 flex items-center gap-2">

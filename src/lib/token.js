@@ -110,6 +110,31 @@ export function verifyCheckinCode(code) {
   return { valid, guestId: valid ? guestId : null };
 }
 
+// Practice codes, for teaching the door staff before the night.
+//
+// Signed the same way a real pass is, and deliberately unmistakable: the
+// check-in endpoint recognises the prefix before it looks anything up, answers
+// with the outcome the code asks for, and writes nothing. So the team can
+// rehearse a clean entry, a code used twice and a pass from another wedding
+// on real phones, against the real scanner, without a single row of the
+// wedding's data moving.
+const TRAINING_PREFIX = "da3wa-train";
+
+export function makeTrainingCode(eventId, variant) {
+  const sig = sign(`train:${eventId}:${variant}`).slice(0, 16);
+  return `${TRAINING_PREFIX}.${eventId}.${variant}.${sig}`;
+}
+
+export function verifyTrainingCode(code) {
+  const parts = String(code || "").split(".");
+  if (parts.length !== 4 || parts[0] !== TRAINING_PREFIX) return null;
+  const [, eventId, variant, sig] = parts;
+  const expected = sign(`train:${eventId}:${variant}`).slice(0, 16);
+  if (sig.length !== expected.length) return null;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  return { eventId, variant };
+}
+
 // A security contact's personal link to the alert page (/guard/<key>). One
 // signature per person, not per wedding: each contact's alerts, "on my way"
 // replies and subscribed phones are attributed to them, and removing someone

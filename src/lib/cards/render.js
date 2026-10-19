@@ -80,3 +80,30 @@ export async function renderHtmlToPng(html, { width, height, locale = "ar" } = {
     await browser.close().catch(() => {});
   }
 }
+
+/**
+ * Renders a full HTML document to a PDF buffer, A4 portrait.
+ *
+ * Same browser, same reason: the door list is Arabic, and a PDF library that
+ * lays out glyphs one after another gives the security team a page of
+ * disconnected letters. printBackground is on because the sheet's only
+ * structure — the rule down the middle between the two columns — is drawn
+ * with a background.
+ */
+export async function renderHtmlToPdf(html, { locale = "ar" } = {}) {
+  const browser = await launch();
+  try {
+    const context = await browser.newContext({ locale });
+    const page = await context.newPage();
+    await page.setContent(html, { waitUntil: "networkidle" });
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(120);
+    return await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "14mm", bottom: "14mm", left: "12mm", right: "12mm" },
+    });
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}

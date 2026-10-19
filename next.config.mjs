@@ -40,6 +40,11 @@ const nextConfig = {
       "./node_modules/playwright-core/**",
       "./node_modules/@sparticuz/chromium/bin/**",
     ],
+    // The door list's PDF is laid out by the same browser — Arabic needs one.
+    "/api/events/*/name-list/pdf": [
+      "./node_modules/playwright-core/**",
+      "./node_modules/@sparticuz/chromium/bin/**",
+    ],
   },
 };
 

@@ -21,6 +21,8 @@ import {
   registerAlertWorker,
 } from "@/lib/alarm";
 import InstallHint from "@/components/InstallHint";
+import NameList from "@/components/NameList";
+import TrainingCodes from "@/components/TrainingCodes";
 
 const READER_ID = "da3wa-qr-reader";
 
@@ -809,6 +811,28 @@ export default function ScanPage() {
           <p className="label">فريق الأمن — اتصال مباشر</p>
           <CallButtons team={team} />
         </div>
+      )}
+
+      {/* The people with no code to scan. Folded away by default — the door
+          needs the camera first and this second — and searchable, because
+          nobody reads twenty names looking for one. */}
+      {eventInfo && (
+        <details className="card p-4">
+          <summary className="font-bold cursor-pointer">قائمة الدخول بالاسم</summary>
+          <p className="text-xs text-ink-2 leading-relaxed mt-2 mb-3">
+            هؤلاء يدخلون بأسمائهم بدون رمز. تأكّد من الاسم الكامل قبل الدخول.
+          </p>
+          <NameList eventId={eventInfo.id} printable search />
+        </details>
+      )}
+
+      {eventInfo && (
+        <details className="card p-4">
+          <summary className="font-bold cursor-pointer">تدريب — بطاقات تجريبية</summary>
+          <div className="mt-3">
+            <TrainingCodes eventId={eventInfo.id} />
+          </div>
+        </details>
       )}
 
       <InstallHint label="ثبّت السكانر كتطبيق على الشاشة" appName="سكانر دعوة" />

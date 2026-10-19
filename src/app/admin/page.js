@@ -21,6 +21,7 @@ import {
   WishWall,
 } from "@/components/dashboardWidgets";
 import { onRoll } from "@/lib/roll";
+import NameList from "@/components/NameList";
 import { WrenchIcon, ChevronDownIcon, VideoIcon, MusicIcon, ImageIcon, PaletteIcon, ShieldIcon, SendIcon } from "@/components/icons";
 import { formatEventDateArabic, formatEventTimeArabic } from "@/lib/date";
 import { joinCoupleNames, resolveCoupleParts } from "@/lib/couple";
@@ -1601,6 +1602,18 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
           table below, with a way back, but out of every number here. */}
       <GuestBreakdown stats={stats} guests={onRoll(guests)} />
       <SidesTable guests={onRoll(guests)} />
+
+      {/* Who comes in by name instead of by code — the couple's own people.
+          Two columns here because that is how it prints. */}
+      <section className="card p-4 space-y-2">
+        <h2 className="font-bold">قائمة الدخول بالاسم</h2>
+        <p className="text-xs text-ink-2 leading-relaxed">
+          أسماء تدخل بدون رمز QR — أهل العروسين ومن لا يُطلب منهم فتح رابط. كل طرف له قائمته، والاثنتان
+          تظهران لموظف الباب وفي تطبيق الأمن، وتُطبعان في ورقة واحدة.
+        </p>
+        <NameList eventId={event.id} printable />
+      </section>
+
       <p className="text-xs text-ink-3 -mt-3">
         &quot;إجمالي الدعوات&quot; = عدد الضيوف المضافين، بصرف النظر عن حالتهم. &quot;إجمالي الحضور المتوقع&quot; = مجموع
         كل ضيف مؤكَّد زائد عدد مرافقيه الذين أكّدهم فعليًا. &quot;دخلوا فعلًا&quot; = عدد الأفراد الذين سُجِّل دخولهم فعليًا
