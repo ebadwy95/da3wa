@@ -1946,3 +1946,237 @@ body {
 .inv-sash.share span {
   background: linear-gradient(135deg, #2f5f9e, #4b7bc0);
 }
+
+/* ============================================================================
+   Depth, press and motion
+   ----------------------------------------------------------------------------
+   Da3wa is sold as a service now, and the first thing a buyer judges is
+   whether the controls feel like objects. Flat gold pills read as a
+   prototype; the same pills with a body, a lit top edge and a press that
+   actually travels read as a product.
+   
+   One light source for the whole thing — low, warm and in front, the way a
+   card on a table is lit — so nothing looks pasted on from another design.
+   Every shadow below is two layers: a tight contact shadow that says
+   "resting on", and a wide soft one that says "above".
+   
+   The press is the part that matters. A raised control sits on a solid lip
+   of colour (not a blur); on :active the lip collapses and the control
+   travels down by exactly that much, so the thing you pressed goes where
+   your finger went. On a phone at a wedding door that is the difference
+   between "did it register?" and knowing.
+   ========================================================================= */
+
+:root {
+  --lift-1: 0 1px 1px rgba(74, 58, 32, 0.07), 0 2px 4px rgba(74, 58, 32, 0.06);
+  --lift-2: 0 1px 2px rgba(74, 58, 32, 0.08), 0 6px 16px rgba(74, 58, 32, 0.10);
+  --lift-3: 0 2px 4px rgba(74, 58, 32, 0.10), 0 18px 40px rgba(74, 58, 32, 0.16);
+
+  /* The body of a raised control. Deliberately a dark translucent rather
+     than a named brown: half the buttons in this product carry an inline
+     colour of their own (the green WhatsApp one, the red refusals, the blue
+     security ones), and a gold lip under a green button looks like a
+     mistake. A shadow of the thing itself works under all of them. */
+  --lip: rgba(38, 28, 12, 0.30);
+  --lip-soft: rgba(38, 28, 12, 0.16);
+  --sheen: rgba(255, 255, 255, 0.45);
+}
+
+:root[data-theme="dark"],
+html.dark {
+  --lift-1: 0 1px 1px rgba(0, 0, 0, 0.5), 0 2px 5px rgba(0, 0, 0, 0.4);
+  --lift-2: 0 1px 2px rgba(0, 0, 0, 0.55), 0 8px 20px rgba(0, 0, 0, 0.5);
+  --lift-3: 0 2px 5px rgba(0, 0, 0, 0.6), 0 20px 44px rgba(0, 0, 0, 0.6);
+  --lip: rgba(0, 0, 0, 0.55);
+  --lip-soft: rgba(0, 0, 0, 0.4);
+  --sheen: rgba(255, 255, 255, 0.22);
+}
+
+/* ---- The solid button ---- */
+
+.pill-btn,
+.btn-gold {
+  background: linear-gradient(180deg, var(--gold-300), var(--gold-400) 48%, var(--gold-500));
+  box-shadow:
+    inset 0 1px 0 var(--sheen),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 3px 0 var(--lip),
+    var(--lift-2);
+  transition:
+    transform 0.12s cubic-bezier(0.2, 0.7, 0.3, 1),
+    box-shadow 0.18s ease,
+    filter 0.18s ease,
+    background 0.18s ease;
+}
+.pill-btn:hover:not(:disabled),
+.btn-gold:hover:not(:disabled) {
+  filter: brightness(1.04);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 var(--sheen),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 4px 0 var(--lip),
+    var(--lift-3);
+}
+/* Down by the height of its own lip: the surface you pressed ends up where
+   your finger is, and nothing else moves. */
+.pill-btn:active:not(:disabled),
+.btn-gold:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 2px 6px rgba(0, 0, 0, 0.22),
+    0 0 0 var(--lip),
+    var(--lift-1);
+}
+
+/* ---- The quieter ones: same physics, a tenth of the voice ---- */
+
+.pill-btn-outline,
+.pill-btn-danger {
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--lip-soft), var(--lift-1);
+  transition:
+    transform 0.12s cubic-bezier(0.2, 0.7, 0.3, 1),
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+.pill-btn-outline:hover:not(:disabled),
+.pill-btn-danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 var(--lip-soft), var(--lift-2);
+}
+.pill-btn-outline:active:not(:disabled),
+.pill-btn-danger:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.12), 0 0 0 var(--lip-soft);
+}
+
+.pill-btn-ghost {
+  transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease;
+}
+.pill-btn-ghost:active:not(:disabled) { transform: translateY(1px); }
+
+.icon-btn:active:not(:disabled) { transform: translateY(1px); }
+
+/* A disabled control is not an object you can press. */
+.pill-btn:disabled,
+.pill-btn-outline:disabled,
+.pill-btn-ghost:disabled,
+.pill-btn-danger:disabled,
+.btn-gold:disabled {
+  box-shadow: none;
+  transform: none;
+}
+
+/* ---- Surfaces ---- */
+
+.card { box-shadow: var(--lift-2); }
+.card-ornate { box-shadow: var(--lift-3); }
+
+/* Opt-in, for a card that is itself a link or a button. */
+.card-lift {
+  transition: transform 0.2s cubic-bezier(0.2, 0.7, 0.3, 1), box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lift-3);
+}
+
+/* ---- Fields: pressed into the paper, not floating on it ---- */
+
+.field {
+  box-shadow: inset 0 1px 2px rgba(74, 58, 32, 0.07);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.field:focus,
+.field:focus-visible {
+  box-shadow: inset 0 1px 2px rgba(74, 58, 32, 0.05), 0 0 0 3px var(--gold-100);
+}
+
+/* ---- A slow sweep of light across the main call to action ----
+   Opt-in (`shine`), and only worth it on the one button a page is really
+   asking you to press. */
+.shine { position: relative; overflow: hidden; }
+.shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.38) 48%,
+    transparent 66%
+  );
+  transform: translateX(-120%);
+  animation: sheen-sweep 4.5s ease-in-out 1.2s infinite;
+  pointer-events: none;
+}
+@keyframes sheen-sweep {
+  0%, 62% { transform: translateX(-120%); }
+  86%, 100% { transform: translateX(120%); }
+}
+
+/* ---- A card held slightly away from the page, turning to face you ---- */
+.tilt-3d {
+  transform: perspective(1100px) rotateY(-7deg) rotateX(3deg);
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.3, 1);
+  will-change: transform;
+}
+.tilt-3d:hover { transform: perspective(1100px) rotateY(0deg) rotateX(0deg); }
+/* The right-hand side of an RTL page is where the eye starts, so the tilt
+   leans the other way. */
+[dir="rtl"] .tilt-3d { transform: perspective(1100px) rotateY(7deg) rotateX(3deg); }
+[dir="rtl"] .tilt-3d:hover { transform: perspective(1100px) rotateY(0deg) rotateX(0deg); }
+
+/* ---- A slow drift behind the hero, so the page is never quite still ---- */
+.aurora {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 120%;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(38% 42% at 22% 28%, rgba(200, 160, 106, 0.30), transparent 70%),
+    radial-gradient(34% 38% at 78% 22%, rgba(224, 196, 141, 0.22), transparent 70%),
+    radial-gradient(44% 46% at 56% 82%, rgba(129, 101, 57, 0.26), transparent 72%);
+  filter: blur(14px);
+  animation: aurora-drift 22s ease-in-out infinite alternate;
+}
+@keyframes aurora-drift {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to   { transform: translate3d(2%, 2%, 0) scale(1.07); }
+}
+
+/* ---- Entrance, for anything that isn't already revealed on scroll ---- */
+.float-soft { animation: float-soft 7s ease-in-out infinite alternate; }
+@keyframes float-soft {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-9px); }
+}
+
+/* Nothing above is information. If the person has asked their system for
+   less movement, all of it stops — the depth stays, the motion goes. */
+@media (prefers-reduced-motion: reduce) {
+  .pill-btn,
+  .btn-gold,
+  .pill-btn-outline,
+  .pill-btn-danger,
+  .pill-btn-ghost,
+  .card-lift,
+  .tilt-3d {
+    transition: none;
+  }
+  .pill-btn:hover:not(:disabled),
+  .btn-gold:hover:not(:disabled),
+  .pill-btn-outline:hover:not(:disabled),
+  .pill-btn-danger:hover:not(:disabled),
+  .card-lift:hover { transform: none; }
+  .shine::after,
+  .aurora,
+  .float-soft { animation: none; }
+  .shine::after { opacity: 0; }
+  .tilt-3d,
+  [dir="rtl"] .tilt-3d { transform: none; }
+}

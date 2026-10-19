@@ -75,7 +75,7 @@ export default function AppsPage() {
               </>
             );
             return app.href ? (
-              <a key={app.name} href={app.href} className="card p-4 flex flex-col gap-3" style={{ textDecoration: "none", color: "inherit" }}>
+              <a key={app.name} href={app.href} className="card card-lift p-4 flex flex-col gap-3" style={{ textDecoration: "none", color: "inherit" }}>
                 {body}
               </a>
             ) : (

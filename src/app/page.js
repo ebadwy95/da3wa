@@ -86,6 +86,10 @@ export default function HomePage() {
 
       {/* ---------------------------------------------------------------- */}
       <section className="band-dark section" style={{ paddingBlock: "clamp(3.5rem, 9vw, 6rem)" }}>
+        {/* Three warm lights drifting behind the hero, slowly enough that
+            you never catch them moving — the page is simply never quite
+            still. Stops entirely for prefers-reduced-motion. */}
+        <div className="aurora" aria-hidden="true" />
         <div className="hero-glow" aria-hidden="true" />
         <div className="pattern-veil" aria-hidden="true" />
 
@@ -121,7 +125,7 @@ export default function HomePage() {
             </Reveal>
 
             <Reveal delay={240} className="flex flex-wrap gap-3 justify-center lg:justify-start">
-              <Link href="/start" className="pill-btn">
+              <Link href="/start" className="pill-btn shine">
                 <RingsIcon size={18} />
                 ابدأ الآن
               </Link>
@@ -135,7 +139,11 @@ export default function HomePage() {
               most honest thing this page can show. Muted and looping so it
               can autoplay; the invitation is where it plays with sound. */}
           <Reveal delay={300} className="flex justify-center">
-            <div className="phone">
+            {/* Two elements on purpose: the float animates the wrapper's
+                transform and the tilt sets the phone's own. On one element
+                the animation wins and the tilt disappears. */}
+            <div className="float-soft">
+              <div className="phone tilt-3d">
               <div className="phone-screen">
                 <video
                   src="/samples/invite.mp4"
@@ -147,6 +155,7 @@ export default function HomePage() {
                   preload="metadata"
                   aria-label="نموذج لدعوة إلكترونية"
                 />
+              </div>
               </div>
             </div>
           </Reveal>
@@ -243,7 +252,7 @@ export default function HomePage() {
                 جهّز دعوتك، وارفع قائمة ضيوفك، وسلّم الباب لنظام يعرف كل اسم.
               </p>
               <div className="flex flex-wrap gap-3 justify-center">
-                <Link href="/start" className="pill-btn">
+                <Link href="/start" className="pill-btn shine">
                   <SendIcon size={18} />
                   ابدأ الآن
                 </Link>
