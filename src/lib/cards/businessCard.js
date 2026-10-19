@@ -66,20 +66,23 @@ export function businessCardHtml({ side = "front", lang = "ar", name, phone, ema
   const t = COPY[lang] || COPY.ar;
   const en = lang === "en";
 
+  // Laid out as a column that ends in the QR row rather than floating the
+  // code in a corner: the English name is long and was running underneath it.
   const face = `
-  <div class="side front">
+  <div class="side front stack">
     <div class="rule-top"></div>
-    <div class="brand-row">
-      ${MARK}
-      <div class="brand">${esc(t.brand)}</div>
+    <div class="top">
+      <div class="brand-row centre">
+        ${MARK}
+        <div class="brand">${esc(t.brand)}</div>
+      </div>
+      <div class="tag">${esc(t.tagline)}</div>
     </div>
-    <div class="tag">${esc(t.tagline)}</div>
-    <div class="divider"></div>
     <div class="person">
       <div class="name">${esc(name)}</div>
       <div class="role">${esc(t.role)}</div>
     </div>
-    <div class="qr-wrap">
+    <div class="qr-row">
       <img class="qr" src="${esc(qr)}" alt="">
       <div class="scan">${esc(scanNote || t.scanLabel)}</div>
     </div>
@@ -140,17 +143,19 @@ export function businessCardHtml({ side = "front", lang = "ar", name, phone, ema
    background:linear-gradient(90deg,transparent,var(--gold-l),transparent)}
   .divider.wide{width:${Math.round(46 * MM)}px}
 
-  .person{text-align:center}
-  .name{font-size:${Math.round(5 * MM)}px;font-weight:700;letter-spacing:-.01em}
+  .person{text-align:center;max-width:100%}
+  .name{font-size:${Math.round((en ? 4.3 : 5) * MM)}px;font-weight:700;letter-spacing:-.01em}
   .role{margin-top:${Math.round(0.8 * MM)}px;font-size:${Math.round(2.6 * MM)}px;color:var(--gold-d);
    letter-spacing:.18em;text-transform:uppercase}
 
-  .qr-wrap{position:absolute;bottom:${Math.round(5 * MM)}px;
-   ${en ? "right" : "left"}:${Math.round(6 * MM)}px;text-align:center}
-  .qr{width:${Math.round(17 * MM)}px;height:${Math.round(17 * MM)}px;display:block;
+  /* The face is a column with three stops, so nothing can land on anything
+     else however long a name turns out to be. */
+  .side.stack{justify-content:space-between}
+  .side.stack .top{display:flex;flex-direction:column;align-items:center;margin-top:${Math.round(2 * MM)}px}
+  .qr-row{display:flex;align-items:center;gap:${Math.round(2.4 * MM)}px;align-self:stretch}
+  .qr{width:${Math.round(16 * MM)}px;height:${Math.round(16 * MM)}px;display:block;flex-shrink:0;
    border:1px solid var(--gold-l);border-radius:${Math.round(1.6 * MM)}px;background:#fff;padding:${Math.round(0.8 * MM)}px}
-  .scan{margin-top:${Math.round(1 * MM)}px;font-size:${Math.round(1.9 * MM)}px;color:var(--ink-2);
-   max-width:${Math.round(24 * MM)}px;line-height:1.35}
+  .scan{font-size:${Math.round(2.1 * MM)}px;color:var(--ink-2);line-height:1.4;text-align:${en ? "left" : "right"}}
 
   .pitch-title{margin-top:${Math.round(3 * MM)}px;font-size:${Math.round(3.4 * MM)}px;font-weight:600;
    text-align:center;color:var(--gold-d)}
