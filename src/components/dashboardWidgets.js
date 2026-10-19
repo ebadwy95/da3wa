@@ -114,8 +114,10 @@ const BREAKDOWNS = [
     },
   },
   {
-    key: "familyPeople",
-    label: "أهل الفرح (أفراد)",
+    // Cards, not people: see the note in SidesTable for why the headcount
+    // behind them is no longer guessed from an allowance.
+    key: "family",
+    label: "أهل الفرح (بطاقات)",
     accent: "#8a5a2b",
     scope: "family",
     sections: (g) => [{ title: null, list: g }],
@@ -307,14 +309,18 @@ function sideTotals(guests) {
   return totals;
 }
 
-export function SidesTable({ guests }) {
+export function SidesTable({ guests, stats }) {
   const totals = useMemo(() => sideTotals(guests || []), [guests]);
+  const door = stats?.doorList || { groom: 0, bride: 0, total: 0 };
   if (!guests?.length) return null;
   const rows = SIDE_ROWS.filter(
     (r) => totals[r.key].invites || totals[r.key].family || totals[r.key].share
   );
 
-  const cell = (t) => [
+  const doorFor = (key) =>
+    key === "all" ? door.total : key === "groom" || key === "bride" ? door[key] || 0 : 0;
+
+  const cell = (t, key) => [
     t.invites,
     t.people,
     t.sent,
@@ -325,12 +331,17 @@ export function SidesTable({ guests }) {
     // Where the night lands if everyone still silent says yes, at the full
     // allowance they were each given.
     t.confirmedPeople + t.pendingPeople,
-    t.family ? `${t.family} (${t.familyPeople})` : "—",
+    // Cards only. The people behind a family card were never counted from
+    // an answer — nobody is asked to give one — so counting an allowance
+    // was counting a guess. The door list replaced it.
+    t.family || "—",
     t.share || "—",
+    doorFor(key) || "—",
     // What the hall has to seat and feed: everyone who could sit down —
-    // confirmed, still silent at their full allowance, and the family.
-    // Apologies and the cards sent from afar are not here.
-    t.confirmedPeople + t.pendingPeople + t.familyPeople,
+    // confirmed, still silent at their full allowance, and the names the
+    // couple wrote down themselves. Apologies, the cards sent from afar and
+    // the family cards are not here.
+    t.confirmedPeople + t.pendingPeople + doorFor(key),
   ];
   const headers = [
     "",
@@ -342,8 +353,9 @@ export function SidesTable({ guests }) {
     "اعتذروا",
     "ما ردوا",
     "لو الكل أكد",
-    "أهل الفرح (أفراد)",
+    "أهل الفرح (بطاقات)",
     "مشاركة الفرحة",
+    "قائمة الدخول بالاسم",
     "أقصى عدد للكراسي",
   ];
 
@@ -352,8 +364,9 @@ export function SidesTable({ guests }) {
       <h2 className="font-bold">التقسيم حسب الطرف</h2>
       <p className="text-xs text-ink-2 leading-relaxed">
         «لو الكل أكد» = الأفراد المؤكدين الآن + كل اللي ما ردوا بكامل العدد المسموح لهم. و«أقصى عدد للكراسي» =
-        هذا الرقم + أهل الفرح — يعني كل اللي ممكن يقعدون ويتعشون، على أساسه تحسبون الكراسي والبوفيه. المعتذرين
-        وبطاقات مشاركة الفرحة ما يدخلون في الحساب.
+        هذا الرقم + قائمة الدخول بالاسم — يعني كل اللي ممكن يقعدون ويتعشون، على أساسه تحسبون الكراسي والبوفيه.
+        بطاقات أهل الفرح وصلتهم وتشتغل عادي، بس أعدادها ما تنحسب هني — العدد الفعلي لهم يجي من قائمة الدخول
+        بالاسم. المعتذرين وبطاقات مشاركة الفرحة ما يدخلون في الحساب.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
@@ -368,15 +381,23 @@ export function SidesTable({ guests }) {
             {rows.map((r) => (
               <tr key={r.key} className="border-t" style={{ borderColor: "var(--line-soft)" }}>
                 <td className="py-2 px-2 font-semibold whitespace-nowrap">{r.label}</td>
-                {cell(totals[r.key]).map((v, i) => (
+                {cell(totals[r.key], r.key).map((v, i) => (
                   <td key={i} className="py-2 px-2 text-center tnum">{v}</td>
                 ))}
               </tr>
             ))}
             <tr className="border-t-2 font-bold" style={{ borderColor: "var(--line)" }}>
               <td className="py-2 px-2 whitespace-nowrap">الإجمالي</td>
-              {cell(totals.all).map((v, i) => (
-                <td key={i} className="py-2 px-2 text-center tnum" style={i === 9 ? { color: "var(--gold-600)", fontSize: "var(--text-base)" } : undefined}>
+              {/* The chairs figure is the last column and the one the whole
+                  table exists for, so it is the one picked out. Indexed from
+                  the end rather than by number: the columns have moved once
+                  already and the highlight silently landed on the wrong one. */}
+              {cell(totals.all, "all").map((v, i, arr) => (
+                <td
+                  key={i}
+                  className="py-2 px-2 text-center tnum"
+                  style={i === arr.length - 1 ? { color: "var(--gold-600)", fontSize: "var(--text-base)" } : undefined}
+                >
                   {v}
                 </td>
               ))}

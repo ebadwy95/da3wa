@@ -4,6 +4,7 @@ import { isAdminAuthed } from "@/lib/auth";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { guestKind } from "@/lib/guestKind";
 import { onRoll } from "@/lib/roll";
+import { bothLists } from "@/lib/nameList";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -46,6 +47,21 @@ export async function GET(request) {
     share: everyone.filter((g) => guestKind(g) === "share").length,
     storage: isUsingRedis() ? "upstash-redis" : "local-json",
   };
+
+  // The families are no longer counted from their cards. Their cards still
+  // work — the invitations that reached them are theirs — but the number of
+  // people behind them was always a guess at an allowance nobody answered.
+  // The door list is the couple writing down who is actually coming, so that
+  // is what the hall is planned from now.
+  if (eventId) {
+    const event = db.events.find((e) => e.id === eventId);
+    const lists = bothLists(event || {});
+    stats.doorList = {
+      groom: lists.groom.length,
+      bride: lists.bride.length,
+      total: lists.groom.length + lists.bride.length,
+    };
+  }
 
   return NextResponse.json({ stats });
 }

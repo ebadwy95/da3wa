@@ -14,25 +14,68 @@ const TRAINING_OUTCOMES = {
   ok: {
     ok: true,
     training: true,
-    guestName: "ضيف تجريبي",
+    guestName: "ضيف تجريبي — بطاقة سليمة",
     partySize: 2,
     remaining: 2,
     checkedInCount: 0,
-    message: "تدريب — بطاقة سليمة. اختر العدد الداخل الآن واضغط تأكيد.",
+    message: "تدريب — بطاقة سليمة لشخصين. اختر العدد الداخل الآن واضغط تأكيد.",
   },
+  // The one everybody has to have seen before the night: this is what a
+  // duplicated pass looks like, and in the real wedding it rings the phones
+  // of the whole security team at the same moment.
   used: {
     ok: false,
     training: true,
     reason: "already_full",
-    guestName: "ضيف تجريبي",
+    guestName: "ضيف تجريبي — بطاقة مستخدمة",
     message: "تدريب — هذه البطاقة دخلت بالكامل من قبل. لا تسمح بالدخول واتصل بالأمن.",
   },
   declined: {
     ok: false,
     training: true,
     reason: "declined",
-    guestName: "ضيف تجريبي",
+    guestName: "ضيف تجريبي — معتذر",
     message: "تدريب — هذا الضيف اعتذر عن الحضور. لا تسمح بالدخول.",
+  },
+  // A party that is not all together at the gate — the commonest thing that
+  // actually happens, and the one the staff get wrong by admitting everyone.
+  partial: {
+    ok: true,
+    training: true,
+    guestName: "ضيف تجريبي — دخول جزئي",
+    partySize: 4,
+    remaining: 2,
+    checkedInCount: 2,
+    message: "تدريب — بطاقة لأربعة، دخل منهم اثنان. الباقي اثنان فقط.",
+  },
+  // Stepped outside and came back. The card scans again and must not be
+  // treated as a duplicate.
+  returning: {
+    ok: true,
+    training: true,
+    returning: true,
+    guestName: "ضيف تجريبي — خرج ورجع",
+    partySize: 3,
+    remaining: 1,
+    checkedInCount: 2,
+    steppedOutCount: 1,
+    message: "تدريب — هذا الضيف خرج ورجع. رجّعه عادي، لا تنبّه الأمن.",
+  },
+  // Taken off the list after their pass was sent. Their phone still shows a
+  // valid-looking card.
+  withdrawn: {
+    ok: false,
+    training: true,
+    reason: "withdrawn",
+    guestName: "ضيف تجريبي — دعوة ملغاة",
+    message: "تدريب — هذه الدعوة لم تعد سارية. يرجى مراجعة أهل العروسين.",
+  },
+  // Not one of ours at all: a screenshot, a code off the internet, a forgery.
+  forged: {
+    ok: false,
+    training: true,
+    reason: "invalid",
+    message: "تدريب — رمز غير صالح، ليس من رموز هذا الزفاف. لا تسمح بالدخول.",
   },
 };
 

@@ -210,7 +210,7 @@ function CoupleDashboard({ eventId, onLoggedOut }) {
       <div className="wrap p-5 flex flex-col gap-6" style={{ maxWidth: "80rem" }}>
 
       <GuestBreakdown stats={stats} guests={onRoll(guests)} />
-      <SidesTable guests={onRoll(guests)} />
+      <SidesTable guests={onRoll(guests)} stats={stats} />
 
       {/* Who comes in by name instead of by code — the couple's own people.
           Two columns here because that is how it prints. */}

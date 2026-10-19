@@ -9,21 +9,50 @@ import { makeTrainingCode } from "@/lib/token";
 
 // Practice passes for the door staff.
 //
-// Three codes, because three things happen at a door: a pass that is fine, a
-// pass that has already been used, and a guest who said they weren't coming.
-// The team scan them off a second phone the week before and learn what each
-// answer looks like — the alarm included — while every one of them is
-// answered by /api/checkin without reading or writing a single guest.
+// Every outcome a door actually produces, in the order the staff should meet
+// them: the clean entry first, then the two that look like mistakes and are
+// not, then the four refusals. They scan them off a second phone the week
+// before and learn what each answer looks like — the alarm included — while
+// every one of them is answered by /api/checkin without reading or writing a
+// single guest.
 export const dynamic = "force-dynamic";
 
 const DRILLS = [
-  { variant: "ok", label: "بطاقة سليمة", hint: "لازم يطلع أخضر ويسألك عن العدد الداخل." },
+  {
+    variant: "ok",
+    label: "١. بطاقة سليمة",
+    hint: "أخضر. يسألك كم واحد داخل الحين — اختر العدد واضغط تأكيد.",
+  },
+  {
+    variant: "partial",
+    label: "٢. دخول جزئي",
+    hint: "بطاقة لأربعة ودخل منهم اثنان. ما يصير تدخّل أربعة — الباقي اثنان بس.",
+  },
+  {
+    variant: "returning",
+    label: "٣. خرج ورجع",
+    hint: "ضيف طلع برّا ورجع. يدخل عادي وما تنبّه الأمن — جرّبها من تبويب «دخول».",
+  },
   {
     variant: "used",
-    label: "بطاقة مستخدمة",
-    hint: "لازم يطلع أحمر — ودي الحالة اللي بترنّ لفريق الأمن في العرس الحقيقي.",
+    label: "٤. بطاقة مستخدمة",
+    hint: "أحمر. هذي اللي ترنّ لفريق الأمن في العرس الحقيقي — ما تدخّله واتصل فيهم.",
   },
-  { variant: "declined", label: "ضيف معتذر", hint: "لازم يطلع أحمر ويقول إن الضيف اعتذر." },
+  {
+    variant: "declined",
+    label: "٥. ضيف معتذر",
+    hint: "أحمر. الضيف نفسه قال ما راح يحضر.",
+  },
+  {
+    variant: "withdrawn",
+    label: "٦. دعوة ملغاة",
+    hint: "أحمر. انشال من القائمة بعد ما وصلته البطاقة — رجّعه لأهل العروسين بأدب.",
+  },
+  {
+    variant: "forged",
+    label: "٧. رمز مو من العرس",
+    hint: "أحمر. سكرين شوت أو رمز من مكان ثاني — ما يدخل أبدًا.",
+  },
 ];
 
 export async function GET(request, { params }) {

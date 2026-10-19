@@ -1601,7 +1601,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       {/* Counted from the roll: a guest marked "لن يحضر" is still in the
           table below, with a way back, but out of every number here. */}
       <GuestBreakdown stats={stats} guests={onRoll(guests)} />
-      <SidesTable guests={onRoll(guests)} />
+      <SidesTable guests={onRoll(guests)} stats={stats} />
 
       {/* Who comes in by name instead of by code — the couple's own people.
           Two columns here because that is how it prints. */}
