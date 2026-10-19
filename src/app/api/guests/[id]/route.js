@@ -164,10 +164,15 @@ export async function PATCH(request, { params }) {
     if (!g) return { missing: true };
     const seen = g.openedAt || g.status !== "pending";
     if (Object.keys(locked).length && seen) return { blocked: true };
-    // Lowering the allowance for a guest who has already seen it: refused for
-    // the same reason the number is locked at all.
+    // Lowering the allowance. The rule is about promises, not about the
+    // number: a guest still deciding was shown an allowance and may answer
+    // with all of it, so taking it back is a promise broken. A guest who has
+    // already answered has banked whatever they claimed — lowering down to
+    // that figure takes nothing from them, and it is how "they are three now,
+    // not four" gets recorded.
     if (wantedAllowance !== null && seen && wantedAllowance < (g.maxCompanions || 0)) {
-      return { blocked: true };
+      const claimed = g.status === "confirmed" ? (attending !== null ? attending - 1 : g.confirmedCompanions || 0) : null;
+      if (claimed === null || wantedAllowance < claimed) return { blocked: true };
     }
     Object.assign(g, changes, locked);
     if (attending !== null) {

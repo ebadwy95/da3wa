@@ -93,17 +93,27 @@ const QR_CSS = `
 /* The engine-turned rosette, centred behind the code. Behind, never on: the
    quiet zone the camera needs stays pure white, and the plate clips the rest
    so the line-work reads as watermark rather than decoration. */
-#rosette{position:absolute;top:50%;left:50%;width:880px;height:880px;
- transform:translate(-50%,-50%);opacity:.55;z-index:0;pointer-events:none}
+/* Bigger and stronger now that it is proven safe: the code's own PNG
+   carries a white quiet zone, so this cannot show through it however far it
+   is pushed — it only ever radiates into the cream around the plate. */
+#rosette{position:absolute;top:50%;left:50%;width:1000px;height:1000px;
+ transform:translate(-50%,-50%);opacity:.72;z-index:0;pointer-events:none}
 
-/* A wax seal over the plate's corner, the way a seal is pressed across the
-   join of an envelope — the mark that says somebody issued this. */
-.seal{position:absolute;z-index:4;width:104px;height:104px;border-radius:50%;
- right:-18px;bottom:-18px;
+/* A wax seal hung off the plate's corner, the way a seal is pressed across
+   the join of an envelope.
+   
+   Sat almost entirely outside the plate on purpose. The code can lose about
+   a seventh of itself to error correction and still read, so a seal biting
+   its corner would have scanned — but this is a pass a stranger holds up at
+   a gate in bad light, and "would have scanned" is not a thing to spend on
+   decoration. The offset is set so the seal's inner edge clears the code's
+   own edge with room to spare. */
+.seal{position:absolute;z-index:4;width:132px;height:132px;border-radius:50%;
+ right:-92px;bottom:-92px;
  background:radial-gradient(circle at 34% 30%,#dcbc80,#a97f3f 46%,#7a5724 100%);
  box-shadow:0 7px 18px rgba(80,58,22,.34),inset 0 2px 5px rgba(255,255,255,.42),inset 0 -3px 8px rgba(0,0,0,.28);
  display:flex;align-items:center;justify-content:center;color:#fff6e4}
-.seal svg{width:46px;height:46px;opacity:.96}
+.seal svg{width:58px;height:58px;opacity:.96}
 /* the plate: the code keeps a real white quiet zone, because at the door this
    is read by a phone camera at arm's length and a decorated code is a code
    that has to be tried twice */
