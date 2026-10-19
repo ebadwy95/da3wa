@@ -86,9 +86,22 @@ export async function recordDeliveryUpdate({ messageId, phone, status, eventLabe
 // wedding's feed is opened, any message still waiting on a verdict is looked
 // up in Wati, and its real status and failure reason are written back.
 
-// The dashboard polls the feed every few seconds; Wati does not need to be
-// asked that often, and a sync that is already running should not start twice.
-const SYNC_EVERY_MS = 45 * 1000;
+// This is one Wati API call per phone number, and it ran every 45 seconds for
+// every number still waiting on a verdict — a hundred of them, on a dashboard
+// somebody left open. That is eight thousand calls an hour against a plan
+// that allows ten thousand a month, and it is what actually stopped the
+// wedding's messages going out the night before: not Meta, not the number,
+// but us asking Wati the same question until the account ran out of road.
+//
+// So: five minutes between passes rather than forty-five seconds, and a hard
+// cap on how many numbers a single pass may ask about. The oldest unresolved
+// messages go first, so nothing is starved — it just takes a few passes to
+// work through a backlog instead of spending the month's quota in an evening.
+const SYNC_EVERY_MS = 5 * 60 * 1000;
+const MAX_PHONES_PER_PASS = 12;
+// A verdict does not exist in the first moments after a send, so asking for
+// it is a call spent on a certain "not yet".
+const SETTLE_MS = 90 * 1000;
 const lastSyncByEvent = new Map();
 
 // How long a message keeps being checked. A verdict that has not arrived after
@@ -111,19 +124,27 @@ export async function syncEventDeliveries(eventId) {
   lastSyncByEvent.set(eventId, now);
 
   const db = await getDb();
-  const pending = (db.messages || []).filter(
-    (m) =>
-      m.eventId === eventId &&
-      (m.status === "sent" || m.status === "delivered") &&
-      m.phone &&
-      now - new Date(m.createdAt).getTime() < SYNC_WINDOW_MS
-  );
+  const pending = (db.messages || [])
+    .filter(
+      (m) =>
+        m.eventId === eventId &&
+        (m.status === "sent" || m.status === "delivered") &&
+        m.phone &&
+        now - new Date(m.createdAt).getTime() > SETTLE_MS &&
+        now - new Date(m.createdAt).getTime() < SYNC_WINDOW_MS
+    )
+    // Oldest first: the ones least likely to still be in flight, and the ones
+    // somebody is actually waiting on an answer about.
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   if (pending.length === 0) return { checked: 0 };
 
   const byPhone = new Map();
   for (const m of pending) {
     const key = digitsOnly(m.phone);
-    if (!byPhone.has(key)) byPhone.set(key, []);
+    if (!byPhone.has(key)) {
+      if (byPhone.size >= MAX_PHONES_PER_PASS) continue;
+      byPhone.set(key, []);
+    }
     byPhone.get(key).push(m);
   }
 
