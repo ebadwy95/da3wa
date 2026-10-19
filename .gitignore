@@ -7,6 +7,12 @@ node_modules
 data/db.json
 .env.development.local
 
+# Campaign sheets built for a broadcast. Every row carries a guest's phone
+# number and their signed invitation link — the link that opens their
+# invitation and prints their entry pass. One of these in a repository hands
+# the whole guest list, and the door, to anyone who can read it.
+data/campaign-*.csv
+
 # local media used only for previewing the invitation opener
 public/test/
 
