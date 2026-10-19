@@ -76,9 +76,8 @@ export async function PATCH(request, { params }) {
   }
   // Correcting the guest themself. A misspelled name is worth fixing at any
   // time — their entry pass is then printed right — so it goes in with the
-  // rest. The number and the allowance are locked once the guest has opened
-  // their invitation: those change what they were promised, and they have
-  // already seen it.
+  // rest. The phone number is locked once the guest has opened their
+  // invitation: changing it hands their invitation to somebody else.
   const locked = {};
   if ("name" in body) {
     changes.name = String(body.name || "").trim();
@@ -90,9 +89,23 @@ export async function PATCH(request, { params }) {
     locked.phone = parsed.digits;
     locked.phoneDisplay = parsed.e164;
   }
+  // The allowance. Raising it is always allowed: the guest was promised a
+  // number and is now being promised more, which breaks no promise and is how
+  // "he called, he is bringing three" gets recorded. Lowering it after they
+  // have seen their invitation is the one that has to stay shut.
+  let wantedAllowance = null;
   if ("maxGuests" in body) {
-    locked.maxCompanions = Math.max(1, parseInt(body.maxGuests, 10) || 1) - 1;
+    wantedAllowance = Math.max(1, parseInt(body.maxGuests, 10) || 1) - 1;
+    changes.maxCompanions = wantedAllowance;
   }
+
+  // How many are actually coming, for a guest who has already answered. The
+  // guest's own answer stands until somebody tells us otherwise, and when
+  // they do it is over the phone to the couple, not through the link — which
+  // is closed to them by then. Without this the only record of "we are four
+  // now" was a message nobody could act on: it has to reach the headcount
+  // the caterer works from and the number printed on the entry pass.
+  const attending = "attending" in body ? Math.max(1, parseInt(body.attending, 10) || 1) : null;
 
   // Taking a message off the wall, or putting it back. Admin only: the
   // dashboard still shows it, so nothing a guest wrote is lost.
@@ -131,7 +144,8 @@ export async function PATCH(request, { params }) {
     Object.keys(changes).length === 0 &&
     Object.keys(locked).length === 0 &&
     markInvited === null &&
-    markWithdrawn === null
+    markWithdrawn === null &&
+    attending === null
   ) {
     return NextResponse.json({ error: "لا يوجد تعديل" }, { status: 400 });
   }
@@ -148,8 +162,21 @@ export async function PATCH(request, { params }) {
   const guest = await withDb((freshDb) => {
     const g = freshDb.guests.find((x) => x.id === id);
     if (!g) return { missing: true };
-    if (Object.keys(locked).length && (g.openedAt || g.status !== "pending")) return { blocked: true };
+    const seen = g.openedAt || g.status !== "pending";
+    if (Object.keys(locked).length && seen) return { blocked: true };
+    // Lowering the allowance for a guest who has already seen it: refused for
+    // the same reason the number is locked at all.
+    if (wantedAllowance !== null && seen && wantedAllowance < (g.maxCompanions || 0)) {
+      return { blocked: true };
+    }
     Object.assign(g, changes, locked);
+    if (attending !== null) {
+      if (g.status !== "confirmed") return { notConfirmed: true };
+      // Never more than the allowance — the door would turn the extra away,
+      // and the pass would be promising something the couple did not.
+      const companions = Math.min(attending - 1, g.maxCompanions || 0);
+      g.confirmedCompanions = Math.max(0, companions);
+    }
     if (markInvited === true && !g.invitedAt) {
       g.invitedAt = new Date().toISOString();
       g.invitedByHand = g.invitedAt;
@@ -164,9 +191,15 @@ export async function PATCH(request, { params }) {
   if (guest.missing) {
     return NextResponse.json({ error: "الضيف غير موجود" }, { status: 404 });
   }
+  if (guest.notConfirmed) {
+    return NextResponse.json(
+      { error: "عدد الحاضرين يتحدّد فقط لضيف أكّد حضوره" },
+      { status: 409 }
+    );
+  }
   if (guest.blocked) {
     return NextResponse.json(
-      { error: "الضيف فتح الدعوة — ما يصير تغيير الرقم أو العدد بعدها. الاسم يتعدّل عادي." },
+      { error: "الضيف شاف دعوته — العدد يزيد بس وما ينقص، والرقم ما يتغيّر. الاسم يتعدّل عادي." },
       { status: 409 }
     );
   }

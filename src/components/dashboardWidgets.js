@@ -519,7 +519,12 @@ export function GuestSideToggle({ guest, onChanged }) {
 function EditGuestDialog({ guest, onClose, onSaved, nameOnly }) {
   const [name, setName] = useState(guest.name);
   const [phone, setPhone] = useState(guest.phoneDisplay || guest.phone);
-  const [maxGuests, setMaxGuests] = useState((guest.maxCompanions || 0) + 1);
+  const allowance = (guest.maxCompanions || 0) + 1;
+  const [maxGuests, setMaxGuests] = useState(allowance);
+  // Only once they have answered yes: how many are actually coming. They ring
+  // the couple to say "we're four now" and this is where that lands.
+  const confirmed = guest.status === "confirmed";
+  const [attending, setAttending] = useState(1 + (guest.confirmedCompanions || 0));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -528,10 +533,16 @@ function EditGuestDialog({ guest, onClose, onSaved, nameOnly }) {
     setSaving(true);
     setError("");
     try {
+      // The allowance can always go up, so it is offered even to a guest who
+      // has seen their invitation; only the phone number stays shut.
+      const body = nameOnly
+        ? { name, maxGuests: Math.max(maxGuests, allowance) }
+        : { name, phone, maxGuests };
+      if (confirmed) body.attending = attending;
       const res = await fetch(`/api/guests/${guest.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nameOnly ? { name } : { name, phone, maxGuests }),
+        body: JSON.stringify(body),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "تعذّر الحفظ");
@@ -547,15 +558,28 @@ function EditGuestDialog({ guest, onClose, onSaved, nameOnly }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)" }} onClick={onClose}>
       <form onSubmit={save} className="card w-full max-w-sm p-5 flex flex-col gap-3" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`تعديل ${guest.name}`}>
-        <p className="font-bold">{nameOnly ? "تصحيح اسم الضيف" : "تعديل بيانات الضيف"}</p>
+        <p className="font-bold">تعديل بيانات الضيف</p>
         <div>
           <label className="label">الاسم</label>
           <input value={name} onChange={(e) => setName(e.target.value)} className="field w-full" required autoFocus />
         </div>
         {nameOnly ? (
-          <p className="text-xs text-ink-2 leading-relaxed">
-            الضيف فتح دعوته، فما يصير تغيير الرقم أو العدد. الاسم يتصحّح عادي، ويطلع الصح في بطاقة الدخول.
-          </p>
+          <>
+            <div>
+              <label className="label">إجمالي العدد المسموح (شامل الضيف نفسه)</label>
+              <input
+                type="number"
+                min={allowance}
+                value={maxGuests}
+                onChange={(e) => setMaxGuests(e.target.value)}
+                className="field w-full"
+              />
+              <p className="text-xs text-ink-2 leading-relaxed mt-1">
+                الضيف شاف دعوته، فالعدد يزيد بس وما ينقص — والرقم ما يتغيّر. الاسم يتصحّح عادي ويطلع
+                الصح في بطاقة الدخول.
+              </p>
+            </div>
+          </>
         ) : (
           <>
             <div>
@@ -567,6 +591,22 @@ function EditGuestDialog({ guest, onClose, onSaved, nameOnly }) {
               <input type="number" min={1} value={maxGuests} onChange={(e) => setMaxGuests(e.target.value)} className="field w-full" />
             </div>
           </>
+        )}
+        {confirmed && (
+          <div>
+            <label className="label">عدد الحاضرين فعلاً (شامل الضيف نفسه)</label>
+            <input
+              type="number"
+              min={1}
+              value={attending}
+              onChange={(e) => setAttending(e.target.value)}
+              className="field w-full"
+            />
+            <p className="text-xs text-ink-2 leading-relaxed mt-1">
+              هذا الرقم هو اللي يتحسب في عدد الحضور ويتطبع على بطاقة الدخول. ما يزيد عن العدد المسموح
+              فوق — إن كانوا صاروا أكثر، كبّر المسموح أول.
+            </p>
+          </div>
         )}
         {error && <p className="text-danger text-sm">{error}</p>}
         <div className="flex gap-2">
