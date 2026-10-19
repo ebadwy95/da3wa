@@ -2217,3 +2217,94 @@ html.dark {
 @media (prefers-reduced-motion: reduce) {
   .stagger-in > * { animation: none; }
 }
+
+/* ============================================================================
+   The pitch deck (/deck)
+   ----------------------------------------------------------------------------
+   Scroll-snap rather than a slide library: it gives swipe on a tablet for
+   free, it prints one slide per page without a second layout, and it is a
+   hundred lines instead of a dependency.
+   ========================================================================= */
+
+.deck {
+  height: 100dvh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+.deck-slide {
+  position: relative;
+  min-height: 100dvh;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2rem, 6vw, 5rem) 1.25rem;
+  overflow: hidden;
+}
+.deck-inner {
+  position: relative;
+  z-index: 2;
+  width: min(60rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  text-align: center;
+}
+.deck-h1 {
+  font-family: var(--font-display), serif;
+  font-size: clamp(2.4rem, 6.5vw, 4.6rem);
+  line-height: 1.35;
+  color: #f4ede0;
+}
+.deck-h2 {
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.9rem, 4.6vw, 3.2rem);
+  line-height: 1.4;
+}
+.band-dark .deck-h2 { color: #f4ede0; }
+.deck-p {
+  font-size: clamp(1.05rem, 2.1vw, 1.5rem);
+  line-height: 1.95;
+  color: var(--ink-2);
+}
+.band-dark .deck-p { color: rgba(244, 237, 224, 0.84); }
+.deck-note {
+  font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+  color: var(--gold-600);
+  line-height: 1.8;
+}
+.band-dark .deck-note { color: #e0c48d; }
+
+/* Three figures, big enough to read from the other side of a stand. */
+.deck-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(1.5rem, 6vw, 4.5rem);
+}
+.deck-stats > div { display: flex; flex-direction: column; gap: 0.35rem; }
+.deck-stats b {
+  font-size: clamp(3rem, 9vw, 6rem);
+  line-height: 1;
+  background: linear-gradient(104deg, #b08d57, #f0dcae 46%, #fff6e2 52%, #e0c48d 60%, #b08d57);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.deck-stats span { font-size: 0.95rem; color: rgba(244, 237, 224, 0.7); letter-spacing: 0.08em; }
+
+.deck-cta { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+/* The PDF to email afterwards: the browser's own print dialog, one slide to
+   a page, nothing clipped. */
+@media print {
+  .deck { height: auto; overflow: visible; }
+  .deck-slide {
+    min-height: auto;
+    height: 100vh;
+    page-break-after: always;
+    break-after: page;
+  }
+  .aurora { display: none; }
+}
