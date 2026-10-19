@@ -53,6 +53,42 @@ async function launch() {
   return playwright.launch({ executablePath, headless: true });
 }
 
+// One render, one browser, no reuse.
+//
+// Chromium dies here more often than it has any right to. On a container that
+// has already drawn a card, the next launch comes up and then falls over
+// mid-page — "Target page, context or browser has been closed" — which is what
+// a browser killed for memory looks like from the outside. Half of one
+// wedding's hundred and thirty passes failed that way, every one of them a
+// guest who would have been handed a broken image at the door.
+//
+// So the attempt is cheap and the second attempt is free: the first browser is
+// gone by then, its memory with it, and a retry on a settled container usually
+// draws the card the first one died on.
+async function drawOnce(html, { width, height, locale }) {
+  const browser = await launch();
+  try {
+    const context = await browser.newContext({
+      viewport: { width, height },
+      deviceScaleFactor: 1,
+      locale,
+    });
+    const page = await context.newPage();
+    // Not "networkidle": every asset this page needs is inlined or a data URL,
+    // so waiting for the network to go quiet only keeps a heavy page alive
+    // longer. The fonts are the one thing worth waiting for, and they are
+    // waited for by name below.
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
+    // The web fonts are the whole design; a screenshot taken before they land
+    // is the card in Times New Roman.
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForTimeout(120);
+    return await page.screenshot({ type: "png", animations: "disabled" });
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
+
 /**
  * Renders a full HTML document to a PNG buffer.
  *
@@ -62,22 +98,11 @@ async function launch() {
  * killed between invocations anyway.
  */
 export async function renderHtmlToPng(html, { width, height, locale = "ar" } = {}) {
-  const browser = await launch();
   try {
-    const context = await browser.newContext({
-      viewport: { width, height },
-      deviceScaleFactor: 1,
-      locale,
-    });
-    const page = await context.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
-    // The web fonts are the whole design; a screenshot taken before they land
-    // is the card in Times New Roman.
-    await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(120);
-    return await page.screenshot({ type: "png", animations: "disabled" });
-  } finally {
-    await browser.close().catch(() => {});
+    return await drawOnce(html, { width, height, locale });
+  } catch (err) {
+    console.warn("[cards] first render died, trying once more:", err.message);
+    return await drawOnce(html, { width, height, locale });
   }
 }
 
@@ -95,7 +120,7 @@ export async function renderHtmlToPdf(html, { locale = "ar" } = {}) {
   try {
     const context = await browser.newContext({ locale });
     const page = await context.newPage();
-    await page.setContent(html, { waitUntil: "networkidle" });
+    await page.setContent(html, { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(120);
     return await page.pdf({
