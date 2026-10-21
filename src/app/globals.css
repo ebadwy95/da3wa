@@ -2308,3 +2308,101 @@ html.dark {
   }
   .aurora { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   The planner's floor screen (/floor/<key>).
+   Read in a dark hall, standing, at arm's length, between two other jobs —
+   so: one number far larger than everything else, its own dark background
+   regardless of the site's theme, and nothing that needs scrolling to. */
+.floor-wrap {
+  min-height: 100dvh;
+  background: #15110d;
+  color: #f4ede0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.75rem, 2.5vw, 1.25rem);
+  padding: clamp(1rem, 4vw, 2rem);
+  font-family: var(--font-ui), system-ui, sans-serif;
+}
+.floor-card {
+  margin: auto;
+  max-width: 24rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(244, 237, 224, 0.14);
+  border-radius: 1rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.floor-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.floor-couple { font-family: var(--font-display), serif; font-size: clamp(1.1rem, 3.5vw, 1.5rem); color: #e8d9b8; }
+.floor-refresh {
+  background: transparent;
+  border: 1px solid rgba(244, 237, 224, 0.2);
+  color: rgba(244, 237, 224, 0.62);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.floor-sides { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(0.6rem, 2vw, 1rem); }
+.floor-side {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(244, 237, 224, 0.1);
+  border-radius: 0.9rem;
+  padding: clamp(0.7rem, 2.4vw, 1.1rem);
+  display: flex; flex-direction: column; gap: 0.45rem;
+}
+.floor-side-label { font-size: 0.82rem; letter-spacing: 0.04em; }
+.floor-side-num { display: flex; align-items: baseline; gap: 0.4rem; }
+.floor-side-num b { font-size: clamp(2rem, 8vw, 3rem); line-height: 1; }
+.floor-side-num span { font-size: 0.85rem; color: rgba(244, 237, 224, 0.6); }
+.floor-side-meta { font-size: 0.75rem; color: rgba(244, 237, 224, 0.45); }
+
+.floor-bar { height: 5px; border-radius: 999px; background: rgba(244, 237, 224, 0.12); overflow: hidden; }
+.floor-bar i { display: block; height: 100%; border-radius: 999px; transition: width 0.6s ease; }
+.floor-bar-lg { height: 10px; }
+.floor-bar-lg i { background: linear-gradient(90deg, #b08d57, #e8d9b8); }
+
+/* The number the night waits on. */
+.floor-main {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.35rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(244, 237, 224, 0.1);
+  border-radius: 1.1rem;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+.floor-main-label { font-size: 0.9rem; letter-spacing: 0.1em; color: rgba(244, 237, 224, 0.62); }
+.floor-main-num {
+  font-size: clamp(5rem, 28vw, 11rem);
+  line-height: 0.92;
+  font-weight: 700;
+  background: linear-gradient(104deg, #8a6a33, #b08d57 26%, #f0dcae 46%, #fff6e2 52%, #f0dcae 58%, #b08d57 76%, #8a6a33);
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.floor-main-sub { font-size: 0.95rem; color: rgba(244, 237, 224, 0.66); }
+.floor-main .floor-bar-lg { width: min(100%, 26rem); margin-top: 0.6rem; }
+
+.floor-foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(0.5rem, 2vw, 0.9rem); }
+.floor-stat {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(244, 237, 224, 0.1);
+  border-radius: 0.8rem;
+  padding: 0.7rem 0.5rem;
+  text-align: center;
+  display: flex; flex-direction: column; gap: 0.15rem;
+}
+.floor-stat b { font-size: clamp(1.3rem, 5.5vw, 1.9rem); line-height: 1; }
+.floor-stat span { font-size: 0.72rem; color: rgba(244, 237, 224, 0.52); }
+
+.floor-eta { text-align: center; font-size: 0.92rem; color: rgba(244, 237, 224, 0.72); margin: 0; }
+.floor-eta b { color: #f0dcae; }
+.floor-eta-quiet { color: rgba(244, 237, 224, 0.4); }
+
+@media (prefers-reduced-motion: reduce) { .floor-bar i { transition: none; } }

@@ -848,6 +848,49 @@ function WhatsappDiagnostics() {
   );
 }
 
+// The link the wedding planner watches all night.
+//
+// Separate from the dashboard on purpose: a planner needs one number and
+// should not be handed the guest list, the phone numbers or the door scanner
+// to get it. The key signs the wedding, not a person, so the planner, the
+// caterer and the hall manager can each open it on their own phone.
+function FloorScreenCard({ event }) {
+  const [copied, setCopied] = useState(false);
+  const link =
+    event.floorKey && typeof window !== "undefined"
+      ? `${window.location.origin}/floor/${event.floorKey}`
+      : "";
+
+  if (!link) return null;
+
+  return (
+    <div className="card p-4 space-y-3">
+      <h2 className="font-bold">شاشة القاعة — لمنظّم الحفل</h2>
+      <p className="text-xs text-ink-2 leading-relaxed">
+        رابط يعرض رقمًا واحدًا كبيرًا: كم فردًا داخل القاعة الآن، مقسومًا على
+        طرف العريس وطرف العروس، مع معدّل الدخول ووقت اكتمال العدد المتوقَّع.
+        يتحدّث وحده كل عشر ثوانٍ. سلّمه لمنظّم الحفل أو مسؤول القاعة — لا يعرض
+        أي اسم أو رقم هاتف ولا يسمح بأي تعديل، فهو آمن للمشاركة.
+      </p>
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="field flex-1 min-w-[160px] truncate" dir="ltr">{link}</div>
+        <button
+          onClick={() => navigator.clipboard.writeText(link).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1600);
+          })}
+          className="pill-btn-outline pill-btn-sm"
+        >
+          {copied ? "تم النسخ ✓" : "نسخ الرابط"}
+        </button>
+        <a href={link} target="_blank" rel="noreferrer" className="pill-btn pill-btn-sm">
+          فتح
+        </a>
+      </div>
+    </div>
+  );
+}
+
 function ScannerAccessCard({ event, onUpdated }) {
   const [copied, setCopied] = useState(null);
   const [adding, setAdding] = useState(false);
@@ -1670,6 +1713,7 @@ function EventDashboard({ event, onDeleted, onUpdated }) {
       )}
 
       <ScannerAccessCard event={eventForDisplay} onUpdated={(scanners) => setOverrides((prev) => ({ ...prev, scanners }))} />
+      <FloorScreenCard event={eventForDisplay} />
       <SecurityTeamCard event={eventForDisplay} />
       <SendAppCard event={eventForDisplay} />
       <AutoMessagesCard event={eventForDisplay} onUpdated={(patch) => setOverrides((prev) => ({ ...prev, ...patch }))} />

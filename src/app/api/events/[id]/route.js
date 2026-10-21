@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getDb, withDb } from "@/lib/db";
 import { sanitiseInviteCopy } from "@/lib/inviteCopy";
 import { isAdminAuthed } from "@/lib/auth";
-import { makeCardToken } from "@/lib/token";
+import { makeCardToken, makeFloorKey } from "@/lib/token";
 import { canAccessEvent } from "@/lib/coupleAuth";
 import { computeDisplayStatus, isTodayOrFuture, daysSinceDeleted } from "@/lib/date";
 import { joinCoupleNames } from "@/lib/couple";
@@ -31,6 +31,10 @@ export async function GET(request, { params }) {
       // already open this event — the couple's own dashboard previews the card
       // with it — and to nobody else, so the image stays unguessable.
       cardToken: makeCardToken(event.id),
+      // The planner's floor screen. Read-only and nameless, so the couple can
+      // hand it to whoever is running the night without handing over the
+      // guest list with it — see makeFloorKey.
+      floorKey: makeFloorKey(event.id),
       guestCount,
       remaining: Math.max(0, event.packageLimit - guestCount),
       displayStatus: computeDisplayStatus(event),

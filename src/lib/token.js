@@ -161,6 +161,28 @@ export function parseGuardKey(key) {
   return { eventId, contactId };
 }
 
+// The wedding planner's floor screen (/floor/<key>). Read-only: it shows how
+// many people are in the hall and nothing else, so it is handed out freely to
+// whoever is running the night without giving them the guest list, the door
+// scanner or the couple's dashboard.
+//
+// One signature per wedding, not per person — the planner, the caterer and
+// the DJ can all watch the same number from their own phones, and the link
+// dies with the wedding.
+export function makeFloorToken(eventId) {
+  return sign(`floor:${eventId}`).slice(0, 24);
+}
+
+export function makeFloorKey(eventId) {
+  return `${eventId}.${makeFloorToken(eventId)}`;
+}
+
+export function parseFloorKey(key) {
+  const [eventId, token] = String(key || "").split(".");
+  if (!eventId || !token || makeFloorToken(eventId) !== token) return null;
+  return { eventId };
+}
+
 // The groom's or bride's session in the sending app (/send). The password is
 // part of what is signed, so resetting it from the dashboard logs out every
 // phone that was using the old one.
