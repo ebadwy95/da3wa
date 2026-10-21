@@ -64,6 +64,8 @@ const APPS = [
     who: "لفريق الأمن اللي يستقبل النداءات",
     what: "يرن على تلفونهم لما موظف الباب يضغط SOS أو يجي أحد بباركود مستخدم.",
     note: "ما له رابط عام — كل واحد يوصله رابطه الخاص من لوحة الإدارة ← فريق الأمن.",
+    href: "/admin",
+    cta: "خذ الرابط من لوحة الإدارة",
   },
   {
     name: "شاشة القاعة",
@@ -71,6 +73,8 @@ const APPS = [
     who: "لمنظّم الحفل ومسؤول القاعة",
     what: "رقم واحد كبير: كم شخص داخل القاعة الحين، مقسوم على طرف العريس وطرف العروس، مع سرعة الدخول ومتى يكتمل العدد. يتحدث بنفسه.",
     note: "ما له رابط عام — لكل عرس رابطه، تنسخه من لوحة الإدارة ← شاشة القاعة. ما يعرض أسماء ولا أرقام، فتعطيه لأي أحد بدون قلق.",
+    href: "/admin",
+    cta: "خذ الرابط من لوحة الإدارة",
   },
 ];
 
@@ -100,11 +104,13 @@ export default function AppsPage() {
                   </div>
                 </div>
                 <p className="text-sm text-ink-2 leading-relaxed">{app.what}</p>
+                {/* The two that have no public link of their own still get a
+                    button — it opens the dashboard page the link is handed
+                    out from, so no row is a dead end. */}
+                {app.note ? <p className="text-xs text-ink-3 leading-relaxed">{app.note}</p> : null}
                 {app.href ? (
-                  <span className="pill-btn pill-btn-sm self-start">افتح التطبيق</span>
-                ) : (
-                  <p className="text-xs text-ink-3 leading-relaxed">{app.note}</p>
-                )}
+                  <span className="pill-btn pill-btn-sm self-start mt-auto">{app.cta ?? "افتح التطبيق"}</span>
+                ) : null}
               </>
             );
             return app.href ? (

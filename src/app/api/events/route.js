@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getDb, withDb } from "@/lib/db";
 import { isAdminAuthed } from "@/lib/auth";
 import { normalizePhone } from "@/lib/phone";
-import { generateScannerCode, generateCoupleUsername, generateCouplePassword } from "@/lib/token";
+import { generateScannerCode, generateCoupleUsername, generateCouplePassword, makeFloorKey } from "@/lib/token";
 import { computeDisplayStatus } from "@/lib/date";
 import { splitCoupleNames, joinCoupleNames } from "@/lib/couple";
 
@@ -14,6 +14,10 @@ function withCounts(event, guests) {
     guestCount: eventGuests.length,
     remaining: Math.max(0, event.packageLimit - eventGuests.length),
     displayStatus: computeDisplayStatus(event),
+    // The floor screen's link is derived, never stored — the dashboard lists
+    // events from here, so it has to arrive with the list or the card that
+    // hands out the link has nothing to show.
+    floorKey: makeFloorKey(event.id),
   };
 }
 
