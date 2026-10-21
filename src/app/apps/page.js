@@ -5,6 +5,30 @@ import { PRIVATE_ROUTE_METADATA } from "@/lib/seo";
 // Written in Gulf Arabic, like everything people outside the team read.
 export const metadata = { ...PRIVATE_ROUTE_METADATA, title: "تطبيقات دعوة" };
 
+// The floor screen has no installed icon of its own — it is a link handed out
+// per wedding, not an app anyone keeps. Drawn here so the row still reads as
+// a row: a gauge filling up, which is the whole screen in one mark.
+const FLOOR_ICON = (
+  <svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true" style={{ borderRadius: 14, flexShrink: 0 }}>
+    <rect width="56" height="56" rx="14" fill="#15110d" />
+    <path
+      d="M14 36a14 14 0 0 1 28 0"
+      fill="none"
+      stroke="rgba(244,237,224,0.18)"
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
+    <path
+      d="M14 36a14 14 0 0 1 20.2-12.6"
+      fill="none"
+      stroke="#d8b878"
+      strokeWidth="4"
+      strokeLinecap="round"
+    />
+    <circle cx="28" cy="36" r="3" fill="#f0dcae" />
+  </svg>
+);
+
 const APPS = [
   {
     name: "لوحة الإدارة",
@@ -41,6 +65,13 @@ const APPS = [
     what: "يرن على تلفونهم لما موظف الباب يضغط SOS أو يجي أحد بباركود مستخدم.",
     note: "ما له رابط عام — كل واحد يوصله رابطه الخاص من لوحة الإدارة ← فريق الأمن.",
   },
+  {
+    name: "شاشة القاعة",
+    svg: FLOOR_ICON,
+    who: "لمنظّم الحفل ومسؤول القاعة",
+    what: "رقم واحد كبير: كم شخص داخل القاعة الحين، مقسوم على طرف العريس وطرف العروس، مع سرعة الدخول ومتى يكتمل العدد. يتحدث بنفسه.",
+    note: "ما له رابط عام — لكل عرس رابطه، تنسخه من لوحة الإدارة ← شاشة القاعة. ما يعرض أسماء ولا أرقام، فتعطيه لأي أحد بدون قلق.",
+  },
 ];
 
 export default function AppsPage() {
@@ -59,8 +90,10 @@ export default function AppsPage() {
             const body = (
               <>
                 <div className="flex items-center gap-3">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={app.icon} alt="" width={56} height={56} style={{ borderRadius: 14, flexShrink: 0 }} />
+                  {app.svg ?? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={app.icon} alt="" width={56} height={56} style={{ borderRadius: 14, flexShrink: 0 }} />
+                  )}
                   <div className="min-w-0">
                     <p className="font-bold" style={{ fontSize: "var(--text-lg)" }}>{app.name}</p>
                     <p className="text-xs" style={{ color: "var(--gold-600)", fontWeight: 600 }}>{app.who}</p>
