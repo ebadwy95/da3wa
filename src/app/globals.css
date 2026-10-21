@@ -2406,3 +2406,29 @@ html.dark {
 .floor-eta-quiet { color: rgba(244, 237, 224, 0.4); }
 
 @media (prefers-reduced-motion: reduce) { .floor-bar i { transition: none; } }
+
+/* A scan at the door, seen from across the hall. */
+@keyframes floorBump {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+.floor-bump { animation: floorBump 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+.floor-live { display: inline-flex; align-items: center; gap: 0.35rem; }
+.floor-live::before {
+  content: "";
+  width: 7px; height: 7px; border-radius: 999px;
+  background: #5bbf7a;
+  box-shadow: 0 0 0 0 rgba(91, 191, 122, 0.6);
+  animation: floorPulse 2s ease-out infinite;
+}
+.floor-live-off::before { background: #c27a3a; animation: none; }
+@keyframes floorPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(91, 191, 122, 0.55); }
+  70%  { box-shadow: 0 0 0 9px rgba(91, 191, 122, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(91, 191, 122, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floor-bump { animation: none; }
+  .floor-live::before { animation: none; }
+}

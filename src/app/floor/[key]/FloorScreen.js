@@ -9,7 +9,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // other things, standing up, holding a phone in one hand. No tabs, no
 // filters, no scrolling to the number that matters.
 
-const POLL_MS = 10000;
+// Close enough to live that a scan at the door shows here before the guest
+// has finished walking in.
+//
+// Not a push: this runs on functions that start and stop per request, so
+// there is no open connection for the door to shout down. Polling is the
+// honest option — and it is kept honest by stopping dead the moment nobody
+// is looking. A screen left face-down on a table costs nothing, which is
+// what keeps four seconds affordable for the two or three people watching.
+const POLL_MS = 4000;
 
 // Arrivals in the last quarter of an hour, turned into "when will the hall be
 // full". A wedding fills in bursts — a bus of twenty, then nobody for ten
@@ -45,13 +53,23 @@ function useFloor(floorKey) {
     // Off the effect body rather than in it, so the first paint is the
     // loading state and not a render cascade.
     const first = setTimeout(load, 0);
-    const poll = setInterval(load, POLL_MS);
-    const wake = () => document.visibilityState === "visible" && load();
-    document.addEventListener("visibilitychange", wake);
+    let poll = setInterval(load, POLL_MS);
+
+    // A phone in a pocket should not be reading the database every four
+    // seconds all night. Polling stops when the screen is away and catches
+    // up the instant it comes back.
+    const onVisibility = () => {
+      clearInterval(poll);
+      if (document.visibilityState === "visible") {
+        load();
+        poll = setInterval(load, POLL_MS);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       clearTimeout(first);
       clearInterval(poll);
-      document.removeEventListener("visibilitychange", wake);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [load]);
 
@@ -86,8 +104,24 @@ function Side({ label, side, tone }) {
   );
 }
 
+// A number that changed should be seen changing. The planner is looking at
+// the room, not at the phone, and the flash is what pulls her eye back.
+function useBump(value) {
+  const [bump, setBump] = useState(false);
+  const previous = useRef(value);
+  useEffect(() => {
+    if (previous.current === value) return;
+    previous.current = value;
+    setBump(true);
+    const t = setTimeout(() => setBump(false), 900);
+    return () => clearTimeout(t);
+  }, [value]);
+  return bump;
+}
+
 export default function FloorScreen({ floorKey }) {
   const { data, error, stale, reload } = useFloor(floorKey);
+  const bump = useBump(data?.total?.inside);
 
   if (error && !data) {
     return (
@@ -131,8 +165,12 @@ export default function FloorScreen({ floorKey }) {
     <main className="floor-wrap">
       <header className="floor-head">
         <span className="floor-couple">{data.coupleNames}</span>
-        <button className="floor-refresh" onClick={reload} aria-label="تحديث">
-          {stale ? "غير محدّث — اضغط" : "محدّث الآن"}
+        <button
+          className={`floor-refresh floor-live${stale ? " floor-live-off" : ""}`}
+          onClick={reload}
+          aria-label="تحديث"
+        >
+          {stale ? "انقطع — اضغط" : "مباشر"}
         </button>
       </header>
 
@@ -143,7 +181,7 @@ export default function FloorScreen({ floorKey }) {
 
       <section className="floor-main">
         <span className="floor-main-label">في القاعة الآن</span>
-        <b className="floor-main-num tnum">{total.inside}</b>
+        <b className={`floor-main-num tnum${bump ? " floor-bump" : ""}`}>{total.inside}</b>
         <span className="floor-main-sub tnum">من {total.expected} مؤكّدًا · {pct}%</span>
         <div className="floor-bar floor-bar-lg" aria-hidden="true">
           <i style={{ width: `${Math.min(100, pct)}%` }} />
