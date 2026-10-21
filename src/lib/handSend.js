@@ -112,10 +112,17 @@ export function thanksMessage(guest, event) {
  * The thank-you for this guest: null when it doesn't apply (not confirmed,
  * or the wedding isn't over), otherwise todo / sent / done — done once the
  * guest opened their link after it was sent.
+ *
+ * "Sent" counts the thank-you however it went out. Most of a wedding's
+ * guests get it in one broadcast, and the couple should open this list the
+ * morning after and find only the people that broadcast could not have
+ * included — whoever confirmed after it was built. A list that shows all
+ * two hundred names, nearly every one of them already thanked, is a list
+ * nobody reads.
  */
 export function thanksState(guest, event, now = new Date()) {
   if (guest.status !== "confirmed" || !thanksOpen(event, now)) return null;
-  const sentAt = guest.handSend?.thanks;
+  const sentAt = guest.handSend?.thanks || guest.thanksSentAt;
   if (!sentAt) return "todo";
   return guest.lastOpenedAt && guest.lastOpenedAt > sentAt ? "done" : "sent";
 }
