@@ -2380,8 +2380,10 @@ html.dark {
 }
 .floor-main-label { font-size: 0.9rem; letter-spacing: 0.1em; color: rgba(244, 237, 224, 0.62); }
 .floor-main-num {
-  font-size: clamp(5rem, 28vw, 11rem);
-  line-height: 0.92;
+  /* On a phone this number has a whole card to itself; it should fill it
+     rather than float in the middle of it. */
+  font-size: clamp(6rem, 42vw, 13rem);
+  line-height: 0.88;
   font-weight: 700;
   background: linear-gradient(104deg, #8a6a33, #b08d57 26%, #f0dcae 46%, #fff6e2 52%, #f0dcae 58%, #b08d57 76%, #8a6a33);
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
